@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="log-explorer" data-title="Log Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="siem.html">SIEM</a><i class="bi bi-chevron-right sep"></i>
+        <a href="log-explorer.html">Log Explorer</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current" id="breadcrumbLogId">Log Details</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div class="d-flex gap-3">
+            <div class="brand-mark brand-mark-lg" id="logSevIcon"><i class="bi bi-file-earmark-text"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 class="fs-detail-title" id="logId">—</h1>
+                <span id="logSevBadge"></span>
+              </div>
+              <p class="text-muted mb-1" id="logMeta">—</p>
+              <div class="d-flex gap-2" id="logTags"></div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-secondary btn-sm" id="copyRawBtn"><i class="bi bi-clipboard"></i> Copy Raw</button>
+            <button class="btn btn-secondary btn-sm"><i class="bi bi-flag"></i> Create Alert</button>
+            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-eye-slash"></i> Suppress Similar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="card stat-card accent-primary h-100"><div class="eyebrow">Host</div><div class="stat-value fs-inherit-lg" id="statHost">—</div></div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="card stat-card accent-info h-100"><div class="eyebrow">Source</div><div class="stat-value fs-inherit-lg" id="statSource">—</div></div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="card stat-card accent-warning h-100"><div class="eyebrow">Category</div><div class="stat-value fs-inherit-lg" id="statCategory">—</div></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="card mb-4">
+        <div class="xdr-tabs tabs-padded">
+          <div class="xdr-tab active" data-tab="raw">Raw Log</div>
+          <div class="xdr-tab" data-tab="parsed">Parsed Fields</div>
+          <div class="xdr-tab" data-tab="json">JSON</div>
+        </div>
+
+        <div class="card-body" id="tabRaw">
+          <div class="log-raw-panel" id="rawLogText">—</div>
+        </div>
+
+        <div class="card-body d-none" id="tabParsed">
+          <div id="parsedFieldsList"></div>
+        </div>
+
+        <div class="card-body d-none" id="tabJson">
+          <div class="log-json-panel" id="jsonPanel">—</div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <section class="card h-100" aria-labelledby="relatedEventsTitle">
+            <div class="card-header"><h2 id="relatedEventsTitle">Related Events — same host</h2></div>
+            <div class="card-body">
+              <div class="xdr-timeline" id="relatedTimeline"></div>
+            </div>
+          </section>
+        </div>
+        <div class="col-lg-5">
+          <section class="card h-100" aria-labelledby="contextTitle">
+            <div class="card-header"><h2 id="contextTitle">Context</h2></div>
+            <div class="card-body">
+              <div class="info-row"><span class="text-muted">Timestamp (UTC)</span><span class="cell-mono" id="ctxTs">—</span></div>
+              <div class="info-row"><span class="text-muted">Log ID</span><span class="cell-mono" id="ctxId">—</span></div>
+              <div class="info-row"><span class="text-muted">Source</span><span id="ctxSource">—</span></div>
+              <div class="info-row"><span class="text-muted">Category</span><span id="ctxCategory">—</span></div>
+              <div class="info-row"><span class="text-muted">Tags</span><span id="ctxTags">—</span></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/data/logs-data.js"></script>
+<script src="../assets/js/pages/log-details.js"></script>
+</body>
+</html>

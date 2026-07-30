@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Incident Summary — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="ai-assistant" data-title="AI Incident Summary">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="ai-dashboard.html">AI Security Assistant</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Incident Summary</span>
+      </nav>
+
+      <div class="section-title-row">
+        <div>
+          <h1><i class="bi bi-stars"></i> AI Incident Summary</h1>
+          <p class="text-muted mt-1">Auto-generated narrative summaries of tracked incidents</p>
+        </div>
+        <select class="form-select" id="incidentSelect" style="max-width:340px;"></select>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <section class="card mb-4" aria-labelledby="narrativeTitle">
+            <div class="card-header"><h2 id="narrativeTitle"><i class="bi bi-stars text-muted"></i> AI-Generated Summary</h2></div>
+            <div class="card-body">
+              <p id="narrativeText" class="mb-0">—</p>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="nextActionsTitle">
+            <div class="card-header"><h2 id="nextActionsTitle">Suggested Next Actions</h2></div>
+            <div class="card-body" id="nextActionsList"></div>
+          </section>
+        </div>
+
+        <div class="col-lg-4">
+          <section class="card mb-4" aria-labelledby="keyFactsTitle">
+            <div class="card-header"><h2 id="keyFactsTitle">Key Facts</h2></div>
+            <div class="card-body">
+              <div class="info-row"><span class="text-muted">Severity</span><span id="factSev"></span></div>
+              <div class="info-row"><span class="text-muted">Status</span><span id="factStatus"></span></div>
+              <div class="info-row"><span class="text-muted">Category</span><span id="factCategory">—</span></div>
+              <div class="info-row"><span class="text-muted">Assigned</span><span id="factAssigned">—</span></div>
+              <div class="info-row"><span class="text-muted">Affected assets</span><span id="factAssets">—</span></div>
+            </div>
+          </section>
+          <section class="card" aria-labelledby="condensedTimelineTitle">
+            <div class="card-header"><h2 id="condensedTimelineTitle">Condensed Timeline</h2></div>
+            <div class="card-body"><div class="xdr-timeline" id="condensedTimeline"></div></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/data/incident-data.js"></script>
+<script src="../assets/js/data/timeline-data.js"></script>
+<script src="../assets/js/pages/incident-summary.js"></script>
+</body>
+</html>

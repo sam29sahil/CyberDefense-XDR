@@ -1,0 +1,46 @@
+/* ==========================================================================
+   scanner.css — page-specific styling for the Vulnerability Scanner module:
+   Scanner Dashboard, New Scan, Scan History, Scan Details, Vulnerability
+   Details, Targets. Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- Scan status pill (distinct states from detection/incident) ---------- */
+.status-pill.st-completed{ color: var(--success); background: var(--success-subtle); }
+.status-pill.st-running{ color: var(--info); background: var(--info-subtle); }
+.status-pill.st-queued{ color: var(--text-disabled); background: rgba(148,163,184,.08); }
+
+/* ---------- Vulnerability status pill ---------- */
+.status-pill.st-open{ color: var(--danger); background: var(--danger-subtle); }
+.status-pill.st-patched{ color: var(--success); background: var(--success-subtle); }
+.status-pill.st-accepted_risk{ color: var(--warning); background: var(--warning-subtle); }
+.status-pill.st-in_progress{ color: var(--info); background: var(--info-subtle); }
+
+/* ---------- Risk score gauge (simple ring via conic-gradient) ---------- */
+.risk-gauge{
+  width:96px; height:96px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background: conic-gradient(var(--gauge-color, var(--danger)) calc(var(--pct,0) * 1%), var(--card-hover) 0);
+  position:relative; flex:none;
+}
+.risk-gauge::before{ content:""; position:absolute; inset:8px; border-radius:50%; background: var(--card); }
+.risk-gauge .risk-gauge-value{ position:relative; font-family: var(--font-mono); font-weight:800; font-size: 1.2rem; color: var(--text); }
+
+/* ---------- Target card ---------- */
+.target-card{ padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--card); height:100%; }
+.target-icon{ width:38px; height:38px; border-radius: var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:18px; background: var(--info-subtle); color: var(--info); }
+
+/* ---------- New Scan: target picker chips ---------- */
+.target-picker{ display:flex; flex-wrap:wrap; gap:8px; max-height:220px; overflow-y:auto; padding: var(--space-2); border:1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+.target-pick-chip{ display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius: var(--radius-sm); border:1px solid var(--border); font-size: var(--fs-sm); cursor:pointer; user-select:none; }
+.target-pick-chip.selected{ background: var(--primary-subtle); border-color: var(--primary); color: var(--text); }
+.target-pick-chip input{ margin:0; }
+
+/* ---------- Scan progress bar (New Scan simulation) ---------- */
+.scan-progress-wrap{ display:none; }
+.scan-progress-wrap.show{ display:block; }
+
+/* ---------- CVSS score badge ---------- */
+.cvss-badge{ font-family: var(--font-mono); font-weight:800; font-size: var(--fs-sm); padding: 3px 8px; border-radius: var(--radius-sm); }
+.cvss-badge.cvss-critical{ background: var(--sev-critical-subtle); color:#FCA5A5; }
+.cvss-badge.cvss-high{ background: var(--sev-high-subtle); color:#FDBA74; }
+.cvss-badge.cvss-medium{ background: var(--sev-medium-subtle); color: var(--sev-medium); }
+.cvss-badge.cvss-low{ background: var(--sev-low-subtle); color: var(--sev-low); }

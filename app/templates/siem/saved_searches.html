@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saved Searches — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="log-explorer" data-title="Saved Searches">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="siem.html">SIEM</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Saved Searches</span>
+      </nav>
+
+      <div class="section-title-row">
+        <div>
+          <h1>Saved Searches</h1>
+          <p class="text-muted mt-1">8 searches saved · 3 with alerting enabled</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="log-explorer.html" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> New Search</a>
+        </div>
+      </div>
+
+      <!-- Summary stat row -->
+      <div class="stat-grid-4 mb-4">
+        <div class="card stat-card accent-primary"><div class="eyebrow">Total Saved</div><div class="stat-value" id="statTotal">—</div></div>
+        <div class="card stat-card accent-success"><div class="eyebrow">Team-Shared</div><div class="stat-value" id="statShared">—</div></div>
+        <div class="card stat-card accent-warning"><div class="eyebrow">Alerting Enabled</div><div class="stat-value" id="statAlerting">—</div></div>
+        <div class="card stat-card accent-info"><div class="eyebrow">Pinned to Dashboard</div><div class="stat-value" id="statPinned">—</div></div>
+      </div>
+
+      <!-- Table -->
+      <section class="xdr-table-wrap" aria-label="Saved searches table">
+        <div class="table-toolbar">
+          <div class="search-input-wrap">
+            <i class="bi bi-search"></i>
+            <input class="form-control search-input" id="searchFilter" placeholder="Filter saved searches…">
+          </div>
+          <select class="form-select filter-w-md" id="filterScope">
+            <option value="">All scopes</option>
+            <option value="Team">Team</option>
+            <option value="Private">Private</option>
+          </select>
+          <select class="form-select filter-w-md" id="filterAlerting">
+            <option value="">Alerting: any</option>
+            <option value="on">Alerting on</option>
+            <option value="off">Alerting off</option>
+          </select>
+          <button class="btn btn-ghost btn-sm ms-auto" id="clearFilters"><i class="bi bi-x-circle"></i> Clear</button>
+        </div>
+
+        <table class="xdr-table" id="searchesTable">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="xdr-pagination" id="searchesPagination"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="xdr-modal-backdrop" data-modal-backdrop="deleteSearchModal"></div>
+<div class="xdr-modal" id="deleteSearchModal">
+  <div class="xdr-modal-header"><h3>Delete saved search</h3><button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button></div>
+  <div class="xdr-modal-body">
+    <p class="mb-0">Delete "<strong id="deleteSearchName">—</strong>"? This can't be undone, and removes it from the SIEM Dashboard if pinned.</p>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-danger" id="confirmDeleteBtn" data-modal-close>Delete</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/core/modal-helpers.js"></script>
+<script src="../assets/js/core/datatable.js"></script>
+<script src="../assets/js/data/saved-searches-data.js"></script>
+<script src="../assets/js/pages/saved-searches.js"></script>
+</body>
+</html>

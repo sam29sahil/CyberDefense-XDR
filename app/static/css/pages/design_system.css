@@ -1,0 +1,21 @@
+/* ==========================================================================
+   design-system.css — page-specific styles for app/design-system.html
+   ========================================================================== */
+
+   .swatch-block{ height: 64px; border-radius: 10px; border: 1px solid var(--border); }
+   .swatch-label{ margin-top: 8px; }
+   
+   .type-sample{ margin-top: 12px; }
+   .type-sample:first-child{ margin-top: 0; }
+   .type-display{ font-size: var(--fs-display); font-weight: 800; }
+   .type-h1{ font-size: var(--fs-h1); font-weight: 700; }
+   .type-h2{ font-size: var(--fs-h2); font-weight: 600; }
+   .type-h3{ font-size: var(--fs-h3); font-weight: 600; }
+   .type-body{ font-size: var(--fs-body); color: var(--text); }
+   .type-sm{ font-size: var(--fs-sm); color: var(--text); }
+   .type-mono-sample{ color: var(--text); }
+   
+   .skeleton-sm{ height: 16px; width: 60%; }
+   .skeleton-md{ height: 16px; width: 90%; }
+   .skeleton-lg{ height: 16px; width: 75%; }
+   

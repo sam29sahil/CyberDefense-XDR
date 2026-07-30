@@ -1,0 +1,19 @@
+/* ==========================================================================
+   dashboard.css — page-specific styles for app/dashboard.html
+   ========================================================================== */
+
+   .score-ring{ width: 120px; height: 120px; margin: 0 auto; }
+
+   .kpi-grid{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+   @media (max-width: 1200px){ .kpi-grid{ grid-template-columns: repeat(2, 1fr); } }
+   @media (max-width: 576px){ .kpi-grid{ grid-template-columns: 1fr; } }
+   
+   .chart-box{ height: 260px; }
+   .chart-box-sm{ height: 200px; }
+   
+   .mini-status-row{ display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+   .mini-status-row:last-child{ border-bottom: 0; }
+   
+   .risk-gauge-readout{ margin-top: -6px; }
+   .risk-gauge-value{ font-size: 1.75rem; font-weight: 800; }
+   

@@ -1,0 +1,123 @@
+/* ==========================================================================
+   CyberDefense XDR — Design Tokens
+   Single source of truth. Every other stylesheet reads from these.
+   ========================================================================== */
+
+   :root{
+    /* ---------- Surfaces ---------- */
+    --bg:            #0B1220;
+    --bg-elevated:   #0F172A;
+    --sidebar:       #111827;
+    --card:          #1F2937;
+    --card-hover:    #253143;
+    --border:        #374151;
+    --border-subtle: #26313F;
+    --glass-bg:      rgba(6, 15, 28, 0.72);
+    --glass-blur:    12px;
+  
+    /* ---------- Brand / semantic ---------- */
+    --primary:         #2563EB;
+    --primary-hover:   #1D4ED8;
+    --primary-subtle:  rgba(37, 99, 235, .14);
+    --success:         #22C55E;
+    --success-subtle:  rgba(34, 197, 94, .14);
+    --warning:         #F59E0B;
+    --warning-subtle:  rgba(245, 158, 11, .14);
+    --danger:          #EF4444;
+    --danger-subtle:   rgba(239, 68, 68, .14);
+    --info:            #06B6D4;
+    --info-subtle:     rgba(6, 182, 212, .14);
+  
+    /* ---------- Severity scale (distinct from generic semantic) ---------- */
+    --sev-critical:        #EF4444;
+    --sev-critical-subtle: rgba(239, 68, 68, .14);
+    --sev-high:            #F97316;
+    --sev-high-subtle:     rgba(249, 115, 22, .14);
+    --sev-medium:          #F59E0B;
+    --sev-medium-subtle:   rgba(245, 158, 11, .14);
+    --sev-low:             #22C55E;
+    --sev-low-subtle:      rgba(34, 197, 94, .14);
+    --sev-info:            #06B6D4;
+    --sev-info-subtle:     rgba(6, 182, 212, .14);
+  
+    /* ---------- Activity / neutral chart series (non-severity) ---------- */
+    --chart-blue:   #3B82F6;
+    --chart-cyan:   #22D3EE;
+    --chart-violet: #8B5CF6;
+    --chart-slate:  #64748B;
+  
+    /* ---------- Text ---------- */
+    --text:          #F8FAFC;
+    --text-muted:    #94A3B8;
+    --text-disabled: #64748B;
+  
+    /* ---------- Typography ---------- */
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  
+    --fs-display: 2.5rem;
+    --fs-h1:      1.75rem;
+    --fs-h2:      1.375rem;
+    --fs-h3:      1.125rem;
+    --fs-body:    0.9375rem;
+    --fs-sm:      0.8125rem;
+    --fs-xs:      0.6875rem;
+    --fs-mono:    0.8125rem;
+  
+    --lh-tight: 1.25;
+    --lh-normal: 1.5;
+  
+    /* ---------- Spacing (4px base) ---------- */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;   /* 20px */
+    --space-6: 1.5rem;    /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --space-10: 2.5rem;   /* 40px */
+    --space-12: 3rem;     /* 48px */
+    --space-16: 4rem;     /* 64px */
+  
+    /* ---------- Radius ---------- */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-full: 999px;
+  
+    /* ---------- Shadow ---------- */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.24);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.28), 0 1px 3px rgba(0,0,0,.24);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,.36), 0 2px 6px rgba(0,0,0,.28);
+    --shadow-glow-primary: 0 0 0 3px var(--primary-subtle);
+    --shadow-glow-danger:  0 0 0 3px var(--danger-subtle);
+  
+    /* ---------- Layout ---------- */
+    --sidebar-width: 260px;
+    --sidebar-collapsed: 72px;
+    --navbar-height: 64px;
+    --content-max: 1440px;
+  
+    /* ---------- Motion ---------- */
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --dur-fast: 120ms;
+    --dur-base: 200ms;
+    --dur-slow: 320ms;
+  
+    /* ---------- Z-index scale ---------- */
+    --z-navbar: 100;
+    --z-sidebar: 90;
+    --z-dropdown: 200;
+    --z-modal-backdrop: 300;
+    --z-modal: 310;
+    --z-toast: 400;
+    --z-tooltip: 500;
+  }
+  
+  /* Light glassmorphism utility — apply narrowly (navbar/sidebar/cards/modals only) */
+  .glass{
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+  

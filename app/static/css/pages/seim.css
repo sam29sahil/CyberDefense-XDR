@@ -1,0 +1,76 @@
+/* ==========================================================================
+   siem.css — page-specific styling for the SIEM module:
+   SIEM Dashboard, Log Explorer, Log Details, Saved Searches.
+   Reads only design tokens from variables.css; no new colors introduced.
+   ========================================================================== */
+
+/* ---------- Live indicator (dashboard + log explorer toolbar) ---------- */
+.live-indicator{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size: var(--fs-xs); font-weight:700; letter-spacing:.03em;
+    color: var(--text-muted); text-transform: uppercase;
+  }
+  .live-indicator .dot{ width:7px; height:7px; }
+  .live-indicator.is-live{ color: var(--success); }
+  .live-indicator.is-live .dot{ background: var(--success); box-shadow: 0 0 0 3px var(--success-subtle); animation: dotPulse 1.6s var(--ease) infinite; }
+  
+  /* ---------- Live log stream (SIEM dashboard) ---------- */
+  .log-stream{
+    max-height: 320px; overflow-y: auto;
+    font-family: var(--font-mono); font-size: var(--fs-mono);
+  }
+  .log-stream-row{
+    display:flex; gap: var(--space-3); padding: 6px var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    align-items: baseline;
+  }
+  .log-stream-row:hover{ background: var(--card-hover); }
+  .log-stream-row .lt-time{ color: var(--text-disabled); flex: 0 0 76px; }
+  .log-stream-row .lt-host{ color: var(--text-muted); flex: 0 0 110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .log-stream-row .lt-msg{ color: var(--text); flex: 1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .log-stream-row.sev-critical{ border-left: 2px solid var(--sev-critical); }
+  .log-stream-row.sev-high{ border-left: 2px solid var(--sev-high); }
+  .log-stream-row.sev-medium{ border-left: 2px solid var(--sev-medium); }
+  .log-stream-row.sev-low{ border-left: 2px solid var(--sev-low); }
+  .log-stream-row.sev-info{ border-left: 2px solid var(--sev-info); }
+  .log-stream-row.log-row-new{ animation: logRowIn var(--dur-slow) var(--ease); }
+  @keyframes logRowIn{ from{ background: var(--primary-subtle); } to{ background: transparent; } }
+  
+  /* ---------- Log Explorer message cell ---------- */
+  .log-msg-cell{ font-family: var(--font-mono); font-size: var(--fs-mono); max-width: 480px; }
+  .log-msg-cell .msg-text{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  
+  /* ---------- Advanced filters drawer ---------- */
+  .filters-drawer{
+    display:none; padding: var(--space-4); border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.015);
+  }
+  .filters-drawer.show{ display:grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); }
+  @media (max-width: 992px){ .filters-drawer.show{ grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 576px){ .filters-drawer.show{ grid-template-columns: 1fr; } }
+  
+  /* ---------- Log Details — raw / JSON panels ---------- */
+  .log-raw-panel{
+    background: var(--bg); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+    padding: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-mono);
+    color: var(--text-muted); white-space: pre-wrap; word-break: break-all; line-height: var(--lh-normal);
+  }
+  .log-json-panel{
+    background: var(--bg); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+    padding: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-mono);
+    color: var(--chart-cyan); white-space: pre; overflow-x:auto; line-height: var(--lh-normal);
+  }
+  .log-json-panel .jk{ color: var(--text-muted); }
+  .log-json-panel .jv{ color: var(--text); }
+  
+  /* ---------- Saved Searches ---------- */
+  .saved-search-card{ padding: var(--space-4); }
+  .saved-search-query{
+    font-family: var(--font-mono); font-size: var(--fs-mono); color: var(--text-muted);
+    background: var(--bg); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    padding: 6px 10px; display:block; overflow-x:auto; white-space:nowrap; margin: var(--space-2) 0;
+  }
+  
+  /* ---------- Small chart boxes reused across SIEM dashboard ---------- */
+  .chart-box-xs{ position: relative; height: 160px; }
+  

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="assets" data-title="Asset Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="assets.html">Asset Management</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current" id="breadcrumbAssetName">Asset Details</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div class="d-flex gap-3">
+            <div class="brand-mark brand-mark-lg" id="assetTypeIcon"><i class="bi bi-hdd-rack"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 class="fs-detail-title" id="assetName">—</h1>
+                <span class="badge badge-neutral" id="assetIdBadge">—</span>
+              </div>
+              <p class="text-muted mb-1" id="assetMeta">—</p>
+              <div class="d-flex gap-2" id="assetTags"></div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-secondary btn-sm"><i class="bi bi-search"></i> Scan Now</button>
+            <button class="btn btn-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</button>
+            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-power"></i> Isolate</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card accent-primary"><div class="eyebrow">Risk Score</div><div class="stat-value" id="statRisk">—</div></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card accent-danger"><div class="eyebrow">Open Vulns</div><div class="stat-value">7</div></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card accent-warning"><div class="eyebrow">Alerts (30d)</div><div class="stat-value">14</div></div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card accent-success"><div class="eyebrow">Uptime</div><div class="stat-value">99.2%</div></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="card">
+        <div class="xdr-tabs tabs-padded">
+          <div class="xdr-tab active" data-tab="overview">Overview</div>
+          <div class="xdr-tab" data-tab="vulns">Vulnerabilities <span class="count">7</span></div>
+          <div class="xdr-tab" data-tab="alerts">Alert History <span class="count">14</span></div>
+          <div class="xdr-tab" data-tab="network">Network</div>
+          <div class="xdr-tab" data-tab="compliance">Compliance</div>
+        </div>
+
+        <div class="card-body" id="tabOverview">
+          <div class="row g-4">
+            <div class="col-lg-6">
+              <h3 class="mb-3">System Information</h3>
+              <div class="info-row"><span class="text-muted">Operating System</span><span id="infoOS">—</span></div>
+              <div class="info-row"><span class="text-muted">Environment</span><span id="infoEnv">—</span></div>
+              <div class="info-row"><span class="text-muted">IP Address</span><span class="cell-mono" id="infoIP">—</span></div>
+              <div class="info-row"><span class="text-muted">Owner Team</span><span id="infoOwner">—</span></div>
+              <div class="info-row"><span class="text-muted">Agent Version</span><span class="cell-mono">4.12.1</span></div>
+            </div>
+            <div class="col-lg-6">
+              <h3 class="mb-3">Recent Activity</h3>
+              <div class="xdr-timeline">
+                <div class="timeline-item sev-high"><div class="timeline-time">14:29 UTC</div><strong>Suspicious PowerShell execution flagged</strong><p class="text-muted mb-0">Detection rule DET-4471 · Alert Center</p></div>
+                <div class="timeline-item sev-medium"><div class="timeline-time">09:12 UTC</div><strong>New CVE matched to installed package</strong><p class="text-muted mb-0">CVE-2026-1120 · openssl 3.0.9</p></div>
+                <div class="timeline-item sev-low"><div class="timeline-time">Yesterday</div><strong>Scheduled vulnerability scan completed</strong><p class="text-muted mb-0">3 new findings, 0 critical</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body d-none" id="tabVulns">
+          <table class="xdr-table">
+            <thead><tr><th>CVE</th><th>Description</th><th>Severity</th><th>CVSS</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="cell-mono">CVE-2026-1120</td><td>OpenSSL heap overflow via crafted certificate</td><td><span class="badge badge-sev-critical">Critical</span></td><td>9.8</td><td><span class="badge badge-warning">Open</span></td></tr>
+              <tr><td class="cell-mono">CVE-2025-9981</td><td>Privilege escalation in sudo policy plugin</td><td><span class="badge badge-sev-high">High</span></td><td>8.6</td><td><span class="badge badge-warning">Open</span></td></tr>
+              <tr><td class="cell-mono">CVE-2025-7742</td><td>Remote code execution in nginx module</td><td><span class="badge badge-sev-high">High</span></td><td>7.9</td><td><span class="badge badge-info">In Progress</span></td></tr>
+              <tr><td class="cell-mono">CVE-2025-5510</td><td>Information disclosure in TLS handshake</td><td><span class="badge badge-sev-medium">Medium</span></td><td>6.1</td><td><span class="badge badge-success">Patched</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-body d-none" id="tabAlerts">
+          <div class="xdr-timeline">
+            <div class="timeline-item sev-critical"><div class="timeline-time">2 min ago</div><strong>Active exploitation attempt — CVE-2026-1120</strong><p class="text-muted mb-0">Blocked by detection rule DET-1102</p></div>
+            <div class="timeline-item sev-high"><div class="timeline-time">38 min ago</div><strong>Suspicious PowerShell execution (encoded)</strong><p class="text-muted mb-0">Under investigation — INC-2291</p></div>
+            <div class="timeline-item sev-medium"><div class="timeline-time">3h ago</div><strong>Unusual outbound connection</strong><p class="text-muted mb-0">Resolved — benign, whitelisted CDN</p></div>
+          </div>
+        </div>
+
+        <div class="card-body d-none" id="tabNetwork">
+          <div class="empty-state">
+            <i class="bi bi-diagram-3"></i>
+            <h3>Network topology view</h3>
+            <p>Visualize this asset's connections to other monitored assets and external endpoints.</p>
+          </div>
+        </div>
+
+        <div class="card-body d-none" id="tabCompliance">
+          <div class="row g-3">
+            <div class="col-md-4"><div class="d-flex justify-content-between text-sm mb-1"><span>CIS Benchmark</span><span class="text-muted">88%</span></div><div class="xdr-progress"><div class="xdr-progress-bar bar-success" style="width:88%"></div></div></div>
+            <div class="col-md-4"><div class="d-flex justify-content-between text-sm mb-1"><span>PCI-DSS</span><span class="text-muted">74%</span></div><div class="xdr-progress"><div class="xdr-progress-bar bar-warning" style="width:74%"></div></div></div>
+            <div class="col-md-4"><div class="d-flex justify-content-between text-sm mb-1"><span>SOC 2</span><span class="text-muted">91%</span></div><div class="xdr-progress"><div class="xdr-progress-bar bar-success" style="width:91%"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/data/assets-data.js"></script>
+<script src="../assets/js/pages/asset-details.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+/* ==========================================================================
+   threatintel.css — page-specific styling for the Threat Intelligence
+   module: Threat Dashboard, IOC Feed, IOC Details, Feeds, Campaigns, Actors.
+   Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- IOC type chip ---------- */
+.ioc-type-chip{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size: var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    padding: 3px 8px; border-radius: var(--radius-sm); background: rgba(148,163,184,.14); color: var(--text-muted);
+  }
+  .ioc-value{ font-family: var(--font-mono); font-size: var(--fs-mono); color: var(--text); }
+  
+  /* ---------- Confidence dots ---------- */
+  .confidence-dots{ display:inline-flex; gap:3px; vertical-align:middle; }
+  .confidence-dots span{ width:6px; height:6px; border-radius:50%; background: var(--border); }
+  .confidence-dots.conf-high span:nth-child(-n+3){ background: var(--success); }
+  .confidence-dots.conf-medium span:nth-child(-n+2){ background: var(--warning); }
+  .confidence-dots.conf-low span:nth-child(-n+1){ background: var(--danger); }
+  
+  /* ---------- Actor / campaign card ---------- */
+  .actor-card{
+    padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+    background: var(--card); height:100%; display:flex; flex-direction:column; gap: var(--space-2);
+    transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease); text-decoration:none;
+  }
+  .actor-card:hover{ border-color: var(--border); transform: translateY(-2px); }
+  .actor-avatar{
+    width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:700; background: rgba(139,92,246,.16); color: var(--chart-violet);
+  }
+  .sophistication-pill{ font-size: var(--fs-xs); font-weight:700; padding: 2px 8px; border-radius: 999px; background: var(--danger-subtle); color: #FCA5A5; }
+  
+  .campaign-card{
+    padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+    background: var(--card); height:100%; display:flex; flex-direction:column; gap: var(--space-2);
+  }
+  .campaign-status-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+  .campaign-status-dot.active{ background: var(--danger); box-shadow: 0 0 0 3px var(--danger-subtle); }
+  .campaign-status-dot.dormant{ background: var(--warning); }
+  .campaign-status-dot.concluded{ background: var(--text-disabled); }
+  
+  /* ---------- Feed status row ---------- */
+  .feed-status-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .feed-status-dot.active{ background: var(--success); }
+  .feed-status-dot.error{ background: var(--danger); }
+  .feed-status-dot.paused{ background: var(--text-disabled); }
+  
+  /* ---------- Sightings sparkline strip ---------- */
+  .sightings-bar{ display:flex; align-items:flex-end; gap:2px; height:28px; }
+  .sightings-bar i{ flex:1 1 auto; background: var(--chart-cyan); opacity:.55; border-radius:1px 1px 0 0; min-height:2px; }
+  

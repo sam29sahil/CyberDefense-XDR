@@ -1,0 +1,7 @@
+/* ==========================================================================
+   asset-details.css — page-specific styles for app/asset-details.html
+   ========================================================================== */
+
+   .fs-detail-title{ font-size: 1.5rem; }
+   .tabs-padded{ padding: 0 var(--space-5); }
+   

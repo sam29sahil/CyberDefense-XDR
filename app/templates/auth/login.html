@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body class="auth-shell">
+
+<section class="auth-side">
+  <div class="brand-row">
+    <div class="brand-mark brand-mark-md"><i class="bi bi-shield-lock-fill"></i></div>
+    <span class="brand-text-light">CyberDefense <span class="text-info">XDR</span></span>
+  </div>
+  <div class="side-copy">
+    <div class="radar">
+      <div class="radar-dot dot-critical pos-1"></div>
+      <div class="radar-dot dot-warning pos-2"></div>
+      <div class="radar-dot dot-info pos-3"></div>
+    </div>
+    <h2 class="side-heading">Full visibility across every asset, in one console.</h2>
+    <p class="text-muted side-sub">1,248 assets monitored · 4 critical alerts resolved today</p>
+  </div>
+  <div class="side-footer">© 2026 CyberDefense XDR</div>
+</section>
+
+<section class="auth-form-side">
+  <div class="auth-card fade-in">
+    <div class="brand-row-mobile d-lg-none">
+      <div class="brand-mark brand-mark-sm"><i class="bi bi-shield-lock-fill"></i></div>
+      <span class="brand-text-inline">CyberDefense <span class="text-info">XDR</span></span>
+    </div>
+    <h1>Sign in to your console</h1>
+    <p class="text-muted mb-4">Welcome back — your SOC has been quiet since your last shift.</p>
+
+    <form id="loginForm" novalidate>
+      <div class="mb-3">
+        <label class="form-label" for="loginEmail">Work email</label>
+        <input id="loginEmail" type="email" class="form-control" placeholder="you@company.com" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" class="form-control" placeholder="••••••••" required>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="remember">
+          <label class="form-check-label text-sm text-muted" for="remember">Keep me signed in</label>
+        </div>
+        <a href="forgot-password.html" class="text-sm">Forgot password?</a>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 btn-lg">Sign In</button>
+    </form>
+
+    <div class="auth-divider">
+      <hr>
+      <span class="text-xs text-muted">OR</span>
+      <hr>
+    </div>
+
+    <button class="btn btn-secondary w-100"><i class="bi bi-shield-lock"></i> Sign in with SSO</button>
+
+    <p class="text-center text-sm text-muted mt-4">Don't have an account? <a href="register.html">Request access</a></p>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/pages/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Base — resets, typography, scrollbars, utilities
+   ========================================================================== */
+
+   *, *::before, *::after{ box-sizing: border-box; }
+
+   html{ -webkit-text-size-adjust: 100%; }
+   
+   body{
+     background: var(--bg);
+     color: var(--text);
+     font-family: var(--font-body);
+     font-size: var(--fs-body);
+     line-height: var(--lh-normal);
+     -webkit-font-smoothing: antialiased;
+     min-height: 100vh;
+   }
+   
+   h1,h2,h3,h4,h5,h6{ margin: 0; color: var(--text); font-weight: 700; line-height: var(--lh-tight); }
+   h1{ font-size: var(--fs-h1); }
+   h2{ font-size: var(--fs-h2); font-weight: 600; }
+   h3{ font-size: var(--fs-h3); font-weight: 600; }
+   p{ margin: 0 0 var(--space-3); color: var(--text-muted); }
+   a{ color: var(--primary); text-decoration: none; }
+   a:hover{ color: var(--primary-hover); }
+   small, .text-sm{ font-size: var(--fs-sm); }
+   .text-xs{ font-size: var(--fs-xs); }
+   .text-muted{ color: var(--text-muted) !important; }
+   .text-disabled{ color: var(--text-disabled) !important; }
+   .text-success{ color: var(--success) !important; }
+   .text-warning{ color: var(--warning) !important; }
+   .text-danger{ color: var(--danger) !important; }
+   .text-info{ color: var(--info) !important; }
+   .text-primary{ color: var(--primary) !important; }
+   .fs-inherit-lg{ font-size: 1.1rem; }
+   .fs-inherit-md{ font-size: 1rem; }
+   .font-mono{ font-family: var(--font-mono); font-size: var(--fs-mono); }
+   .eyebrow{
+     font-size: var(--fs-xs);
+     font-weight: 600;
+     letter-spacing: .06em;
+     text-transform: uppercase;
+     color: var(--text-muted);
+   }
+   
+   /* Focus visibility — accessibility floor, never remove */
+   a:focus-visible, button:focus-visible, input:focus-visible,
+   select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible{
+     outline: 2px solid var(--primary);
+     outline-offset: 2px;
+     border-radius: var(--radius-sm);
+   }
+   
+   /* Reduced motion respected app-wide */
+   @media (prefers-reduced-motion: reduce){
+     *, *::before, *::after{
+       animation-duration: 0.001ms !important;
+       animation-iteration-count: 1 !important;
+       transition-duration: 0.001ms !important;
+       scroll-behavior: auto !important;
+     }
+   }
+   
+   /* Scrollbars */
+   ::-webkit-scrollbar{ width: 10px; height: 10px; }
+   ::-webkit-scrollbar-track{ background: transparent; }
+   ::-webkit-scrollbar-thumb{ background: var(--border); border-radius: var(--radius-full); border: 2px solid var(--bg); }
+   ::-webkit-scrollbar-thumb:hover{ background: var(--text-disabled); }
+   *{ scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+   
+   /* Selection */
+   ::selection{ background: var(--primary-subtle); color: var(--text); }
+   
+   /* Simple fade/slide utilities used sparingly per motion guidance */
+   .fade-in{ animation: fadeIn var(--dur-slow) var(--ease) both; }
+   @keyframes fadeIn{ from{ opacity:0; transform: translateY(4px);} to{opacity:1; transform:none;} }
+   
+   .slide-in-right{ animation: slideInRight var(--dur-base) var(--ease) both; }
+   @keyframes slideInRight{ from{ opacity:0; transform: translateX(12px);} to{opacity:1; transform:none;} }
+   
+   /* Layout helpers */
+   .page-wrap{
+     max-width: var(--content-max);
+     margin: 0 auto;
+     padding: var(--space-6);
+   }
+   @media (max-width: 768px){
+     .page-wrap{ padding: var(--space-4); }
+   }
+   
+   .section-title-row{
+     display:flex; align-items:center; justify-content:space-between;
+     margin-bottom: var(--space-4); gap: var(--space-3); flex-wrap: wrap;
+   }
+   
+   .divider{ height:1px; background: var(--border); border:0; margin: var(--space-4) 0; }
+   
+   .kbd{
+     font-family: var(--font-mono);
+     font-size: var(--fs-xs);
+     background: var(--bg);
+     border: 1px solid var(--border);
+     border-bottom-width: 2px;
+     border-radius: var(--radius-sm);
+     padding: 1px 6px;
+     color: var(--text-muted);
+   }
+   

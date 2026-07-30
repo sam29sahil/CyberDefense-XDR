@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="design-system" data-title="Design System">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <div class="xdr-breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i><span class="current">Design System</span>
+      </div>
+      <div class="section-title-row">
+        <div>
+          <h1>Design System Reference</h1>
+          <p class="text-muted mt-1">Living documentation of every token and component used across CyberDefense XDR.</p>
+        </div>
+      </div>
+
+      <!-- COLOR TOKENS -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Color Tokens</h2></div>
+        <div class="card-body">
+          <div class="row g-3" id="colorSwatchRow"></div>
+        </div>
+      </div>
+
+      <!-- TYPOGRAPHY -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Typography</h2></div>
+        <div class="card-body">
+          <div class="type-sample type-display">Display 2.5rem / 800</div>
+          <div class="type-sample type-h1">Heading 1 — 1.75rem / 700</div>
+          <div class="type-sample type-h2">Heading 2 — 1.375rem / 600</div>
+          <div class="type-sample type-h3">Heading 3 — 1.125rem / 600</div>
+          <div class="type-sample type-body">Body text — 0.9375rem / 400. The quick brown fox jumps over the lazy dog.</div>
+          <div class="type-sample type-sm">Small / table text — 0.8125rem / 400</div>
+          <div class="type-sample eyebrow">Eyebrow / label — 0.6875rem / 600 uppercase</div>
+          <div class="type-sample font-mono type-mono-sample">Mono — a1b2c3d4e5f6 · 192.168.1.104 · CVE-2024-3094</div>
+        </div>
+      </div>
+
+      <!-- BUTTONS -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Buttons</h2></div>
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+          <button class="btn btn-primary"><i class="bi bi-shield-check"></i> Primary</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-danger"><i class="bi bi-trash"></i> Danger</button>
+          <button class="btn btn-outline-danger">Outline Danger</button>
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+          <button class="btn btn-icon btn-secondary"><i class="bi bi-three-dots"></i></button>
+          <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+      </div>
+
+      <!-- BADGES -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Badges &amp; Severity</h2></div>
+        <div class="card-body d-flex flex-wrap gap-2">
+          <span class="badge badge-sev-critical"><i class="bi bi-skull"></i> Critical</span>
+          <span class="badge badge-sev-high"><i class="bi bi-exclamation-triangle-fill"></i> High</span>
+          <span class="badge badge-sev-medium"><i class="bi bi-dash-circle-fill"></i> Medium</span>
+          <span class="badge badge-sev-low"><i class="bi bi-arrow-down-circle-fill"></i> Low</span>
+          <span class="badge badge-sev-info"><i class="bi bi-info-circle-fill"></i> Info</span>
+          <span class="badge badge-primary">Primary</span>
+          <span class="badge badge-success">Success</span>
+          <span class="badge badge-warning">Warning</span>
+          <span class="badge badge-danger">Danger</span>
+          <span class="badge badge-neutral">Neutral</span>
+        </div>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Alerts</h2></div>
+        <div class="card-body d-flex flex-column gap-2">
+          <div class="alert-banner alert-info"><i class="bi bi-info-circle-fill"></i><div>Scheduled maintenance window Sunday 02:00–04:00 UTC.</div><button class="btn-close-alert"><i class="bi bi-x-lg"></i></button></div>
+          <div class="alert-banner alert-success"><i class="bi bi-check-circle-fill"></i><div>Vulnerability scan completed with no critical findings.</div><button class="btn-close-alert"><i class="bi bi-x-lg"></i></button></div>
+          <div class="alert-banner alert-warning"><i class="bi bi-exclamation-triangle-fill"></i><div>Agent on 4 assets hasn't checked in for 24+ hours.</div><button class="btn-close-alert"><i class="bi bi-x-lg"></i></button></div>
+          <div class="alert-banner alert-danger"><i class="bi bi-shield-exclamation"></i><div>Active exploitation attempt detected on WEB-PROD-03.</div><button class="btn-close-alert"><i class="bi bi-x-lg"></i></button></div>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Progress Bars</h2></div>
+        <div class="card-body d-flex flex-column gap-3">
+          <div><div class="d-flex justify-content-between text-sm mb-1"><span>Patch compliance</span><span class="text-muted">82%</span></div><div class="xdr-progress"><div class="xdr-progress-bar bar-success" style="width:82%"></div></div></div>
+          <div><div class="d-flex justify-content-between text-sm mb-1"><span>Scan coverage</span><span class="text-muted">61%</span></div><div class="xdr-progress"><div class="xdr-progress-bar bar-warning" style="width:61%"></div></div></div>
+          <div><div class="d-flex justify-content-between text-sm mb-1"><span>Exposed critical assets</span><span class="text-muted">24%</span></div><div class="xdr-progress"><div class="xdr-progress-bar bar-danger" style="width:24%"></div></div></div>
+        </div>
+      </div>
+
+      <!-- FORMS -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Forms &amp; Inputs</h2></div>
+        <div class="card-body row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Asset name</label>
+            <input class="form-control" placeholder="e.g. WEB-PROD-03">
+            <div class="form-hint">Must match your CMDB naming convention.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Severity</label>
+            <select class="form-select">
+              <option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">IP address</label>
+            <input class="form-control is-invalid" value="192.168.1.999">
+            <div class="form-error"><i class="bi bi-exclamation-circle"></i> Enter a valid IPv4 address.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Tabs</h2></div>
+        <div class="card-body">
+          <div class="xdr-tabs">
+            <div class="xdr-tab active">Overview</div>
+            <div class="xdr-tab">Timeline <span class="count">14</span></div>
+            <div class="xdr-tab">Evidence</div>
+            <div class="xdr-tab">Related IOCs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Timeline</h2></div>
+        <div class="card-body">
+          <div class="xdr-timeline">
+            <div class="timeline-item sev-critical"><div class="timeline-time">14:32:08 UTC</div><strong>Lateral movement detected</strong><p class="text-muted mb-0">SMB connection from WEB-PROD-03 to DB-PROD-01 using harvested credentials.</p></div>
+            <div class="timeline-item sev-high"><div class="timeline-time">14:29:51 UTC</div><strong>Suspicious PowerShell execution</strong><p class="text-muted mb-0">Encoded command flagged by detection rule DET-4471.</p></div>
+            <div class="timeline-item sev-medium"><div class="timeline-time">14:15:02 UTC</div><strong>Initial alert triggered</strong><p class="text-muted mb-0">Unusual outbound connection to known C2 infrastructure.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Table</h2></div>
+        <div class="xdr-table-wrap flush">
+          <div class="table-toolbar">
+            <div class="search-input-wrap"><i class="bi bi-search"></i><input class="form-control search-input" id="dsSearch" placeholder="Search…"></div>
+          </div>
+          <table class="xdr-table" id="dsTable"><thead><tr></tr></thead><tbody></tbody></table>
+          <div class="xdr-pagination" id="dsPagination"></div>
+        </div>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Empty State</h2></div>
+        <div class="card-body">
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h3>No alerts match these filters</h3>
+            <p>Try widening the time range or clearing severity filters to see more results.</p>
+            <button class="btn btn-secondary btn-sm mt-2">Clear filters</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SKELETON -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Skeleton Loader</h2></div>
+        <div class="card-body d-flex flex-column gap-2">
+          <div class="skeleton skeleton-sm"></div>
+          <div class="skeleton skeleton-md"></div>
+          <div class="skeleton skeleton-lg"></div>
+        </div>
+      </div>
+
+      <!-- TOAST / MODAL triggers -->
+      <div class="card mb-4">
+        <div class="card-header"><h2>Toasts &amp; Modals</h2></div>
+        <div class="card-body d-flex flex-wrap gap-2">
+          <button class="btn btn-secondary btn-sm" id="demoToastSuccess">Show success toast</button>
+          <button class="btn btn-secondary btn-sm" id="demoToastDanger">Show danger toast</button>
+          <button class="btn btn-secondary btn-sm" data-modal-open="demoModal">Open modal</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="xdr-modal-backdrop" data-modal-backdrop="demoModal"></div>
+<div class="xdr-modal" id="demoModal">
+  <div class="xdr-modal-header"><h3>Suppress alert</h3><button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button></div>
+  <div class="xdr-modal-body">
+    <p class="mb-3">This will suppress future occurrences of this alert rule for the selected asset.</p>
+    <label class="form-label">Suppress for</label>
+    <select class="form-select"><option>1 hour</option><option>24 hours</option><option>7 days</option><option>Indefinitely</option></select>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-danger" data-modal-close>Suppress alert</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/core/modal-helpers.js"></script>
+<script src="../assets/js/core/datatable.js"></script>
+<script src="../assets/js/pages/design-system.js"></script>
+</body>
+</html>

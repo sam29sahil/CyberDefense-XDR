@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log Explorer — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="log-explorer" data-title="Log Explorer">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="siem.html">SIEM</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Log Explorer</span>
+      </nav>
+
+      <div class="section-title-row">
+        <div>
+          <h1>Log Explorer</h1>
+          <p class="text-muted mt-1">90 events indexed · last 24 hours across 10 sources</p>
+        </div>
+        <div class="d-flex gap-2">
+          <span class="live-indicator is-live" id="liveIndicator"><span class="dot"></span> Live</span>
+          <button class="btn btn-secondary btn-sm" id="toggleLiveBtn"><i class="bi bi-pause-fill"></i> Pause</button>
+          <button class="btn btn-secondary btn-sm" id="exportBtn"><i class="bi bi-download"></i> Export</button>
+          <a href="saved-searches.html" class="btn btn-secondary btn-sm"><i class="bi bi-bookmark-star"></i> Saved Searches</a>
+          <button class="btn btn-primary btn-sm" data-modal-open="saveSearchModal"><i class="bi bi-bookmark-plus"></i> Save Search</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <section class="xdr-table-wrap" aria-label="Log events table">
+        <div class="table-toolbar">
+          <div class="search-input-wrap">
+            <i class="bi bi-search"></i>
+            <input class="form-control search-input" id="logSearch" placeholder="Search message, host, or source…">
+          </div>
+          <select class="form-select filter-w-sm" id="filterSev">
+            <option value="">All severities</option>
+            <option value="critical">Critical</option><option value="high">High</option>
+            <option value="medium">Medium</option><option value="low">Low</option><option value="info">Info</option>
+          </select>
+          <select class="form-select filter-w-md" id="filterSource">
+            <option value="">All sources</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="advFilterToggle"><i class="bi bi-sliders"></i> Advanced Filters</button>
+          <button class="btn btn-ghost btn-sm ms-auto" id="clearFilters"><i class="bi bi-x-circle"></i> Clear</button>
+        </div>
+
+        <div class="filters-drawer" id="filtersDrawer">
+          <div>
+            <label class="form-label">Hostname</label>
+            <select class="form-select" id="filterHost"><option value="">All hosts</option></select>
+          </div>
+          <div>
+            <label class="form-label">Category</label>
+            <select class="form-select" id="filterCategory">
+              <option value="">All categories</option>
+              <option>Network</option><option>Endpoint</option><option>Cloud</option>
+              <option>Identity</option><option>Application</option><option>Correlation</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Time range</label>
+            <select class="form-select" id="filterTimeRange">
+              <option value="">Any time</option>
+              <option value="15">Last 15 minutes</option>
+              <option value="60">Last hour</option>
+              <option value="360">Last 6 hours</option>
+              <option value="1440">Last 24 hours</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Tag</label>
+            <select class="form-select" id="filterTag"><option value="">Any tag</option></select>
+          </div>
+        </div>
+
+        <table class="xdr-table" id="logsTable">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="xdr-pagination" id="logsPagination"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Save Search Modal -->
+<div class="xdr-modal-backdrop" data-modal-backdrop="saveSearchModal"></div>
+<div class="xdr-modal" id="saveSearchModal">
+  <div class="xdr-modal-header"><h3>Save search</h3><button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button></div>
+  <div class="xdr-modal-body">
+    <div class="mb-3"><label class="form-label">Search name</label><input class="form-control" id="saveSearchName" placeholder="e.g. Critical alerts — last 24h"></div>
+    <div class="mb-3"><label class="form-label">Query (auto-built from current filters)</label>
+      <input class="form-control cell-mono" id="saveSearchQuery" readonly>
+    </div>
+    <div class="form-check mb-2">
+      <input type="checkbox" class="form-check-input" id="saveSearchAlert">
+      <label class="form-check-label text-sm" for="saveSearchAlert">Alert me when new matches appear</label>
+    </div>
+    <div class="form-check">
+      <input type="checkbox" class="form-check-input" id="saveSearchPin" checked>
+      <label class="form-check-label text-sm" for="saveSearchPin">Pin to SIEM Dashboard</label>
+    </div>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-primary" id="saveSearchConfirm" data-modal-close>Save Search</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/core/modal-helpers.js"></script>
+<script src="../assets/js/core/datatable.js"></script>
+<script src="../assets/js/data/logs-data.js"></script>
+<script src="../assets/js/data/saved-searches-data.js"></script>
+<script src="../assets/js/pages/log-explorer.js"></script>
+</body>
+</html>

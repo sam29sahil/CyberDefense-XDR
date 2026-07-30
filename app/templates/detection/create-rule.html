@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Rule — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="detection-engine" data-title="Create Rule">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="detection-dashboard.html">Detection Engine</a><i class="bi bi-chevron-right sep"></i>
+        <a href="detection-rules.html">Detection Rules</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current" id="breadcrumbMode">Create Rule</span>
+      </nav>
+
+      <div class="section-title-row">
+        <div>
+          <h1 id="pageTitle">Create Rule</h1>
+          <p class="text-muted mt-1">Define the conditions and response actions for a new detection rule</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-secondary btn-sm" id="duplicateBtn" style="display:none;"><i class="bi bi-copy"></i> Duplicate</button>
+          <a href="detection-rules.html" class="btn btn-secondary btn-sm"><i class="bi bi-x-lg"></i> Cancel</a>
+          <button class="btn btn-primary btn-sm" id="saveRuleBtn"><i class="bi bi-check-lg"></i> Save Rule</button>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <section class="card">
+            <div class="card-body">
+
+              <div class="builder-section">
+                <div class="builder-section-title"><i class="bi bi-card-text"></i> Basics</div>
+                <div class="row g-3">
+                  <div class="col-md-8">
+                    <label class="form-label">Rule name</label>
+                    <input class="form-control" id="ruleName" placeholder="e.g. Encoded PowerShell command execution">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Severity</label>
+                    <select class="form-select" id="ruleSeverity">
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium" selected>Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="ruleDescription" rows="2" placeholder="What does this rule detect, and why does it matter?"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="builder-section">
+                <div class="builder-section-title"><i class="bi bi-diagram-3"></i> Classification</div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="ruleCategory">
+                      <option>Malware</option><option>Brute Force</option><option>Port Scan</option>
+                      <option>SQL Injection</option><option>Cross-Site Scripting</option><option>PowerShell Abuse</option>
+                      <option>Credential Access</option><option>Lateral Movement</option><option>Data Exfiltration</option>
+                      <option>Privilege Escalation</option><option>Persistence</option><option>Command & Control</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">MITRE ATT&CK technique</label>
+                    <select class="form-select" id="ruleMitre"></select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="builder-section">
+                <div class="builder-section-title"><i class="bi bi-funnel"></i> Conditions</div>
+                <div id="conditionsList"></div>
+                <button class="btn btn-ghost btn-sm mt-2" id="addConditionBtn"><i class="bi bi-plus-lg"></i> Add condition</button>
+              </div>
+
+              <div class="builder-section">
+                <div class="builder-section-title"><i class="bi bi-lightning-charge"></i> Actions on Trigger</div>
+                <div class="action-check-grid" id="actionsGrid">
+                  <label class="action-check"><input type="checkbox" value="Create Alert" checked> Create Alert</label>
+                  <label class="action-check"><input type="checkbox" value="Notify SOC Channel"> Notify SOC Channel</label>
+                  <label class="action-check"><input type="checkbox" value="Auto-Isolate Host"> Auto-Isolate Host</label>
+                  <label class="action-check"><input type="checkbox" value="Create Incident"> Create Incident</label>
+                  <label class="action-check"><input type="checkbox" value="Tag Asset"> Tag Asset</label>
+                </div>
+              </div>
+
+              <div class="builder-section">
+                <div class="builder-section-title"><i class="bi bi-tags"></i> Tags</div>
+                <div class="tag-chip-input" id="tagInputWrap">
+                  <input type="text" id="tagInput" placeholder="Type a tag and press Enter…">
+                </div>
+              </div>
+
+            </div>
+          </section>
+        </div>
+
+        <div class="col-lg-4">
+          <section class="card mb-4">
+            <div class="card-header"><h2>Status</h2></div>
+            <div class="card-body">
+              <select class="form-select" id="ruleStatus">
+                <option value="active">Active</option>
+                <option value="testing">Testing</option>
+                <option value="disabled">Disabled</option>
+              </select>
+              <p class="text-muted text-sm mt-2 mb-0">Rules in <strong>Testing</strong> generate detections but don't trigger response actions.</p>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><h2>Rule Summary</h2></div>
+            <div class="card-body">
+              <div class="info-row"><span class="text-muted">Severity</span><span id="summarySeverity"></span></div>
+              <div class="info-row"><span class="text-muted">Category</span><span id="summaryCategory">—</span></div>
+              <div class="info-row"><span class="text-muted">MITRE</span><span id="summaryMitre">—</span></div>
+              <div class="info-row"><span class="text-muted">Conditions</span><span id="summaryConditions">—</span></div>
+              <div class="info-row"><span class="text-muted">Actions</span><span id="summaryActions">—</span></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/data/detection-rules-data.js"></script>
+<script src="../assets/js/pages/create-rule.js"></script>
+</body>
+</html>

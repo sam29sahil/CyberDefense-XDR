@@ -1,0 +1,46 @@
+/* ==========================================================================
+   incident.css — page-specific styling for the Incident Response module:
+   Incident Dashboard, Incident List, Incident Details, Evidence, Timeline,
+   Playbooks. Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- Status pill (reuses detection.css naming, incident states) ---------- */
+.status-pill.st-open{ color: var(--info); background: var(--info-subtle); }
+.status-pill.st-in_progress{ color: var(--warning); background: var(--warning-subtle); }
+.status-pill.st-resolved{ color: var(--success); background: var(--success-subtle); }
+.status-pill.st-closed{ color: var(--text-disabled); background: rgba(148,163,184,.08); }
+
+/* ---------- Evidence file card ---------- */
+.evidence-card{
+  display:flex; align-items:flex-start; gap: var(--space-3);
+  padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+  background: var(--bg); margin-bottom: var(--space-2);
+}
+.evidence-icon{
+  flex: 0 0 40px; height:40px; width:40px; border-radius: var(--radius-md);
+  background: var(--card-hover); display:flex; align-items:center; justify-content:center; font-size: 18px; color: var(--text-muted);
+}
+.evidence-meta{ flex:1 1 auto; min-width:0; }
+.evidence-name{ font-weight:600; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.evidence-hash{ font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-disabled); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ---------- Playbook card ---------- */
+.playbook-card{
+  padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  background: var(--card); height:100%; display:flex; flex-direction:column; gap: var(--space-2);
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.playbook-card:hover{ border-color: var(--border); transform: translateY(-2px); }
+.playbook-icon{ width:42px; height:42px; border-radius: var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:20px; background: var(--primary-subtle); color: var(--primary); }
+.playbook-steps-count{ font-size: var(--fs-xs); color: var(--text-muted); }
+
+.playbook-step-row{ display:flex; gap: var(--space-3); align-items:flex-start; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); }
+.playbook-step-row:last-child{ border-bottom:0; }
+.playbook-step-num{ flex:0 0 22px; height:22px; border-radius:50%; background: var(--card-hover); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color: var(--text-muted); }
+
+/* ---------- Due date urgency ---------- */
+.due-soon{ color: var(--warning); }
+.due-overdue{ color: var(--danger); }
+
+/* ---------- Timeline type icons ---------- */
+.tl-type-icon{ width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; flex:0 0 28px; background: var(--card-hover); color: var(--text-muted); }

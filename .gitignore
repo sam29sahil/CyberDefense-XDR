@@ -1,21 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual Environment
 venv/
 
-__pycache__/
-
-*.pyc
-
+# Environment Variables
 .env
+.env.*
 
-instance/
+# Logs
+logs/
+*.log
 
-.pytest_cache/
-
-.vscode/
-
-.idea/
-
-logs/*.log
-
+# Database
+*.db
 *.sqlite3
 
+# Flask
+instance/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# macOS
 .DS_Store
+
+# Windows
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/

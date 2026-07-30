@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIEM Dashboard — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="siem" data-title="SIEM Dashboard">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i><span class="current">SIEM Dashboard</span>
+      </nav>
+
+      <div class="section-title-row">
+        <div>
+          <h1>SIEM Dashboard</h1>
+          <p class="text-muted mt-1">Ingesting from 10 log sources across network, endpoint, identity and cloud</p>
+        </div>
+        <div class="d-flex gap-2">
+          <span class="live-indicator is-live" id="liveIndicator"><span class="dot"></span> Live</span>
+          <a href="log-explorer.html" class="btn btn-secondary btn-sm"><i class="bi bi-terminal"></i> Open Log Explorer</a>
+          <a href="saved-searches.html" class="btn btn-primary btn-sm"><i class="bi bi-bookmark-star"></i> Saved Searches</a>
+        </div>
+      </div>
+
+      <!-- KPI ROW -->
+      <div class="kpi-grid mb-4">
+        <div class="card stat-card accent-info">
+          <div class="eyebrow">Events / sec</div>
+          <div class="stat-value" id="kpiEps">—</div>
+          <span class="stat-delta text-muted"><i class="bi bi-activity"></i> Rolling 10s average</span>
+        </div>
+        <div class="card stat-card accent-primary">
+          <div class="eyebrow">Events Today</div>
+          <div class="stat-value">4.82M</div>
+          <span class="stat-delta text-success"><i class="bi bi-arrow-up-short"></i> +6.1% vs yesterday</span>
+        </div>
+        <div class="card stat-card accent-warning">
+          <div class="eyebrow">Storage Used</div>
+          <div class="stat-value">2.3<span class="fs-inherit-lg text-muted"> TB</span></div>
+          <span class="stat-delta text-muted"><i class="bi bi-hdd"></i> 90-day retention</span>
+        </div>
+        <div class="card stat-card accent-danger">
+          <div class="eyebrow">Critical / High Today</div>
+          <div class="stat-value text-danger">14</div>
+          <span class="stat-delta text-danger"><i class="bi bi-arrow-up-short"></i> +3 since noon</span>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <section class="card h-100" aria-labelledby="eventVolumeTitle">
+            <div class="card-header">
+              <h2 id="eventVolumeTitle">Event Volume — last 24 hours</h2>
+              <div class="d-flex gap-2">
+                <span class="badge badge-sev-critical">Critical</span>
+                <span class="badge badge-sev-high">High</span>
+                <span class="badge badge-sev-medium">Medium</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-box"><canvas id="eventVolumeChart"></canvas></div>
+            </div>
+          </section>
+        </div>
+        <div class="col-lg-4">
+          <section class="card h-100" aria-labelledby="severityBreakdownTitle">
+            <div class="card-header"><h2 id="severityBreakdownTitle">Severity Breakdown</h2></div>
+            <div class="card-body">
+              <div class="chart-box-sm"><canvas id="severityDonutChart"></canvas></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+          <section class="card h-100" aria-labelledby="liveStreamTitle">
+            <div class="card-header">
+              <h2 id="liveStreamTitle">Live Log Stream</h2>
+              <a href="log-explorer.html" class="text-sm">Open in Log Explorer <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="log-stream" id="liveLogStream"></div>
+          </section>
+        </div>
+
+        <div class="col-lg-5">
+          <section class="card h-100" aria-labelledby="topSourcesTitle">
+            <div class="card-header"><h2 id="topSourcesTitle">Top Log Sources</h2></div>
+            <div class="card-body">
+              <div id="topSourcesList"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <section class="card" aria-labelledby="topHostsTitle">
+            <div class="card-header"><h2 id="topHostsTitle">Noisiest Hosts</h2></div>
+            <div class="xdr-table-wrap flush">
+              <table class="xdr-table">
+                <thead><tr><th>Host</th><th>Events (24h)</th><th>Top Severity</th></tr></thead>
+                <tbody id="topHostsBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <div class="col-lg-6">
+          <section class="card" aria-labelledby="savedSearchesTitle">
+            <div class="card-header"><h2 id="savedSearchesTitle">Pinned Searches</h2><a href="saved-searches.html" class="text-sm">Manage <i class="bi bi-arrow-right"></i></a></div>
+            <div class="card-body" id="pinnedSearchesList"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/core/charts.js"></script>
+<script src="../assets/js/data/logs-data.js"></script>
+<script src="../assets/js/data/saved-searches-data.js"></script>
+<script src="../assets/js/pages/siem-dashboard.js"></script>
+</body>
+</html>

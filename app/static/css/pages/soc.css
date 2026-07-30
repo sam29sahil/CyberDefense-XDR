@@ -1,0 +1,63 @@
+/* ==========================================================================
+   soc.css — page-specific styling for the SOC module:
+   SOC Dashboard, Alert Center, Alert Details, Investigations, Case Details,
+   Analyst Workbench. Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- Priority pill (P1–P4), distinct from severity badges ---------- */
+.priority-pill{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:22px; border-radius: var(--radius-sm); font-size: var(--fs-xs); font-weight:800; font-family: var(--font-mono); }
+.priority-pill.p-P1{ background: var(--sev-critical-subtle); color: #FCA5A5; }
+.priority-pill.p-P2{ background: var(--sev-high-subtle); color: #FDBA74; }
+.priority-pill.p-P3{ background: var(--sev-medium-subtle); color: var(--sev-medium); }
+.priority-pill.p-P4{ background: var(--sev-low-subtle); color: var(--sev-low); }
+
+/* ---------- Analyst avatar with small initials, sized down for tables ---------- */
+.avatar-sm{ width:26px; height:26px; font-size:.65rem; }
+.avatar-row{ display:flex; align-items:center; gap:8px; }
+.status-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+.status-dot.online{ background: var(--success); }
+.status-dot.away{ background: var(--warning); }
+.status-dot.offline{ background: var(--text-disabled); }
+
+/* ---------- Analyst workload list (SOC dashboard + workbench) ---------- */
+.analyst-load-row{ display:flex; align-items:center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom:1px solid var(--border-subtle); }
+.analyst-load-row:last-child{ border-bottom:0; }
+.analyst-load-row .aln-name{ flex:0 0 130px; font-weight:600; font-size: var(--fs-sm); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.analyst-load-row .xdr-progress{ flex:1 1 auto; }
+
+/* ---------- SLA badge ---------- */
+.sla-badge{ display:inline-flex; align-items:center; gap:5px; font-size: var(--fs-xs); font-weight:700; padding: 3px 9px; border-radius:999px; }
+.sla-badge.sla-ok{ background: var(--success-subtle); color: var(--success); }
+.sla-badge.sla-warn{ background: var(--warning-subtle); color: var(--warning); }
+.sla-badge.sla-breach{ background: var(--danger-subtle); color: #FCA5A5; }
+
+/* ---------- Evidence / indicator chips (case details) ---------- */
+.indicator-chip{
+  display:inline-flex; align-items:center; gap:6px; font-family: var(--font-mono); font-size: var(--fs-xs);
+  background: var(--bg); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  padding: 4px 9px; margin: 0 6px 6px 0;
+}
+.indicator-chip i{ color: var(--text-muted); }
+
+.evidence-item{ display:flex; align-items:center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: var(--space-2); background: var(--bg); }
+.evidence-item .ev-icon{ width:38px; height:38px; border-radius: var(--radius-md); background: var(--card-hover); display:flex; align-items:center; justify-content:center; color: var(--text-muted); flex:none; }
+.evidence-item .ev-meta{ flex:1 1 auto; min-width:0; }
+.evidence-item .ev-name{ font-weight:600; font-size: var(--fs-sm); }
+.evidence-item .ev-sub{ font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); }
+
+/* ---------- Notes / activity feed ---------- */
+.note-item{ display:flex; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); }
+.note-item:last-child{ border-bottom:0; }
+.note-item .note-body{ flex:1 1 auto; background: var(--bg); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3); }
+.note-item .note-author{ font-weight:600; font-size: var(--fs-sm); }
+.note-item .note-time{ font-size: var(--fs-xs); color: var(--text-muted); }
+
+/* ---------- Recommended action row ---------- */
+.rec-action-row{ display:flex; align-items:center; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); }
+.rec-action-row:last-child{ border-bottom:0; }
+.rec-action-row i{ color: var(--info); }
+
+/* ---------- Workbench quick-queue card ---------- */
+.queue-item{ display:flex; align-items:center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: var(--space-2); transition: background var(--dur-fast) var(--ease); }
+.queue-item:hover{ background: var(--card-hover); }
+.queue-item .qi-title{ flex:1 1 auto; min-width:0; font-weight:600; font-size: var(--fs-sm); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

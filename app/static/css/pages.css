@@ -1,0 +1,13 @@
+/* ==========================================================================
+   pages.css — aggregator for page-specific stylesheets.
+   Each page's unique styling lives in its own file under assets/css/pages/
+   so no page-specific rule ever leaks into the shared component library.
+   ========================================================================== */
+
+   @import url("pages/landing.css");
+   @import url("pages/auth.css");
+   @import url("pages/dashboard.css");
+   @import url("pages/design-system.css");
+   @import url("pages/asset-details.css");
+   @import url("pages/siem.css");
+   

@@ -1,0 +1,72 @@
+/* ==========================================================================
+   detection.css — page-specific styling for the Detection Engine module:
+   Detection Dashboard, Detection Rules, Create Rule, Rule Details,
+   Detection History. Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- MITRE ATT&CK technique chip ---------- */
+.mitre-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family: var(--font-mono); font-size: var(--fs-xs); font-weight:600;
+    color: var(--chart-violet); background: rgba(139,92,246,.12);
+    border: 1px solid rgba(139,92,246,.28); border-radius: var(--radius-sm);
+    padding: 3px 8px; white-space: nowrap;
+  }
+  .mitre-chip .tname{ color: var(--text-muted); font-weight:500; font-family: 'Inter', sans-serif; }
+  
+  /* ---------- Rule status pill (distinct from severity) ---------- */
+  .status-pill{ display:inline-flex; align-items:center; gap:5px; font-size: var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding: 3px 9px; border-radius: 999px; }
+  .status-pill .dot{ width:6px; height:6px; border-radius:50%; }
+  .status-pill.st-active{ color: var(--success); background: var(--success-subtle); }
+  .status-pill.st-active .dot{ background: var(--success); }
+  .status-pill.st-disabled{ color: var(--text-disabled); background: rgba(148,163,184,.08); }
+  .status-pill.st-disabled .dot{ background: var(--text-disabled); }
+  .status-pill.st-testing{ color: var(--warning); background: var(--warning-subtle); }
+  .status-pill.st-testing .dot{ background: var(--warning); }
+  
+  /* ---------- Top Triggered Rules list (dashboard) ---------- */
+  .rule-rank-row{
+    display:flex; align-items:center; gap: var(--space-3);
+    padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle);
+  }
+  .rule-rank-row:last-child{ border-bottom:0; }
+  .rule-rank-badge{
+    flex:0 0 24px; height:24px; border-radius:50%; background: var(--card-hover);
+    display:flex; align-items:center; justify-content:center; font-size: var(--fs-xs); font-weight:700; color: var(--text-muted);
+  }
+  .rule-rank-row .rr-name{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:var(--text); }
+  .rule-rank-row .rr-count{ font-family: var(--font-mono); font-weight:700; color: var(--text); }
+  
+  /* ---------- Rule Builder ---------- */
+  .builder-section{ padding: var(--space-4) 0; border-bottom: 1px solid var(--border-subtle); }
+  .builder-section:last-child{ border-bottom:0; }
+  .builder-section-title{ font-size: var(--fs-sm); font-weight:700; color: var(--text); margin-bottom: var(--space-3); display:flex; align-items:center; gap:8px; }
+  .builder-section-title i{ color: var(--text-muted); }
+  
+  .condition-row{
+    display:grid; grid-template-columns: 1fr 140px 1fr auto; gap: var(--space-2);
+    align-items:center; margin-bottom: var(--space-2);
+  }
+  @media (max-width: 768px){ .condition-row{ grid-template-columns: 1fr; } }
+  
+  .tag-chip-input{ display:flex; flex-wrap:wrap; gap:6px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); }
+  .tag-chip-input .chip{ display:inline-flex; align-items:center; gap:5px; background: var(--card-hover); border-radius: var(--radius-sm); padding: 3px 8px; font-size: var(--fs-xs); color: var(--text); }
+  .tag-chip-input .chip button{ background:none; border:0; color: var(--text-muted); cursor:pointer; display:flex; }
+  .tag-chip-input input{ flex:1 1 120px; min-width:120px; background:none; border:0; color: var(--text); font-size: var(--fs-sm); outline:none; }
+  
+  .action-check-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+  @media (max-width: 576px){ .action-check-grid{ grid-template-columns: 1fr; } }
+  .action-check{
+    display:flex; align-items:center; gap:8px; padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg);
+    font-size: var(--fs-sm); cursor:pointer;
+  }
+  .action-check input{ margin:0; }
+  
+  /* ---------- Coverage / radar chart container ---------- */
+  .chart-box-radar{ position: relative; height: 280px; }
+  
+  /* ---------- Rule details stat mini bar ---------- */
+  .fp-meter{ height:6px; border-radius:4px; background: var(--card-hover); overflow:hidden; }
+  .fp-meter-fill{ height:100%; background: var(--warning); }
+  

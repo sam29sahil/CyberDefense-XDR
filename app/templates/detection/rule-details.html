@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rule Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="detection-engine" data-title="Rule Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="detection-dashboard.html">Detection Engine</a><i class="bi bi-chevron-right sep"></i>
+        <a href="detection-rules.html">Detection Rules</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current" id="breadcrumbRuleId">Rule Details</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div class="d-flex gap-3">
+            <div class="brand-mark brand-mark-lg"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 class="fs-detail-title" id="ruleName">—</h1>
+                <span id="ruleSevBadge"></span>
+                <span id="ruleStatusPill"></span>
+              </div>
+              <p class="text-muted mb-2" id="ruleDesc">—</p>
+              <div class="d-flex gap-2 flex-wrap" id="ruleTagsRow"></div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-secondary btn-sm" id="toggleStatusBtn"><i class="bi bi-power"></i> Disable Rule</button>
+            <a href="#" class="btn btn-secondary btn-sm" id="editRuleBtn"><i class="bi bi-pencil"></i> Edit</a>
+            <button class="btn btn-secondary btn-sm" id="duplicateRuleBtn"><i class="bi bi-copy"></i> Duplicate</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-6"><div class="card stat-card accent-primary"><div class="eyebrow">Triggers (30d)</div><div class="stat-value" id="statTriggers">—</div></div></div>
+        <div class="col-lg-3 col-6"><div class="card stat-card accent-warning"><div class="eyebrow">False Positive Rate</div><div class="stat-value" id="statFpRate">—</div></div></div>
+        <div class="col-lg-3 col-6"><div class="card stat-card accent-info"><div class="eyebrow">MITRE Technique</div><div class="stat-value fs-inherit-lg" id="statMitre">—</div></div></div>
+        <div class="col-lg-3 col-6"><div class="card stat-card accent-success"><div class="eyebrow">Author</div><div class="stat-value fs-inherit-lg" id="statAuthor">—</div></div></div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+          <section class="card h-100" aria-labelledby="triggerHistoryTitle">
+            <div class="card-header"><h2 id="triggerHistoryTitle">Trigger History — 14 days</h2></div>
+            <div class="card-body"><div class="chart-box"><canvas id="triggerHistoryChart"></canvas></div></div>
+          </section>
+        </div>
+        <div class="col-lg-5">
+          <section class="card h-100" aria-labelledby="statisticsTitle">
+            <div class="card-header"><h2 id="statisticsTitle">Statistics</h2></div>
+            <div class="card-body">
+              <div class="mb-3">
+                <div class="d-flex justify-content-between text-sm mb-1"><span>False positive rate</span><span class="text-muted" id="fpRateLabel">—</span></div>
+                <div class="fp-meter"><div class="fp-meter-fill" id="fpMeterFill" style="width:0%"></div></div>
+              </div>
+              <div class="info-row"><span class="text-muted">Created</span><span id="statCreated">—</span></div>
+              <div class="info-row"><span class="text-muted">Last modified</span><span id="statModified">—</span></div>
+              <div class="info-row"><span class="text-muted">Category</span><span id="statCategory">—</span></div>
+              <div class="info-row"><span class="text-muted">Data source</span><span id="statSource">—</span></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Tabs: Conditions / Actions, Timeline, Recent Matches -->
+      <div class="card">
+        <div class="xdr-tabs tabs-padded">
+          <div class="xdr-tab active" data-tab="def">Conditions & Actions</div>
+          <div class="xdr-tab" data-tab="timeline">Timeline</div>
+          <div class="xdr-tab" data-tab="matches">Recent Matches</div>
+        </div>
+
+        <div class="card-body" id="tabDef">
+          <div class="row g-4">
+            <div class="col-lg-6">
+              <h3 class="fs-inherit-md mb-2">Conditions</h3>
+              <div id="conditionsView"></div>
+            </div>
+            <div class="col-lg-6">
+              <h3 class="fs-inherit-md mb-2">Actions on Trigger</h3>
+              <div id="actionsView"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body d-none" id="tabTimeline">
+          <div class="xdr-timeline" id="ruleTimeline"></div>
+        </div>
+
+        <div class="card-body d-none" id="tabMatches">
+          <div class="xdr-table-wrap flush">
+            <table class="xdr-table">
+              <thead><tr><th>Time</th><th>Host</th><th>Source</th><th>Status</th></tr></thead>
+              <tbody id="recentMatchesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/core/charts.js"></script>
+<script src="../assets/js/data/detection-rules-data.js"></script>
+<script src="../assets/js/data/detection-history-data.js"></script>
+<script src="../assets/js/pages/rule-details.js"></script>
+</body>
+</html>

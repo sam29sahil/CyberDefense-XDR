@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="../assets/css/main.css" rel="stylesheet">
+</head>
+<body data-page="soc-dashboard" data-title="Case Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="soc-dashboard.html">SOC</a><i class="bi bi-chevron-right sep"></i>
+        <a href="investigations.html">Investigations</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current" id="breadcrumbCaseId">Case Details</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div class="d-flex gap-3">
+            <div class="brand-mark brand-mark-lg"><i class="bi bi-kanban"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 class="fs-detail-title" id="caseTitle">—</h1>
+                <span id="casePriorityPill"></span>
+                <span id="caseSevBadge"></span>
+                <span id="caseStatusBadge"></span>
+              </div>
+              <p class="text-muted mb-0" id="caseMeta">—</p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <span id="caseSlaBadge"></span>
+            <button class="btn btn-secondary btn-sm" id="reassignBtn"><i class="bi bi-person-plus"></i> Reassign</button>
+            <button class="btn btn-outline-danger btn-sm" id="closeCaseBtn"><i class="bi bi-check-circle"></i> Close Case</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <section class="card mb-4" aria-labelledby="indicatorsTitle">
+            <div class="card-header"><h2 id="indicatorsTitle">Indicators</h2></div>
+            <div class="card-body" id="indicatorsList"></div>
+          </section>
+
+          <section class="card mb-4" aria-labelledby="relatedAlertsCaseTitle">
+            <div class="card-header"><h2 id="relatedAlertsCaseTitle">Related Alerts</h2></div>
+            <div class="xdr-table-wrap flush">
+              <table class="xdr-table">
+                <thead><tr><th>Alert</th><th>Severity</th><th>Host</th><th>Status</th></tr></thead>
+                <tbody id="relatedAlertsCaseBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="notesTitle">
+            <div class="card-header"><h2 id="notesTitle">Notes</h2></div>
+            <div class="card-body">
+              <div id="notesList"></div>
+              <div class="d-flex gap-2 mt-3">
+                <div class="avatar">AR</div>
+                <div class="flex-grow-1">
+                  <textarea class="form-control mb-2" id="newNoteText" rows="2" placeholder="Add an investigation note…"></textarea>
+                  <button class="btn btn-primary btn-sm" id="addNoteBtn"><i class="bi bi-send"></i> Add Note</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-lg-5">
+          <section class="card mb-4" aria-labelledby="recActionsTitle">
+            <div class="card-header"><h2 id="recActionsTitle">Recommended Actions</h2></div>
+            <div class="card-body" id="recActionsList"></div>
+          </section>
+
+          <section class="card" aria-labelledby="activityTitle">
+            <div class="card-header"><h2 id="activityTitle">Activity Feed</h2></div>
+            <div class="card-body">
+              <div class="xdr-timeline" id="activityTimeline"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/core/shell.js"></script>
+<script src="../assets/js/core/toast.js"></script>
+<script src="../assets/js/data/cases-data.js"></script>
+<script src="../assets/js/data/alerts-data.js"></script>
+<script src="../assets/js/data/analysts-data.js"></script>
+<script src="../assets/js/pages/case-details.js"></script>
+</body>
+</html>

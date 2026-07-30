@@ -1,0 +1,74 @@
+/* ==========================================================================
+   ai.css — page-specific styling for the AI Security Assistant module:
+   AI Dashboard, Chat, Incident Summary, Recommendations, Risk Analysis.
+   Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- Insight card ---------- */
+.insight-card{
+    display:flex; gap: var(--space-3); padding: var(--space-3);
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg);
+    margin-bottom: var(--space-2);
+  }
+  .insight-icon{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 32px; font-size:14px; }
+  .insight-icon.warning{ background: var(--warning-subtle); color: var(--warning); }
+  .insight-icon.info{ background: var(--info-subtle); color: var(--info); }
+  .insight-icon.success{ background: var(--success-subtle); color: var(--success); }
+  .insight-confidence{ font-size: var(--fs-xs); color: var(--text-disabled); white-space:nowrap; }
+  
+  /* ---------- Chat layout ---------- */
+  .chat-shell{ display:flex; height: calc(100vh - 220px); min-height:480px; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow:hidden; }
+  .chat-sidebar{ width:260px; flex:0 0 260px; border-right: 1px solid var(--border); background: rgba(255,255,255,.01); overflow-y:auto; }
+  .chat-sidebar-item{ padding: var(--space-3); border-bottom: 1px solid var(--border-subtle); cursor:pointer; }
+  .chat-sidebar-item:hover{ background: var(--card-hover); }
+  .chat-sidebar-item.active{ background: var(--primary-subtle); border-left: 2px solid var(--primary); }
+  .chat-sidebar-item .cs-title{ font-size: var(--fs-sm); font-weight:600; color: var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chat-sidebar-item .cs-time{ font-size: var(--fs-xs); color: var(--text-disabled); }
+  
+  .chat-main{ flex:1 1 auto; display:flex; flex-direction:column; min-width:0; }
+  .chat-messages{ flex:1 1 auto; overflow-y:auto; padding: var(--space-4); }
+  .chat-bubble-row{ display:flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+  .chat-bubble-row.user{ flex-direction:row-reverse; }
+  .chat-avatar{ width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 30px; font-size:14px; }
+  .chat-avatar.assistant{ background: rgba(139,92,246,.16); color: var(--chart-violet); }
+  .chat-avatar.user{ background: var(--card-hover); color: var(--text-muted); }
+  .chat-bubble{ max-width:72%; padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--fs-sm); line-height: var(--lh-normal); }
+  .chat-bubble-row.assistant .chat-bubble{ background: var(--card-hover); color: var(--text); border-top-left-radius:2px; }
+  .chat-bubble-row.user .chat-bubble{ background: var(--primary); color: #fff; border-top-right-radius:2px; }
+  
+  .typing-dots{ display:inline-flex; gap:3px; align-items:center; padding: 10px 14px; }
+  .typing-dots span{ width:6px; height:6px; border-radius:50%; background: var(--text-muted); animation: typingBounce 1.2s infinite; }
+  .typing-dots span:nth-child(2){ animation-delay:.15s; }
+  .typing-dots span:nth-child(3){ animation-delay:.3s; }
+  @keyframes typingBounce{ 0%,60%,100%{ transform: translateY(0); opacity:.5; } 30%{ transform: translateY(-4px); opacity:1; } }
+  
+  .chat-suggestions{ display:flex; flex-wrap:wrap; gap:8px; padding: 0 var(--space-4) var(--space-3); }
+  .chat-suggestion-chip{
+    font-size: var(--fs-xs); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text-muted); cursor:pointer; transition: border-color var(--dur) var(--ease);
+  }
+  .chat-suggestion-chip:hover{ border-color: var(--primary); color: var(--text); }
+  
+  .chat-input-row{ display:flex; gap: var(--space-2); padding: var(--space-3); border-top: 1px solid var(--border); }
+  
+  /* ---------- Recommendation card ---------- */
+  .rec-priority-rail{ width:4px; border-radius:4px; align-self:stretch; flex:0 0 4px; }
+  .rec-priority-rail.critical{ background: var(--sev-critical); }
+  .rec-priority-rail.high{ background: var(--sev-high); }
+  .rec-priority-rail.medium{ background: var(--sev-medium); }
+  .rec-priority-rail.low{ background: var(--sev-low); }
+  
+  /* ---------- Risk factor bar ---------- */
+  .risk-factor-row{ margin-bottom: var(--space-3); }
+  .risk-factor-bar{ height:8px; border-radius:4px; background: var(--card-hover); overflow:hidden; }
+  .risk-factor-fill{ height:100%; border-radius:4px; }
+  .risk-trend-icon.up{ color: var(--danger); }
+  .risk-trend-icon.down{ color: var(--success); }
+  .risk-trend-icon.flat{ color: var(--text-disabled); }
+  
+  /* ---------- Overall risk gauge ---------- */
+  .risk-gauge-wrap{ position: relative; height:180px; display:flex; align-items:center; justify-content:center; }
+  .risk-gauge-score{ position:absolute; text-align:center; }
+  .risk-gauge-score .num{ font-size:32px; font-weight:800; color: var(--text); }
+  .risk-gauge-score .lbl{ font-size: var(--fs-xs); color: var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+  
