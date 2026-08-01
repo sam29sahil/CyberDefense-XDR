@@ -1,0 +1,45 @@
+/* ==========================================================================
+   users.css — page-specific styling for the User Management module:
+   Users, User Details, Roles, Permissions, Activity.
+   Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- User avatar ---------- */
+.user-avatar{
+    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; background: var(--primary-subtle); color: #93B4FA; flex:0 0 36px;
+  }
+  .user-avatar-lg{ width:56px; height:56px; font-size:20px; flex:0 0 56px; }
+  
+  /* ---------- Status pill (user active/inactive/locked) ---------- */
+  .status-pill.st-active{ color: var(--success); background: var(--success-subtle); }
+  .status-pill.st-inactive{ color: var(--text-disabled); background: rgba(148,163,184,.08); }
+  .status-pill.st-locked{ color: var(--danger); background: var(--danger-subtle); }
+  
+  /* ---------- MFA badge ---------- */
+  .mfa-badge{ display:inline-flex; align-items:center; gap:4px; font-size: var(--fs-xs); font-weight:700; }
+  .mfa-badge.on{ color: var(--success); }
+  .mfa-badge.off{ color: var(--text-disabled); }
+  
+  /* ---------- Role card ---------- */
+  .role-card{
+    padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+    background: var(--card); height:100%; display:flex; flex-direction:column; gap: var(--space-2);
+  }
+  .role-icon-tile{
+    width:40px; height:40px; border-radius: var(--radius-md); display:flex; align-items:center; justify-content:center;
+    font-size:18px; background: rgba(139,92,246,.14); color: var(--chart-violet);
+  }
+  
+  /* ---------- Permission matrix ---------- */
+  .perm-matrix-wrap{ overflow-x:auto; }
+  .perm-matrix{ width:100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 720px; }
+  .perm-matrix th, .perm-matrix td{ padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); text-align:center; }
+  .perm-matrix th{ text-align:left; color: var(--text-muted); font-weight:600; }
+  .perm-matrix td:first-child, .perm-matrix th:first-child{ text-align:left; color: var(--text); font-weight:500; }
+  .perm-matrix thead th{ position: sticky; top:0; background: var(--card); }
+  .perm-check{ width:16px; height:16px; accent-color: var(--primary); cursor:pointer; }
+  
+  /* ---------- Activity result badge ---------- */
+  .activity-ip{ font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+  

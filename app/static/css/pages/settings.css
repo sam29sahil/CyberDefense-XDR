@@ -1,0 +1,48 @@
+/* ==========================================================================
+   settings.css — page-specific styling for the Settings module:
+   General, Security, Notifications, API, Integrations, Profile.
+   Reads only design tokens from variables.css.
+   ========================================================================== */
+
+/* ---------- Toggle switch (used across all settings pages) ---------- */
+.xdr-switch{ position:relative; display:inline-block; width:40px; height:22px; flex:0 0 40px; }
+.xdr-switch input{ opacity:0; width:0; height:0; }
+.xdr-switch .track{
+  position:absolute; inset:0; background: var(--card-hover); border-radius:999px; cursor:pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+.xdr-switch .track::before{
+  content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; border-radius:50%;
+  background: var(--text-muted); transition: transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.xdr-switch input:checked + .track{ background: var(--primary-subtle); }
+.xdr-switch input:checked + .track::before{ transform: translateX(18px); background: var(--primary); }
+
+.settings-row{
+  display:flex; align-items:center; justify-content:space-between; gap: var(--space-3);
+  padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle);
+}
+.settings-row:last-child{ border-bottom:0; }
+.settings-row .row-label{ font-weight:600; color: var(--text); }
+.settings-row .row-hint{ font-size: var(--fs-xs); color: var(--text-muted); margin-top:2px; }
+
+/* ---------- Integration card ---------- */
+.integration-card{
+  padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  background: var(--card); height:100%; display:flex; flex-direction:column; gap: var(--space-2);
+}
+.integration-icon{
+  width:42px; height:42px; border-radius: var(--radius-md); display:flex; align-items:center; justify-content:center;
+  font-size:20px; background: var(--card-hover); color: var(--text);
+}
+.integration-status-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+.integration-status-dot.active{ background: var(--success); }
+.integration-status-dot.error{ background: var(--danger); }
+.integration-status-dot.disconnected{ background: var(--text-disabled); }
+
+/* ---------- API key row ---------- */
+.api-key-value{ font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); }
+.scope-chip{ display:inline-flex; font-size: var(--fs-xs); font-weight:600; padding:2px 7px; border-radius: var(--radius-sm); background: rgba(148,163,184,.14); color: var(--text-muted); }
+
+/* ---------- Profile avatar upload ---------- */
+.avatar-upload-wrap{ display:flex; align-items:center; gap: var(--space-4); }
