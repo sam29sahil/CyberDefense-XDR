@@ -8,25 +8,44 @@ from app.users.models import User
 
 
 def get_user_by_username(username):
-    """Find a user by username."""
     return User.query.filter_by(
         username=username
     ).first()
 
 
 def get_user_by_email(email):
-    """Find a user by email."""
     return User.query.filter_by(
-        email=email
+        email=email.strip().lower()
     ).first()
 
 
-def create_user(username, email, password, role="analyst"):
-    """Create and persist a new user."""
+def create_user(
+    first_name,
+    last_name,
+    email,
+    company,
+    password,
+    role="analyst",
+):
+    email = email.strip().lower()
+
+    # Generate an internal username from email.
+    base_username = email.split("@")[0]
+
+    username = base_username
+    counter = 1
+
+    while get_user_by_username(username):
+
+        username = f"{base_username}{counter}"
+        counter += 1
 
     user = User(
-        username=username.strip(),
-        email=email.strip().lower(),
+        username=username,
+        email=email,
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
+        company=company.strip() if company else None,
         role=role,
     )
 
@@ -38,12 +57,9 @@ def create_user(username, email, password, role="analyst"):
     return user
 
 
-def authenticate_user(username, password):
-    """Authenticate a user using username and password."""
+def authenticate_user(email, password):
 
-    user = get_user_by_username(
-        username.strip()
-    )
+    user = get_user_by_email(email)
 
     if user is None:
         return None

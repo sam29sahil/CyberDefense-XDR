@@ -12,11 +12,6 @@ from app.extensions import db
 
 
 class User(UserMixin, db.Model):
-    """
-    Application user.
-
-    Authentication and authorization will build on this model.
-    """
 
     __tablename__ = "users"
 
@@ -37,6 +32,21 @@ class User(UserMixin, db.Model):
         unique=True,
         nullable=False,
         index=True
+    )
+
+    first_name = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    last_name = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    company = db.Column(
+        db.String(255),
+        nullable=True
     )
 
     password_hash = db.Column(
@@ -70,15 +80,17 @@ class User(UserMixin, db.Model):
     )
 
     def set_password(self, password):
-        """Hash and store a password."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        """Check a plaintext password against the stored hash."""
         return check_password_hash(
             self.password_hash,
             password
         )
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
     def __repr__(self):
-        return f"<User {self.username}>"
+        return f"<User {self.email}>"

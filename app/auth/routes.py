@@ -7,7 +7,8 @@ from flask import (
     render_template,
     redirect,
     url_for,
-    flash,
+    request,
+    jsonify,
 )
 
 from flask_login import (
@@ -19,13 +20,7 @@ from flask_login import (
 
 from app.auth import auth
 
-from app.auth.forms import (
-    LoginForm,
-    RegisterForm,
-)
-
 from app.auth.services import (
-    get_user_by_username,
     get_user_by_email,
     create_user,
     authenticate_user,
@@ -34,124 +29,155 @@ from app.auth.services import (
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
-    """User login."""
 
-    if current_user.is_authenticated:
-        return redirect(
-            url_for("main.home")
-        )
+    if request.method == "GET":
 
-    form = LoginForm()
+        if current_user.is_authenticated:
+            return redirect(url_for("main.home"))
 
-    if form.validate_on_submit():
+        return render_template("auth/login.html")
 
-        user = authenticate_user(
-            form.username.data,
-            form.password.data,
-        )
+    data = request.get_json(silent=True) or {}
 
-        if user is None:
-            flash(
-                "Invalid username or password.",
-                "danger",
-            )
+    email = str(
+        data.get("email", "")
+    ).strip().lower()
 
-            return render_template(
-                "auth/login.html",
-                form=form,
-            )
+    password = data.get("password", "")
 
-        login_user(
-            user,
-            remember=form.remember.data,
-        )
-
-        flash(
-            "Login successful.",
-            "success",
-        )
-
-        return redirect(
-            url_for("main.home")
-        )
-
-    return render_template(
-        "auth/login.html",
-        form=form,
+    remember = bool(
+        data.get("remember", False)
     )
+
+    if not email or not password:
+
+        return jsonify({
+            "success": False,
+            "message": "Email and password are required.",
+        }), 400
+
+    user = authenticate_user(
+        email,
+        password,
+    )
+
+    if user is None:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid email or password.",
+        }), 401
+
+    login_user(
+        user,
+        remember=remember,
+    )
+
+    return jsonify({
+        "success": True,
+        "message": "Login successful.",
+        "redirect": url_for("main.home"),
+    }), 200
 
 
 @auth.route("/register", methods=["GET", "POST"])
 def register():
-    """User registration."""
 
-    if current_user.is_authenticated:
-        return redirect(
-            url_for("main.home")
-        )
+    if request.method == "GET":
 
-    form = RegisterForm()
+        if current_user.is_authenticated:
+            return redirect(url_for("main.home"))
 
-    if form.validate_on_submit():
+        return render_template("auth/register.html")
 
-        username = form.username.data.strip()
-        email = form.email.data.strip().lower()
+    data = request.get_json(silent=True) or {}
 
-        if get_user_by_username(username):
-            flash(
-                "Username already exists.",
-                "danger",
-            )
+    first_name = str(
+        data.get("first_name", "")
+    ).strip()
 
-            return render_template(
-                "auth/register.html",
-                form=form,
-            )
+    last_name = str(
+        data.get("last_name", "")
+    ).strip()
 
-        if get_user_by_email(email):
-            flash(
-                "Email already registered.",
-                "danger",
-            )
+    email = str(
+        data.get("email", "")
+    ).strip().lower()
 
-            return render_template(
-                "auth/register.html",
-                form=form,
-            )
+    company = str(
+        data.get("company", "")
+    ).strip()
 
-        create_user(
-            username=username,
-            email=email,
-            password=form.password.data,
-        )
+    password = data.get("password", "")
 
-        flash(
-            "Registration successful. You can now log in.",
-            "success",
-        )
+    terms = data.get("terms", False)
 
-        return redirect(
-            url_for("auth.login")
-        )
+    if not first_name:
+        return jsonify({
+            "success": False,
+            "message": "First name is required.",
+        }), 400
 
-    return render_template(
-        "auth/register.html",
-        form=form,
+    if not last_name:
+        return jsonify({
+            "success": False,
+            "message": "Last name is required.",
+        }), 400
+
+    if not email:
+        return jsonify({
+            "success": False,
+            "message": "Work email is required.",
+        }), 400
+
+    if not password:
+        return jsonify({
+            "success": False,
+            "message": "Password is required.",
+        }), 400
+
+    if not terms:
+        return jsonify({
+            "success": False,
+            "message": "You must accept the Terms of Service and Security Policy.",
+        }), 400
+
+    if len(password) < 12:
+        return jsonify({
+            "success": False,
+            "message": "Password must contain at least 12 characters.",
+        }), 400
+
+    if get_user_by_email(email):
+
+        return jsonify({
+            "success": False,
+            "message": "An account with this email already exists.",
+        }), 409
+
+    create_user(
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        company=company,
+        password=password,
     )
 
+    return jsonify({
+        "success": True,
+        "message": "Your account has been created successfully.",
+        "redirect": url_for("auth.login"),
+    }), 201
 
-@auth.route("/logout")
+
+@auth.route("/logout", methods=["GET", "POST"])
 @login_required
 def logout():
-    """Log out the current user."""
 
     logout_user()
 
-    flash(
-        "You have been logged out.",
-        "success",
-    )
-
-    return redirect(
-        url_for("auth.login")
-    )
+    return jsonify({
+        "success": True,
+        "message": "Logged out successfully.",
+        "redirect": url_for("auth.login"),
+    })

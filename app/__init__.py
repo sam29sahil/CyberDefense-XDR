@@ -14,6 +14,7 @@ from app.extensions import (
 )
 
 from app.routes import main
+from app.auth import auth
 
 from app.utils.logger import configure_logger
 
@@ -36,16 +37,11 @@ def create_app():
     # Logging
     configure_logger()
 
-    # Import models so SQLAlchemy knows about them
+    # Import models so SQLAlchemy registers them
     from app.users.models import User  # noqa: F401
 
-    # Blueprints
+    # Register blueprints
     app.register_blueprint(main)
+    app.register_blueprint(auth)
 
     return app
-
-    from app.routes import main
-    app.register_blueprint(main)
-    
-    from app.auth import auth
-    app.register_blueprint(auth)
