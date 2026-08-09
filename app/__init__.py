@@ -7,7 +7,12 @@ from flask import Flask
 
 from config.config import Config
 
-from app.extensions import db, migrate
+from app.extensions import (
+    db,
+    migrate,
+    login_manager,
+)
+
 from app.routes import main
 
 from app.utils.logger import configure_logger
@@ -20,17 +25,21 @@ def create_app():
 
     app = Flask(__name__)
 
-    # Load configuration
+    # Configuration
     app.config.from_object(Config)
 
-    # Initialize extensions
+    # Extensions
     db.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
 
-    # Configure logging
+    # Logging
     configure_logger()
 
-    # Register blueprints
+    # Import models so SQLAlchemy knows about them
+    from app.users.models import User  # noqa: F401
+
+    # Blueprints
     app.register_blueprint(main)
 
     return app
