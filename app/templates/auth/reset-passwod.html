@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Reset Password — CyberDefense XDR</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+        rel="stylesheet"
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/main.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/pages/auth.css') }}"
+    >
+
+</head>
+
+
+<body class="auth-shell centered">
+
+
+<div class="auth-card centered-text fade-in">
+
+
+{% if not valid %}
+
+    <div class="auth-icon-circle">
+
+        <i class="bi bi-exclamation-triangle"></i>
+
+    </div>
+
+
+    <h1>
+        Reset link expired
+    </h1>
+
+
+    <p class="text-muted mb-4">
+
+        {{ message }}
+
+    </p>
+
+
+    <a
+        href="{{ url_for('auth.forgot_password') }}"
+        class="btn btn-primary w-100"
+    >
+        Request a new reset link
+    </a>
+
+
+    <a
+        href="{{ url_for('auth.login') }}"
+        class="d-inline-flex align-items-center gap-1 mt-4 text-sm"
+    >
+
+        <i class="bi bi-arrow-left"></i>
+
+        Back to sign in
+
+    </a>
+
+
+{% else %}
+
+
+    <div class="auth-icon-circle">
+
+        <i class="bi bi-shield-lock"></i>
+
+    </div>
+
+
+    <h1>
+        Create a new password
+    </h1>
+
+
+    <p class="text-muted mb-4">
+
+        Choose a strong password for your
+        CyberDefense XDR account.
+
+    </p>
+
+
+    <div
+        id="messageBox"
+        class="alert d-none text-start"
+    ></div>
+
+
+    <form
+        id="resetPasswordForm"
+        class="text-start"
+        novalidate
+    >
+
+        <div class="mb-3">
+
+            <label
+                class="form-label"
+                for="password"
+            >
+                New password
+            </label>
+
+
+            <input
+                id="password"
+                type="password"
+                class="form-control"
+                placeholder="Minimum 12 characters"
+                autocomplete="new-password"
+                minlength="12"
+                required
+            >
+
+        </div>
+
+
+        <div class="mb-4">
+
+            <label
+                class="form-label"
+                for="confirmPassword"
+            >
+                Confirm password
+            </label>
+
+
+            <input
+                id="confirmPassword"
+                type="password"
+                class="form-control"
+                placeholder="Enter password again"
+                autocomplete="new-password"
+                minlength="12"
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            id="resetButton"
+            class="btn btn-primary w-100 btn-lg"
+        >
+
+            <i class="bi bi-check-circle me-2"></i>
+
+            Reset Password
+
+        </button>
+
+    </form>
+
+
+{% endif %}
+
+
+</div>
+
+
+{% if valid %}
+
+<script>
+
+document
+    .getElementById("resetPasswordForm")
+    .addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+
+        const password =
+            document.getElementById("password").value;
+
+        const confirmPassword =
+            document.getElementById("confirmPassword").value;
+
+        const messageBox =
+            document.getElementById("messageBox");
+
+        const button =
+            document.getElementById("resetButton");
+
+
+        function showError(message) {
+
+            messageBox.className =
+                "alert alert-danger text-start";
+
+            messageBox.textContent =
+                message;
+
+            messageBox.classList.remove("d-none");
+
+        }
+
+
+        if (password.length < 12) {
+
+            showError(
+                "Password must contain at least 12 characters."
+            );
+
+            return;
+        }
+
+
+        if (password !== confirmPassword) {
+
+            showError(
+                "Passwords do not match."
+            );
+
+            return;
+        }
+
+
+        button.disabled = true;
+
+        button.innerHTML = `
+            <span
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+            ></span>
+            Resetting...
+        `;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    window.location.pathname,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Accept":
+                                "application/json"
+                        },
+
+                        credentials:
+                            "same-origin",
+
+                        body:
+                            JSON.stringify({
+                                password:
+                                    password,
+
+                                confirm_password:
+                                    confirmPassword
+                            })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok || !data.success) {
+
+                showError(
+                    data.message ||
+                    "Password reset failed."
+                );
+
+                return;
+            }
+
+
+            messageBox.className =
+                "alert alert-success text-start";
+
+            messageBox.textContent =
+                data.message ||
+                "Password reset successfully.";
+
+            messageBox.classList.remove(
+                "d-none"
+            );
+
+
+            setTimeout(function () {
+
+                window.location.href =
+                    data.redirect ||
+                    "{{ url_for('auth.login') }}";
+
+            }, 1000);
+
+
+        } catch (error) {
+
+            console.error(
+                "Reset password error:",
+                error
+            );
+
+            showError(
+                "Unable to connect to the server."
+            );
+
+        } finally {
+
+            button.disabled = false;
+
+            button.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                Reset Password
+            `;
+
+        }
+
+    });
+
+</script>
+
+{% endif %}
+
+
+</body>
+
+</html>

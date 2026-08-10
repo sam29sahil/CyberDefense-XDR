@@ -34,10 +34,7 @@
     <span class="lp-badge"><i class="bi bi-stars"></i> AI Copilot now built into every module</span>
     <h1>See the attack.<br>Stop it <span class="accent">before it spreads.</span></h1>
     <p class="lead">CyberDefense XDR unifies SIEM, endpoint detection, vulnerability management, and threat intelligence into one console your SOC actually wants to use.</p>
-    <div class="d-flex justify-content-center gap-3">
-      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Request a Demo</a>
-      <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary btn-lg"><i class="bi bi-play-circle"></i> View Live Dashboard</a>
-    </div>
+   
   </div>
 
   <div class="lp-console fade-in">
@@ -122,7 +119,7 @@
   <div class="lp-cta-band">
     <h2 class="lp-cta-heading">Ready to see your environment through CyberDefense XDR?</h2>
     <p class="text-muted lp-cta-sub">Spin up a guided walkthrough with your own use cases — no sales deck required.</p>
-    <a href="auth/register.html" class="btn btn-primary btn-lg">Request a Demo</a>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Request a Demo</a>
   </div>
 </section>
 

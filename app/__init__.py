@@ -15,6 +15,7 @@ from app.extensions import (
 
 from app.routes import main
 from app.auth import auth
+import app.auth.routes
 from app.dashboard import dashboard
 
 from app.utils.logger import configure_logger
@@ -43,7 +44,10 @@ def create_app():
 
     # Register blueprints
     app.register_blueprint(main)
-    app.register_blueprint(auth)
+    app.register_blueprint(
+    auth,
+    url_prefix="/auth"
+)
     app.register_blueprint(dashboard)
 
     return app

@@ -69,7 +69,7 @@
           </div>
           <nav class="sidebar-nav">${sections}</nav>
           <div class="sidebar-footer">
-            <a href="../auth/login.html" class="nav-item">
+            <a href="/auth/logout" class="nav-item">
               <i class="bi bi-box-arrow-left"></i>
               <span class="nav-label">Logout</span>
               <span class="tooltip-label">Logout</span>

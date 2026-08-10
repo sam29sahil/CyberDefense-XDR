@@ -1,128 +1,344 @@
-/*
- * CyberDefense XDR
- * Registration
- */
+/* ==========================================================================
+   CyberDefense XDR
+   Registration Page
+   ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    const form = document.getElementById("registerForm");
+    const form =
+        document.getElementById("registerForm");
 
     if (!form) {
         return;
     }
 
+
     form.addEventListener("submit", async function (event) {
 
         event.preventDefault();
 
+
+        // ==================================================================
+        // INPUTS
+        // ==================================================================
+
+        const firstNameInput =
+            document.getElementById("regFirst");
+
+        const lastNameInput =
+            document.getElementById("regLast");
+
+        const emailInput =
+            document.getElementById("regEmail");
+
+        const companyInput =
+            document.getElementById("regCompany");
+
+        const passwordInput =
+            document.getElementById("regPassword");
+
+        const termsInput =
+            document.getElementById("terms");
+
+        const submitButton =
+            form.querySelector(
+                'button[type="submit"]'
+            );
+
+
         const firstName =
-            document.getElementById("regFirst")?.value.trim();
+            firstNameInput
+                ? firstNameInput.value.trim()
+                : "";
+
 
         const lastName =
-            document.getElementById("regLast")?.value.trim();
+            lastNameInput
+                ? lastNameInput.value.trim()
+                : "";
+
 
         const email =
-            document.getElementById("regEmail")?.value.trim();
+            emailInput
+                ? emailInput.value.trim()
+                : "";
+
 
         const company =
-            document.getElementById("regCompany")?.value.trim();
+            companyInput
+                ? companyInput.value.trim()
+                : "";
+
 
         const password =
-            document.getElementById("regPassword")?.value;
+            passwordInput
+                ? passwordInput.value
+                : "";
+
 
         const terms =
-            document.getElementById("terms")?.checked || false;
+            termsInput
+                ? termsInput.checked
+                : false;
 
-        if (!firstName || !lastName || !email || !password) {
 
-            showToast({
-                type: "error",
-                title: "Registration failed",
-                msg: "Please complete all required fields."
-            });
+        // ==================================================================
+        // CLIENT VALIDATION
+        // ==================================================================
+
+        if (!firstName) {
+
+            showMessage(
+                "warning",
+                "Missing information",
+                "First name is required."
+            );
 
             return;
         }
+
+
+        if (!lastName) {
+
+            showMessage(
+                "warning",
+                "Missing information",
+                "Last name is required."
+            );
+
+            return;
+        }
+
+
+        if (!email) {
+
+            showMessage(
+                "warning",
+                "Missing information",
+                "Work email is required."
+            );
+
+            return;
+        }
+
+
+        if (!password) {
+
+            showMessage(
+                "warning",
+                "Missing information",
+                "Password is required."
+            );
+
+            return;
+        }
+
 
         if (password.length < 12) {
 
-            showToast({
-                type: "error",
-                title: "Registration failed",
-                msg: "Password must contain at least 12 characters."
-            });
+            showMessage(
+                "warning",
+                "Weak password",
+                "Password must contain at least 12 characters."
+            );
 
             return;
         }
+
 
         if (!terms) {
 
-            showToast({
-                type: "error",
-                title: "Terms required",
-                msg: "Please accept the Terms of Service and Security Policy."
-            });
+            showMessage(
+                "warning",
+                "Terms required",
+                "You must accept the Terms of Service and Security Policy."
+            );
 
             return;
         }
 
+
+        // ==================================================================
+        // BUTTON STATE
+        // ==================================================================
+
+        const originalButtonText =
+            submitButton
+                ? submitButton.innerHTML
+                : "Request Access";
+
+
+        if (submitButton) {
+
+            submitButton.disabled = true;
+
+            submitButton.innerHTML = `
+                <span
+                    class="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                ></span>
+                Creating account...
+            `;
+        }
+
+
+        // ==================================================================
+        // REQUEST
+        // ==================================================================
+
         try {
 
-            const response = await fetch("/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                credentials: "same-origin",
-                body: JSON.stringify({
-                    first_name: firstName,
-                    last_name: lastName,
-                    email: email,
-                    company: company,
-                    password: password,
-                    terms: terms
-                })
-            });
+            const response = await fetch(
+                "/auth/register",
+                {
+                    method: "POST",
 
-            const data = await response.json();
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
 
-            if (!response.ok) {
+                    credentials: "same-origin",
 
-                showToast({
-                    type: "error",
-                    title: "Registration failed",
-                    msg: data.message || "Unable to create account."
-                });
+                    body: JSON.stringify({
+
+                        first_name: firstName,
+
+                        last_name: lastName,
+
+                        email: email,
+
+                        company: company,
+
+                        password: password,
+
+                        terms: terms
+
+                    })
+                }
+            );
+
+
+            // --------------------------------------------------------------
+            // RESPONSE
+            // --------------------------------------------------------------
+
+            let data = {};
+
+            try {
+
+                data = await response.json();
+
+            } catch (jsonError) {
+
+                console.error(
+                    "Invalid JSON response:",
+                    jsonError
+                );
+
+            }
+
+
+            // --------------------------------------------------------------
+            // SUCCESS
+            // --------------------------------------------------------------
+
+            if (
+                response.ok &&
+                data.success
+            ) {
+
+                showMessage(
+                    "success",
+                    "Account created",
+                    data.message ||
+                    "Your account has been created successfully."
+                );
+
+
+                setTimeout(function () {
+
+                    window.location.href =
+                        data.redirect ||
+                        "/auth/login";
+
+                }, 700);
+
 
                 return;
             }
 
-            showToast({
-                type: "success",
-                title: "Account created",
-                msg: data.message || "Registration successful."
-            });
 
-            setTimeout(function () {
+            // --------------------------------------------------------------
+            // ERROR
+            // --------------------------------------------------------------
 
-                window.location.href =
-                    data.redirect || "/auth/login";
+            showMessage(
+                "danger",
+                "Registration failed",
+                data.message ||
+                "Unable to create the account."
+            );
 
-            }, 700);
 
         } catch (error) {
 
             console.error(
-                "Registration error:",
+                "Registration request failed:",
                 error
             );
 
-            showToast({
-                type: "error",
-                title: "Connection error",
-                msg: "Unable to connect to CyberDefense XDR."
-            });
+
+            showMessage(
+                "danger",
+                "Connection error",
+                "Unable to connect to the authentication server."
+            );
+
+
+        } finally {
+
+            if (submitButton) {
+
+                submitButton.disabled = false;
+
+                submitButton.innerHTML =
+                    originalButtonText;
+
+            }
+
         }
+
     });
+
+
+    // ======================================================================
+    // TOAST HELPER
+    // ======================================================================
+
+    function showMessage(
+        type,
+        title,
+        message
+    ) {
+
+        if (typeof showToast === "function") {
+
+            showToast({
+                type: type,
+                title: title,
+                msg: message
+            });
+
+        } else {
+
+            alert(
+                title + ": " + message
+            );
+
+        }
+
+    }
+
 });
