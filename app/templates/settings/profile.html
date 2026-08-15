@@ -1,110 +1,812 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
 <title>My Profile — CyberDefense XDR</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link href="../assets/css/main.css" rel="stylesheet">
+
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+>
+
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet"
+>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+    rel="stylesheet"
+>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/main.css') }}"
+>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/pages/auth.css') }}"
+>
+
 </head>
-<body data-page="settings" data-title="My Profile">
+
+
+<body
+    data-page="settings"
+    data-title="My Profile"
+>
+
+
 <div class="app-shell">
-  <div id="sidebar-root"></div>
-  <div class="main-content">
-    <div id="navbar-root"></div>
 
-    <div class="page-wrap fade-in">
-      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
-        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
-        <a href="general-settings.html">Settings</a><i class="bi bi-chevron-right sep"></i><span class="current">My Profile</span>
-      </nav>
+    <div id="sidebar-root"></div>
 
-      <div class="section-title-row">
-        <div><h1>Settings</h1><p class="text-muted mt-1">Platform preferences and configuration</p></div>
-        <button class="btn btn-primary btn-sm" id="saveBtn"><i class="bi bi-check-lg"></i> Save Changes</button>
-      </div>
+    <div class="main-content">
 
-      <div class="xdr-tabs tabs-padded mb-4">
-        <a href="general-settings.html" class="xdr-tab">General</a>
-        <a href="security-settings.html" class="xdr-tab">Security</a>
-        <a href="notification-settings.html" class="xdr-tab">Notifications</a>
-        <a href="api-settings.html" class="xdr-tab">API Keys</a>
-        <a href="integrations.html" class="xdr-tab">Integrations</a>
-        <a href="profile.html" class="xdr-tab active">My Profile</a>
-      </div>
+        <div id="navbar-root"></div>
 
-      <div class="row g-4">
-        <div class="col-lg-7">
-          <section class="card mb-4">
-            <div class="card-header"><h2>Profile</h2></div>
-            <div class="card-body">
-              <div class="avatar-upload-wrap mb-4">
-                <span class="user-avatar user-avatar-lg">AR</span>
+
+        <div class="page-wrap fade-in">
+
+
+            <!-- Breadcrumb -->
+
+            <nav
+                class="xdr-breadcrumb"
+                aria-label="Breadcrumb"
+            >
+
+                <a href="{{ url_for('dashboard.index') }}">
+                    Home
+                </a>
+
+                <i class="bi bi-chevron-right sep"></i>
+
+                <a href="{{ url_for('settings.general') }}">
+                    Settings
+                </a>
+
+                <i class="bi bi-chevron-right sep"></i>
+
+                <span class="current">
+                    My Profile
+                </span>
+
+            </nav>
+
+
+            <!-- Page title -->
+
+            <div class="section-title-row">
+
                 <div>
-                  <button class="btn btn-secondary btn-sm" id="changeAvatarBtn"><i class="bi bi-upload"></i> Change Photo</button>
-                  <p class="text-xs text-muted mb-0 mt-2">JPG or PNG, up to 2MB.</p>
+
+                    <h1>
+                        My Profile
+                    </h1>
+
+                    <p class="text-muted mt-1">
+                        Manage your CyberDefense XDR account
+                    </p>
+
                 </div>
-              </div>
-              <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">Full name</label><input class="form-control" id="profName" value="Aria Reyes"></div>
-                <div class="col-md-6"><label class="form-label">Email</label><input class="form-control" id="profEmail" value="aria.reyes@cyberdefensexdr.io"></div>
-                <div class="col-md-6"><label class="form-label">Role</label><input class="form-control" value="SOC Manager" disabled></div>
-                <div class="col-md-6"><label class="form-label">Department</label><input class="form-control" value="SOC Operations" disabled></div>
-              </div>
-            </div>
-          </section>
 
-          <section class="card">
-            <div class="card-header"><h2>Change Password</h2></div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">Current password</label><input type="password" class="form-control" id="curPw"></div>
-                <div class="col-md-4"><label class="form-label">New password</label><input type="password" class="form-control" id="newPw"></div>
-                <div class="col-md-4"><label class="form-label">Confirm new password</label><input type="password" class="form-control" id="confirmPw"></div>
-              </div>
-              <button class="btn btn-secondary btn-sm mt-3" id="changePwBtn"><i class="bi bi-key"></i> Update Password</button>
+                <button
+                    class="btn btn-primary btn-sm"
+                    id="saveBtn"
+                    type="button"
+                >
+
+                    <i class="bi bi-check-lg"></i>
+
+                    Save Changes
+
+                </button>
+
             </div>
-          </section>
+
+
+            <!-- Settings tabs -->
+
+            <div class="xdr-tabs tabs-padded mb-4">
+
+                <a
+                    href="{{ url_for('settings.general') }}"
+                    class="xdr-tab"
+                >
+                    General
+                </a>
+
+                <a
+                    href="{{ url_for('settings.security') }}"
+                    class="xdr-tab"
+                >
+                    Security
+                </a>
+
+                <a
+                    href="{{ url_for('settings.notifications') }}"
+                    class="xdr-tab"
+                >
+                    Notifications
+                </a>
+
+                <a
+                    href="{{ url_for('settings.api_settings') }}"
+                    class="xdr-tab"
+                >
+                    API Keys
+                </a>
+
+                <a
+                    href="{{ url_for('settings.integrations') }}"
+                    class="xdr-tab"
+                >
+                    Integrations
+                </a>
+
+                <a
+                    href="{{ url_for('settings.profile') }}"
+                    class="xdr-tab active"
+                >
+                    My Profile
+                </a>
+
+            </div>
+
+
+            <div class="row g-4">
+
+
+                <!-- LEFT -->
+
+                <div class="col-lg-7">
+
+
+                    <!-- Profile -->
+
+                    <section class="card mb-4">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Profile
+                            </h2>
+
+                        </div>
+
+
+                        <div class="card-body">
+
+
+                            <!-- Avatar -->
+
+                            <div
+                                class="avatar-upload-wrap mb-4"
+                            >
+
+                                <span
+                                    class="user-avatar user-avatar-lg"
+                                    id="profileAvatar"
+                                >
+                                    {{ (
+                                        (user.first_name or '')[:1]
+                                        +
+                                        (user.last_name or '')[:1]
+                                    )|upper }}
+                                </span>
+
+                                <div>
+
+                                    <div class="fw-semibold">
+                                        {{ user.first_name }}
+                                        {{ user.last_name }}
+                                    </div>
+
+                                    <p
+                                        class="text-xs text-muted mb-0 mt-1"
+                                    >
+                                        {{ user.role|capitalize }}
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Profile fields -->
+
+                            <div class="row g-3">
+
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        class="form-label"
+                                        for="profFirstName"
+                                    >
+                                        First name
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="profFirstName"
+                                        value="{{ user.first_name or '' }}"
+                                        autocomplete="given-name"
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        class="form-label"
+                                        for="profLastName"
+                                    >
+                                        Last name
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="profLastName"
+                                        value="{{ user.last_name or '' }}"
+                                        autocomplete="family-name"
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        class="form-label"
+                                        for="profEmail"
+                                    >
+                                        Email
+                                    </label>
+
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        id="profEmail"
+                                        value="{{ user.email }}"
+                                        disabled
+                                    >
+
+                                    <div class="form-text">
+                                        Email cannot be changed here.
+                                    </div>
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        class="form-label"
+                                        for="profUsername"
+                                    >
+                                        Username
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="profUsername"
+                                        value="{{ user.username }}"
+                                        disabled
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        class="form-label"
+                                        for="profCompany"
+                                    >
+                                        Company
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="profCompany"
+                                        value="{{ user.company or '' }}"
+                                        autocomplete="organization"
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        class="form-label"
+                                    >
+                                        Role
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        value="{{ user.role|capitalize }}"
+                                        disabled
+                                    >
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- Change Password -->
+
+                    <section class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Change Password
+                            </h2>
+
+                        </div>
+
+                        <div class="card-body">
+
+                            <p class="text-muted">
+                                Password management will be
+                                connected to the authentication
+                                system next.
+                            </p>
+
+                            <a
+                                href="{{ url_for('auth.forgot_password') }}"
+                                class="btn btn-secondary btn-sm"
+                            >
+
+                                <i class="bi bi-key"></i>
+
+                                Reset Password
+
+                            </a>
+
+                        </div>
+
+                    </section>
+
+
+                </div>
+
+
+                <!-- RIGHT -->
+
+                <div class="col-lg-5">
+
+
+                    <!-- Account -->
+
+                    <section class="card mb-4">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Account Information
+                            </h2>
+
+                        </div>
+
+                        <div class="card-body">
+
+
+                            <div class="settings-row">
+
+                                <div>
+
+                                    <div class="row-label">
+                                        Account status
+                                    </div>
+
+                                    <div class="row-hint">
+                                        Your current account status
+                                    </div>
+
+                                </div>
+
+                                {% if user.is_active %}
+
+                                <span class="mfa-badge on">
+                                    <i class="bi bi-check-circle"></i>
+                                    Active
+                                </span>
+
+                                {% else %}
+
+                                <span class="badge bg-danger">
+                                    Inactive
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <hr>
+
+
+                            <div class="settings-row">
+
+                                <div>
+
+                                    <div class="row-label">
+                                        Role
+                                    </div>
+
+                                    <div class="row-hint">
+                                        Access level
+                                    </div>
+
+                                </div>
+
+                                <strong>
+                                    {{ user.role|capitalize }}
+                                </strong>
+
+                            </div>
+
+
+                            <hr>
+
+
+                            <div class="settings-row">
+
+                                <div>
+
+                                    <div class="row-label">
+                                        Member since
+                                    </div>
+
+                                    <div class="row-hint">
+                                        Account creation date
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+
+                                    {% if user.created_at %}
+                                        {{ user.created_at.strftime('%d %b %Y') }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- Security -->
+
+                    <section class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Security
+                            </h2>
+
+                        </div>
+
+                        <div class="card-body">
+
+                            <div class="settings-row">
+
+                                <div>
+
+                                    <div class="row-label">
+                                        Password
+                                    </div>
+
+                                    <div class="row-hint">
+                                        Keep your password
+                                        strong and unique.
+                                    </div>
+
+                                </div>
+
+                                <a
+                                    href="{{ url_for('auth.forgot_password') }}"
+                                    class="btn btn-ghost btn-sm"
+                                >
+                                    Change
+                                </a>
+
+                            </div>
+
+
+                            <hr>
+
+
+                            <div class="settings-row">
+
+                                <div>
+
+                                    <div class="row-label">
+                                        Multi-Factor Authentication
+                                    </div>
+
+                                    <div class="row-hint">
+                                        MFA configuration
+                                        can be added later.
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    Not configured
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="col-lg-5">
-          <section class="card mb-4">
-            <div class="card-header"><h2>Multi-Factor Authentication</h2></div>
-            <div class="card-body">
-              <div class="settings-row"><div><div class="row-label">Authenticator app</div><div class="row-hint">Enabled — configured 6 months ago</div></div><span class="mfa-badge on"><i class="bi bi-shield-check"></i> On</span></div>
-              <button class="btn btn-ghost btn-sm mt-2" id="reconfigureMfaBtn"><i class="bi bi-arrow-repeat"></i> Reconfigure</button>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card-header"><h2>Active Sessions</h2></div>
-            <div class="card-body" id="sessionsList"></div>
-          </section>
-        </div>
-      </div>
     </div>
-  </div>
+
 </div>
 
-<!-- Revoke session confirm -->
-<div class="xdr-modal-backdrop" data-modal-backdrop="revokeSessionModal"></div>
-<div class="xdr-modal" id="revokeSessionModal">
-  <div class="xdr-modal-header"><h3>Revoke session</h3><button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button></div>
-  <div class="xdr-modal-body"><p class="mb-0">Sign out "<strong id="revokeSessionDevice">—</strong>"? That device will need to sign in again.</p></div>
-  <div class="xdr-modal-footer">
-    <button class="btn btn-secondary" data-modal-close>Cancel</button>
-    <button class="btn btn-danger" id="confirmRevokeSessionBtn" data-modal-close>Revoke</button>
-  </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/app.js"></script>
-<script src="../assets/js/core/shell.js"></script>
-<script src="../assets/js/core/toast.js"></script>
-<script src="../assets/js/core/modal-helpers.js"></script>
-<script src="../assets/js/data/settings-data.js"></script>
-<script src="../assets/js/pages/profile.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/app.js') }}">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/core/shell.js') }}">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/core/toast.js') }}">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/core/modal-helpers.js') }}">
+</script>
+
+<script
+    src="{{ url_for('static', filename='js/pages/profile.js') }}">
+</script>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const saveBtn =
+            document.getElementById("saveBtn");
+
+        if (!saveBtn) {
+            return;
+        }
+
+
+        saveBtn.addEventListener(
+            "click",
+            async function () {
+
+                const firstName =
+                    document
+                        .getElementById("profFirstName")
+                        .value
+                        .trim();
+
+                const lastName =
+                    document
+                        .getElementById("profLastName")
+                        .value
+                        .trim();
+
+                const company =
+                    document
+                        .getElementById("profCompany")
+                        .value
+                        .trim();
+
+
+                if (!firstName || !lastName) {
+
+                    if (window.showToast) {
+
+                        window.showToast({
+                            type: "warning",
+                            title: "Missing information",
+                            msg:
+                                "First name and last name are required."
+                        });
+
+                    } else {
+
+                        alert(
+                            "First name and last name are required."
+                        );
+
+                    }
+
+                    return;
+                }
+
+
+                saveBtn.disabled = true;
+
+                const original =
+                    saveBtn.innerHTML;
+
+                saveBtn.innerHTML = `
+                    <span
+                        class="spinner-border spinner-border-sm me-2"
+                    ></span>
+                    Saving...
+                `;
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "{{ url_for('settings.profile') }}",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json",
+
+                                    "Accept":
+                                        "application/json"
+                                },
+
+                                credentials:
+                                    "same-origin",
+
+                                body:
+                                    JSON.stringify({
+                                        first_name:
+                                            firstName,
+
+                                        last_name:
+                                            lastName,
+
+                                        company:
+                                            company
+                                    })
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok || !data.success) {
+
+                        throw new Error(
+                            data.message ||
+                            "Unable to update profile."
+                        );
+
+                    }
+
+
+                    if (window.showToast) {
+
+                        window.showToast({
+                            type: "success",
+                            title: "Profile updated",
+                            msg:
+                                data.message ||
+                                "Your profile has been updated."
+                        });
+
+                    } else {
+
+                        alert(
+                            data.message ||
+                            "Profile updated successfully."
+                        );
+
+                    }
+
+
+                    const avatar =
+                        document.getElementById(
+                            "profileAvatar"
+                        );
+
+                    if (avatar) {
+
+                        avatar.textContent =
+                            (
+                                firstName.charAt(0) +
+                                lastName.charAt(0)
+                            ).toUpperCase();
+
+                    }
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Profile update failed:",
+                        error
+                    );
+
+
+                    if (window.showToast) {
+
+                        window.showToast({
+                            type: "danger",
+                            title: "Update failed",
+                            msg: error.message
+                        });
+
+                    } else {
+
+                        alert(error.message);
+
+                    }
+
+
+                } finally {
+
+                    saveBtn.disabled = false;
+
+                    saveBtn.innerHTML =
+                        original;
+
+                }
+
+            }
+        );
+
+    }
+);
+
+</script>
+
 </body>
+
 </html>

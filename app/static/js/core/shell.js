@@ -44,7 +44,7 @@
       { section: "Administration", items: [
         { key: "user-management", label: "User Management", icon: "bi-people", href: "user-management.html" },
         { key: "audit-logs", label: "Audit Logs", icon: "bi-journal-text", href: "audit-logs.html" },
-        { key: "settings", label: "Settings", icon: "bi-gear", href: "settings.html" },
+        { key: "settings", label: "Settings", icon: "bi-gear", href: "/settings/profile" },
       ]},
     ];
   
