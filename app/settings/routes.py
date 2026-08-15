@@ -115,3 +115,73 @@ def api_settings():
         "settings/api-settings.html",
         user=current_user
     )
+@settings.route("/profile/password", methods=["POST"])
+@login_required
+def change_password():
+
+    data = request.get_json(silent=True) or {}
+
+    current_password = str(
+        data.get("current_password", "")
+    )
+
+    new_password = str(
+        data.get("new_password", "")
+    )
+
+    confirm_password = str(
+        data.get("confirm_password", "")
+    )
+
+
+    if not current_password:
+        return jsonify({
+            "success": False,
+            "message": "Current password is required."
+        }), 400
+
+
+    if not new_password:
+        return jsonify({
+            "success": False,
+            "message": "New password is required."
+        }), 400
+
+
+    if len(new_password) < 12:
+        return jsonify({
+            "success": False,
+            "message": "New password must contain at least 12 characters."
+        }), 400
+
+
+    if new_password != confirm_password:
+        return jsonify({
+            "success": False,
+            "message": "New passwords do not match."
+        }), 400
+
+
+    if not current_user.check_password(current_password):
+        return jsonify({
+            "success": False,
+            "message": "Current password is incorrect."
+        }), 401
+
+
+    if current_password == new_password:
+        return jsonify({
+            "success": False,
+            "message": "New password must be different from your current password."
+        }), 400
+
+
+    current_user.set_password(new_password)
+
+    db.session.commit()
+
+
+    return jsonify({
+        "success": True,
+        "message": "Password changed successfully."
+    }), 200   

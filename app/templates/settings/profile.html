@@ -361,13 +361,315 @@
 
                     <section class="card">
 
-                        <div class="card-header">
+    <div class="card-header">
+        <h2>Change Password</h2>
+    </div>
 
-                            <h2>
-                                Change Password
-                            </h2>
+    <div class="card-body">
 
-                        </div>
+        <div
+            id="passwordMessage"
+            class="alert d-none"
+            role="alert"
+        ></div>
+
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+
+                <label
+                    class="form-label"
+                    for="curPw"
+                >
+                    Current password
+                </label>
+
+                <input
+                    type="password"
+                    class="form-control"
+                    id="curPw"
+                    autocomplete="current-password"
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <label
+                    class="form-label"
+                    for="newPw"
+                >
+                    New password
+                </label>
+
+                <input
+                    type="password"
+                    class="form-control"
+                    id="newPw"
+                    autocomplete="new-password"
+                    minlength="12"
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <label
+                    class="form-label"
+                    for="confirmPw"
+                >
+                    Confirm new password
+                </label>
+
+                <input
+                    type="password"
+                    class="form-control"
+                    id="confirmPw"
+                    autocomplete="new-password"
+                    minlength="12"
+                >
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="btn btn-secondary btn-sm mt-3"
+            id="changePwBtn"
+            type="button"
+        >
+
+            <i class="bi bi-key"></i>
+
+            Update Password
+
+        </button>
+
+    </div>
+
+</section>
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const button =
+            document.getElementById("changePwBtn");
+
+        const message =
+            document.getElementById("passwordMessage");
+
+
+        if (!button) {
+            return;
+        }
+
+
+        button.addEventListener(
+            "click",
+            async function () {
+
+                const currentPassword =
+                    document
+                        .getElementById("curPw")
+                        .value;
+
+                const newPassword =
+                    document
+                        .getElementById("newPw")
+                        .value;
+
+                const confirmPassword =
+                    document
+                        .getElementById("confirmPw")
+                        .value;
+
+
+                message.className =
+                    "alert d-none";
+
+
+                if (!currentPassword) {
+
+                    showPasswordMessage(
+                        "danger",
+                        "Enter your current password."
+                    );
+
+                    return;
+                }
+
+
+                if (newPassword.length < 12) {
+
+                    showPasswordMessage(
+                        "danger",
+                        "New password must contain at least 12 characters."
+                    );
+
+                    return;
+                }
+
+
+                if (newPassword !== confirmPassword) {
+
+                    showPasswordMessage(
+                        "danger",
+                        "New passwords do not match."
+                    );
+
+                    return;
+                }
+
+
+                const originalText =
+                    button.innerHTML;
+
+
+                button.disabled = true;
+
+                button.innerHTML = `
+                    <span
+                        class="spinner-border spinner-border-sm me-2"
+                    ></span>
+                    Updating...
+                `;
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "{{ url_for('settings.change_password') }}",
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json",
+
+                                    "Accept":
+                                        "application/json"
+                                },
+
+                                credentials:
+                                    "same-origin",
+
+                                body:
+                                    JSON.stringify({
+                                        current_password:
+                                            currentPassword,
+
+                                        new_password:
+                                            newPassword,
+
+                                        confirm_password:
+                                            confirmPassword
+                                    })
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok || !data.success) {
+
+                        throw new Error(
+                            data.message ||
+                            "Unable to change password."
+                        );
+
+                    }
+
+
+                    showPasswordMessage(
+                        "success",
+                        data.message ||
+                        "Password changed successfully."
+                    );
+
+
+                    document
+                        .getElementById("curPw")
+                        .value = "";
+
+                    document
+                        .getElementById("newPw")
+                        .value = "";
+
+                    document
+                        .getElementById("confirmPw")
+                        .value = "";
+
+
+                    if (window.showToast) {
+
+                        window.showToast({
+                            type: "success",
+                            title: "Password updated",
+                            msg:
+                                "Your password was changed successfully."
+                        });
+
+                    }
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Password update failed:",
+                        error
+                    );
+
+
+                    showPasswordMessage(
+                        "danger",
+                        error.message
+                    );
+
+
+                } finally {
+
+                    button.disabled = false;
+
+                    button.innerHTML =
+                        originalText;
+
+                }
+
+            }
+        );
+
+
+        function showPasswordMessage(
+            type,
+            text
+        ) {
+
+            message.className =
+                "alert alert-" +
+                type;
+
+            message.textContent =
+                text;
+
+            message.classList.remove(
+                "d-none"
+            );
+
+        }
+
+    }
+);
+
+</script>
 
                         <div class="card-body">
 
