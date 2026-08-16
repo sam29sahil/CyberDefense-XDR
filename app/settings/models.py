@@ -335,4 +335,107 @@ class APIKey(db.Model):
             f"<APIKey id={self.id} "
             f"name={self.name!r} "
             f"user_id={self.user_id}>"
-        )        
+        )  
+# ============================================================
+# INTEGRATIONS
+# ============================================================
+
+class Integration(db.Model):
+
+    __tablename__ = "integrations"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
+    # ========================================================
+    # Integration Identity
+    # ========================================================
+
+    integration_key = db.Column(
+        db.String(50),
+        nullable=False
+    )
+
+    name = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    category = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    icon = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    description = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    # ========================================================
+    # Connection State
+    # ========================================================
+
+    connected = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    status = db.Column(
+        db.String(30),
+        nullable=False,
+        default="disconnected"
+    )
+
+    # ========================================================
+    # Configuration
+    # ========================================================
+
+    webhook_url = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    token_hash = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+    # ========================================================
+    # Timestamps
+    # ========================================================
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    def __repr__(self):
+
+        return (
+            f"<Integration "
+            f"name={self.name!r} "
+            f"user_id={self.user_id}>"
+        )

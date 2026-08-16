@@ -9,6 +9,7 @@ from app.settings.models import (
     SecuritySettings,
     NotificationSettings,
     APIKey,
+    Integration,
 )
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
@@ -764,6 +765,10 @@ def save_notification_settings():
 @login_required
 def integrations():
 
+    ensure_default_integrations(
+        current_user.id
+    )
+
     return render_template(
         "settings/integrations.html",
         user=current_user
@@ -969,4 +974,272 @@ def revoke_api_key():
     return jsonify({
         "success": True,
         "message": "API key revoked successfully."
-    }), 200    
+    }), 200  
+# ============================================================
+# INTEGRATIONS API
+# ============================================================
+
+
+@settings.route("/integrations/data", methods=["GET"])
+@login_required
+def integrations_data():
+
+    integrations = Integration.query.filter_by(
+        user_id=current_user.id
+    ).order_by(
+        Integration.id.asc()
+    ).all()
+
+    result = []
+
+    for integration in integrations:
+
+        result.append({
+            "id": integration.integration_key,
+            "name": integration.name,
+            "category": integration.category,
+            "icon": integration.icon,
+            "connected": integration.connected,
+            "status": integration.status,
+            "description": integration.description,
+        })
+
+    return jsonify({
+        "success": True,
+        "integrations": result
+    }), 200
+
+
+# ============================================================
+# SAVE / CONNECT INTEGRATION
+# ============================================================
+
+
+@settings.route("/integrations/save", methods=["POST"])
+@login_required
+def save_integration():
+
+    data = request.get_json(silent=True) or {}
+
+    integration_key = str(
+        data.get("id", "")
+    ).strip()
+
+    webhook_url = str(
+        data.get("webhook_url", "")
+    ).strip()
+
+    token = str(
+        data.get("token", "")
+    ).strip()
+
+    if not integration_key:
+
+        return jsonify({
+            "success": False,
+            "message": "Integration ID is required."
+        }), 400
+
+    integration = Integration.query.filter_by(
+        user_id=current_user.id,
+        integration_key=integration_key
+    ).first()
+
+    if integration is None:
+
+        return jsonify({
+            "success": False,
+            "message": "Integration not found."
+        }), 404
+
+    if webhook_url:
+        integration.webhook_url = webhook_url
+
+    if token:
+        integration.token_hash = hashlib.sha256(
+            token.encode("utf-8")
+        ).hexdigest()
+
+    integration.connected = True
+    integration.status = "active"
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"{integration.name} connected successfully."
+    }), 200
+
+
+# ============================================================
+# DISCONNECT INTEGRATION
+# ============================================================
+
+
+@settings.route("/integrations/disconnect", methods=["POST"])
+@login_required
+def disconnect_integration():
+
+    data = request.get_json(silent=True) or {}
+
+    integration_key = str(
+        data.get("id", "")
+    ).strip()
+
+    if not integration_key:
+
+        return jsonify({
+            "success": False,
+            "message": "Integration ID is required."
+        }), 400
+
+    integration = Integration.query.filter_by(
+        user_id=current_user.id,
+        integration_key=integration_key
+    ).first()
+
+    if integration is None:
+
+        return jsonify({
+            "success": False,
+            "message": "Integration not found."
+        }), 404
+
+    integration.connected = False
+    integration.status = "disconnected"
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"{integration.name} disconnected successfully."
+    }), 200   
+# ============================================================
+# DEFAULT INTEGRATIONS
+# ============================================================
+
+DEFAULT_INTEGRATIONS = [
+    {
+        "id": "INT-1",
+        "name": "Slack",
+        "category": "Chat & Notifications",
+        "icon": "bi-slack",
+        "connected": True,
+        "status": "active",
+        "description": (
+            "Send alert and incident notifications to Slack channels."
+        ),
+    },
+    {
+        "id": "INT-2",
+        "name": "Jira",
+        "category": "Ticketing",
+        "icon": "bi-kanban",
+        "connected": True,
+        "status": "active",
+        "description": (
+            "Automatically create Jira tickets for confirmed incidents."
+        ),
+    },
+    {
+        "id": "INT-3",
+        "name": "PagerDuty",
+        "category": "On-call",
+        "icon": "bi-telephone-forward",
+        "connected": True,
+        "status": "active",
+        "description": (
+            "Page on-call analysts for critical severity alerts."
+        ),
+    },
+    {
+        "id": "INT-4",
+        "name": "ServiceNow",
+        "category": "ITSM",
+        "icon": "bi-diagram-3",
+        "connected": False,
+        "status": "disconnected",
+        "description": (
+            "Sync incidents with ServiceNow ITSM workflows."
+        ),
+    },
+    {
+        "id": "INT-5",
+        "name": "Splunk",
+        "category": "SIEM",
+        "icon": "bi-bar-chart-line",
+        "connected": False,
+        "status": "disconnected",
+        "description": (
+            "Forward normalized events to a Splunk index."
+        ),
+    },
+    {
+        "id": "INT-6",
+        "name": "Microsoft Teams",
+        "category": "Chat & Notifications",
+        "icon": "bi-microsoft-teams",
+        "connected": False,
+        "status": "disconnected",
+        "description": (
+            "Post alert summaries to a Teams channel."
+        ),
+    },
+    {
+        "id": "INT-7",
+        "name": "AWS Security Hub",
+        "category": "Cloud",
+        "icon": "bi-cloud",
+        "connected": True,
+        "status": "error",
+        "description": (
+            "Import findings from AWS Security Hub as IOCs."
+        ),
+    },
+    {
+        "id": "INT-8",
+        "name": "Okta",
+        "category": "Identity",
+        "icon": "bi-shield-lock",
+        "connected": True,
+        "status": "active",
+        "description": (
+            "Sync user provisioning and SSO with Okta."
+        ),
+    },
+]
+
+
+def ensure_default_integrations(user_id):
+
+    existing = {
+        integration.integration_key
+        for integration in Integration.query.filter_by(
+            user_id=user_id
+        ).all()
+    }
+
+    created = False
+
+    for item in DEFAULT_INTEGRATIONS:
+
+        if item["id"] in existing:
+            continue
+
+        integration = Integration(
+            user_id=user_id,
+            integration_key=item["id"],
+            name=item["name"],
+            category=item["category"],
+            icon=item["icon"],
+            description=item["description"],
+            connected=item["connected"],
+            status=item["status"],
+        )
+
+        db.session.add(integration)
+
+        created = True
+
+    if created:
+        db.session.commit()       

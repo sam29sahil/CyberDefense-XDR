@@ -57,7 +57,13 @@ def create_app():
     # ==========================================================
 
     from app.users.models import User  # noqa: F401
-    from app.settings.models import SecuritySettings  # noqa: F401
+
+    from app.settings.models import (
+        SecuritySettings,
+        NotificationSettings,
+        APIKey,
+        Integration,
+    ) # noqa: F401
 
 
     # ==========================================================
