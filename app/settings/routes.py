@@ -3,9 +3,12 @@ CyberDefense XDR
 Settings Routes
 """
 import json
+import hashlib
+import secrets
 from app.settings.models import (
     SecuritySettings,
     NotificationSettings,
+    APIKey,
 )
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
@@ -779,3 +782,191 @@ def api_settings():
         "settings/api-settings.html",
         user=current_user
     )
+# ============================================================
+# API KEY DATA
+# ============================================================
+
+@settings.route("/api/data", methods=["GET"])
+@login_required
+def api_keys_data():
+
+    keys = APIKey.query.filter_by(
+        user_id=current_user.id
+    ).order_by(
+        APIKey.created_at.desc()
+    ).all()
+
+    result = []
+
+    for key in keys:
+
+        try:
+            scopes = json.loads(key.scopes or "[]")
+        except (TypeError, ValueError):
+            scopes = []
+
+        result.append({
+            "id": key.id,
+            "name": key.name,
+            "prefix": key.key_prefix,
+            "scopes": scopes,
+            "created_at": (
+                key.created_at.isoformat()
+                if key.created_at else None
+            ),
+            "last_used": (
+                key.last_used.isoformat()
+                if key.last_used else None
+            ),
+            "status": key.status,
+        })
+
+    return jsonify({
+        "success": True,
+        "keys": result
+    }), 200
+
+
+# ============================================================
+# GENERATE API KEY
+# ============================================================
+
+@settings.route("/api/generate", methods=["POST"])
+@login_required
+def generate_api_key():
+
+    data = request.get_json(silent=True) or {}
+
+    name = str(
+        data.get("name", "")
+    ).strip()
+
+    scopes = data.get("scopes", [])
+
+    if not name:
+        return jsonify({
+            "success": False,
+            "message": "API key name is required."
+        }), 400
+
+    if not isinstance(scopes, list):
+        return jsonify({
+            "success": False,
+            "message": "Invalid API key scopes."
+        }), 400
+
+    scopes = [
+        str(scope).strip()
+        for scope in scopes
+        if str(scope).strip()
+    ]
+
+    allowed_scopes = {
+        "read:alerts",
+        "write:incidents",
+        "read:assets",
+        "read:reports",
+    }
+
+    invalid_scopes = [
+        scope
+        for scope in scopes
+        if scope not in allowed_scopes
+    ]
+
+    if invalid_scopes:
+        return jsonify({
+            "success": False,
+            "message": "Invalid API key scope."
+        }), 400
+
+    if not scopes:
+        scopes = ["read:alerts"]
+
+    # Generate cryptographically secure secret
+    raw_key = (
+        "xdr_"
+        + secrets.token_hex(32)
+    )
+
+    # Store only SHA-256 hash
+    key_hash = hashlib.sha256(
+        raw_key.encode("utf-8")
+    ).hexdigest()
+
+    key_prefix = raw_key[:12]
+
+    api_key = APIKey(
+        user_id=current_user.id,
+        name=name,
+        key_prefix=key_prefix,
+        key_hash=key_hash,
+        scopes=json.dumps(scopes),
+        status="active",
+    )
+
+    db.session.add(api_key)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "API key generated successfully.",
+        "key": raw_key,
+        "api_key": {
+            "id": api_key.id,
+            "name": api_key.name,
+            "prefix": api_key.key_prefix,
+            "scopes": scopes,
+            "status": api_key.status,
+            "created_at": (
+                api_key.created_at.isoformat()
+                if api_key.created_at else None
+            ),
+            "last_used": None,
+        }
+    }), 201
+
+
+# ============================================================
+# REVOKE API KEY
+# ============================================================
+
+@settings.route("/api/revoke", methods=["POST"])
+@login_required
+def revoke_api_key():
+
+    data = request.get_json(silent=True) or {}
+
+    try:
+        key_id = int(data.get("id"))
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "message": "Invalid API key ID."
+        }), 400
+
+    api_key = APIKey.query.filter_by(
+        id=key_id,
+        user_id=current_user.id
+    ).first()
+
+    if api_key is None:
+        return jsonify({
+            "success": False,
+            "message": "API key not found."
+        }), 404
+
+    if api_key.status == "revoked":
+        return jsonify({
+            "success": False,
+            "message": "API key is already revoked."
+        }), 400
+
+    api_key.status = "revoked"
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "API key revoked successfully."
+    }), 200    

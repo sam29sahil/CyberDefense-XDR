@@ -242,3 +242,97 @@ class NotificationSettings(db.Model):
         return (
             f"<NotificationSettings user_id={self.user_id}>"
         )
+
+# ============================================================
+# API KEYS
+# ============================================================
+
+class APIKey(db.Model):
+
+    __tablename__ = "api_keys"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
+    # ========================================================
+    # Key Information
+    # ========================================================
+
+    name = db.Column(
+        db.String(150),
+        nullable=False
+    )
+
+    key_prefix = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    key_hash = db.Column(
+        db.String(255),
+        nullable=False,
+        unique=True
+    )
+
+    # ========================================================
+    # Permissions / Scopes
+    # ========================================================
+
+    scopes = db.Column(
+        db.Text,
+        nullable=False,
+        default="[]"
+    )
+
+    # ========================================================
+    # Status
+    # ========================================================
+
+    status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="active"
+    )
+
+    # ========================================================
+    # Usage Information
+    # ========================================================
+
+    last_used = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    # ========================================================
+    # Timestamps
+    # ========================================================
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    def __repr__(self):
+
+        return (
+            f"<APIKey id={self.id} "
+            f"name={self.name!r} "
+            f"user_id={self.user_id}>"
+        )        
