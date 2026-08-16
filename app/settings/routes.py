@@ -3,8 +3,10 @@ CyberDefense XDR
 Settings Routes
 """
 import json
-
-from app.settings.models import SecuritySettings
+from app.settings.models import (
+    SecuritySettings,
+    NotificationSettings,
+)
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 
@@ -446,6 +448,309 @@ def notifications():
         "settings/notifications-settings.html",
         user=current_user
     )
+
+# ============================================================
+# NOTIFICATION SETTINGS API
+# ============================================================
+
+
+@settings.route(
+    "/notifications/data",
+    methods=["GET"]
+)
+@login_required
+def notification_data():
+
+    notification_settings = NotificationSettings.query.filter_by(
+        user_id=current_user.id
+    ).first()
+
+    # --------------------------------------------------------
+    # Defaults for a new user
+    # --------------------------------------------------------
+
+    if notification_settings is None:
+
+        default_matrix = {
+            "critical": {
+                "email": True,
+                "slack": True,
+                "sms": True
+            },
+            "high": {
+                "email": True,
+                "slack": True,
+                "sms": False
+            },
+            "medium": {
+                "email": True,
+                "slack": False,
+                "sms": False
+            },
+            "low": {
+                "email": False,
+                "slack": False,
+                "sms": False
+            }
+        }
+
+        return jsonify({
+            "success": True,
+            "settings": {
+                "email_enabled": True,
+                "slack_enabled": True,
+                "sms_enabled": False,
+                "webhook_enabled": False,
+                "notification_matrix": default_matrix,
+                "min_severity": "medium",
+                "quiet_hours_enabled": False,
+                "quiet_hours_from": "20:00",
+                "quiet_hours_to": "07:00"
+            }
+        }), 200
+
+    # --------------------------------------------------------
+    # Decode notification matrix
+    # --------------------------------------------------------
+
+    try:
+
+        notification_matrix = json.loads(
+            notification_settings.notification_matrix or "{}"
+        )
+
+    except (TypeError, ValueError):
+
+        notification_matrix = {}
+
+    # --------------------------------------------------------
+    # Return saved settings
+    # --------------------------------------------------------
+
+    return jsonify({
+        "success": True,
+        "settings": {
+            "email_enabled":
+                notification_settings.email_enabled,
+
+            "slack_enabled":
+                notification_settings.slack_enabled,
+
+            "sms_enabled":
+                notification_settings.sms_enabled,
+
+            "webhook_enabled":
+                notification_settings.webhook_enabled,
+
+            "notification_matrix":
+                notification_matrix,
+
+            "min_severity":
+                notification_settings.min_severity,
+
+            "quiet_hours_enabled":
+                notification_settings.quiet_hours_enabled,
+
+            "quiet_hours_from":
+                notification_settings.quiet_hours_from,
+
+            "quiet_hours_to":
+                notification_settings.quiet_hours_to
+        }
+    }), 200
+
+
+# ============================================================
+# SAVE NOTIFICATION SETTINGS
+# ============================================================
+
+
+@settings.route(
+    "/notifications/save",
+    methods=["POST"]
+)
+@login_required
+def save_notification_settings():
+
+    data = request.get_json(silent=True) or {}
+
+    # --------------------------------------------------------
+    # Notification channels
+    # --------------------------------------------------------
+
+    email_enabled = bool(
+        data.get("email_enabled", True)
+    )
+
+    slack_enabled = bool(
+        data.get("slack_enabled", True)
+    )
+
+    sms_enabled = bool(
+        data.get("sms_enabled", False)
+    )
+
+    webhook_enabled = bool(
+        data.get("webhook_enabled", False)
+    )
+
+    # --------------------------------------------------------
+    # Severity
+    # --------------------------------------------------------
+
+    min_severity = str(
+        data.get("min_severity", "medium")
+    ).strip().lower()
+
+    allowed_severities = {
+        "low",
+        "medium",
+        "high",
+        "critical"
+    }
+
+    if min_severity not in allowed_severities:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid notification severity."
+        }), 400
+
+    # --------------------------------------------------------
+    # Quiet hours
+    # --------------------------------------------------------
+
+    quiet_hours_enabled = bool(
+        data.get("quiet_hours_enabled", False)
+    )
+
+    quiet_hours_from = str(
+        data.get("quiet_hours_from", "20:00")
+    ).strip()
+
+    quiet_hours_to = str(
+        data.get("quiet_hours_to", "07:00")
+    ).strip()
+
+    # --------------------------------------------------------
+    # Validate time format
+    # --------------------------------------------------------
+
+    import re
+
+    time_pattern = r"^(?:[01]\d|2[0-3]):[0-5]\d$"
+
+    if not re.match(
+        time_pattern,
+        quiet_hours_from
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid quiet-hours start time."
+        }), 400
+
+    if not re.match(
+        time_pattern,
+        quiet_hours_to
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid quiet-hours end time."
+        }), 400
+
+    # --------------------------------------------------------
+    # Notification matrix
+    # --------------------------------------------------------
+
+    notification_matrix = data.get(
+        "notification_matrix",
+        {}
+    )
+
+    if not isinstance(
+        notification_matrix,
+        dict
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid notification matrix."
+        }), 400
+
+    # --------------------------------------------------------
+    # Find existing settings
+    # --------------------------------------------------------
+
+    settings_record = NotificationSettings.query.filter_by(
+        user_id=current_user.id
+    ).first()
+
+    # --------------------------------------------------------
+    # Create settings for new user
+    # --------------------------------------------------------
+
+    if settings_record is None:
+
+        settings_record = NotificationSettings(
+            user_id=current_user.id
+        )
+
+        db.session.add(settings_record)
+
+    # --------------------------------------------------------
+    # Update channel settings
+    # --------------------------------------------------------
+
+    settings_record.email_enabled = email_enabled
+
+    settings_record.slack_enabled = slack_enabled
+
+    settings_record.sms_enabled = sms_enabled
+
+    settings_record.webhook_enabled = webhook_enabled
+
+    # --------------------------------------------------------
+    # Update matrix
+    # --------------------------------------------------------
+
+    settings_record.notification_matrix = json.dumps(
+        notification_matrix
+    )
+
+    # --------------------------------------------------------
+    # Update severity
+    # --------------------------------------------------------
+
+    settings_record.min_severity = min_severity
+
+    # --------------------------------------------------------
+    # Update quiet hours
+    # --------------------------------------------------------
+
+    settings_record.quiet_hours_enabled = (
+        quiet_hours_enabled
+    )
+
+    settings_record.quiet_hours_from = (
+        quiet_hours_from
+    )
+
+    settings_record.quiet_hours_to = (
+        quiet_hours_to
+    )
+
+    # --------------------------------------------------------
+    # Save
+    # --------------------------------------------------------
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Notification settings saved successfully."
+    }), 200    
 
 
 # ============================================================

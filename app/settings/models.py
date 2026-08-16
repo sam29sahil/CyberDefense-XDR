@@ -1,12 +1,16 @@
 """
 CyberDefense XDR
-Security Settings Model
+Settings Models
 """
 
 from datetime import datetime
 
 from app.extensions import db
 
+
+# ============================================================
+# SECURITY SETTINGS
+# ============================================================
 
 class SecuritySettings(db.Model):
 
@@ -109,6 +113,132 @@ class SecuritySettings(db.Model):
     )
 
     def __repr__(self):
+
         return (
             f"<SecuritySettings user_id={self.user_id}>"
+        )
+
+
+# ============================================================
+# NOTIFICATION SETTINGS
+# ============================================================
+
+class NotificationSettings(db.Model):
+
+    __tablename__ = "notification_settings"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    # ========================================================
+    # Notification Channels
+    # ========================================================
+
+    email_enabled = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+    slack_enabled = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+    sms_enabled = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    webhook_enabled = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    # ========================================================
+    # Notification Matrix
+    #
+    # Stored as JSON text:
+    #
+    # {
+    #     "critical": {
+    #         "email": true,
+    #         "slack": true,
+    #         "sms": true
+    #     }
+    # }
+    # ========================================================
+
+    notification_matrix = db.Column(
+        db.Text,
+        nullable=False,
+        default="{}"
+    )
+
+    # ========================================================
+    # Severity Threshold
+    # ========================================================
+
+    min_severity = db.Column(
+        db.String(20),
+        nullable=False,
+        default="medium"
+    )
+
+    # ========================================================
+    # Quiet Hours
+    # ========================================================
+
+    quiet_hours_enabled = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    quiet_hours_from = db.Column(
+        db.String(5),
+        nullable=False,
+        default="20:00"
+    )
+
+    quiet_hours_to = db.Column(
+        db.String(5),
+        nullable=False,
+        default="07:00"
+    )
+
+    # ========================================================
+    # Timestamps
+    # ========================================================
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    def __repr__(self):
+
+        return (
+            f"<NotificationSettings user_id={self.user_id}>"
         )
