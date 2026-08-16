@@ -35,7 +35,6 @@ def create_app():
 
     app.config.from_object(Config)
 
-
     # ==========================================================
     # Extensions
     # ==========================================================
@@ -44,13 +43,11 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-
     # ==========================================================
     # Logging
     # ==========================================================
 
     configure_logger()
-
 
     # ==========================================================
     # Import models so SQLAlchemy registers them
@@ -63,8 +60,7 @@ def create_app():
         NotificationSettings,
         APIKey,
         Integration,
-    ) # noqa: F401
-
+    )  # noqa: F401
 
     # ==========================================================
     # Register Blueprints
@@ -72,14 +68,10 @@ def create_app():
 
     app.register_blueprint(main)
 
-    app.register_blueprint(
-        auth,
-        url_prefix="/auth"
-    )
+    app.register_blueprint(auth, url_prefix="/auth")
 
     app.register_blueprint(dashboard)
 
     app.register_blueprint(settings)
-
 
     return app

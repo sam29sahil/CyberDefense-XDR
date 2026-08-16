@@ -6,7 +6,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 
-
 db = SQLAlchemy()
 
 migrate = Migrate()
@@ -25,7 +24,4 @@ def load_user(user_id):
 
     from app.users.models import User
 
-    return db.session.get(
-        User,
-        int(user_id)
-    )
+    return db.session.get(User, int(user_id))

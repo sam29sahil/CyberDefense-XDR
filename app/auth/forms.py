@@ -37,13 +37,9 @@ class LoginForm(FlaskForm):
         ],
     )
 
-    remember = BooleanField(
-        "Remember me"
-    )
+    remember = BooleanField("Remember me")
 
-    submit = SubmitField(
-        "Login"
-    )
+    submit = SubmitField("Login")
 
 
 class RegisterForm(FlaskForm):
@@ -84,6 +80,4 @@ class RegisterForm(FlaskForm):
         ],
     )
 
-    submit = SubmitField(
-        "Register"
-    )
+    submit = SubmitField("Register")

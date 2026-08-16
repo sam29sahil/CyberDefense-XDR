@@ -2,6 +2,7 @@
 CyberDefense XDR
 Settings Routes
 """
+
 import json
 import hashlib
 import secrets
@@ -10,6 +11,7 @@ from app.settings.models import (
     NotificationSettings,
     APIKey,
     Integration,
+    GeneralSettings,
 )
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
@@ -17,59 +19,42 @@ from flask_login import login_required, current_user
 from app.extensions import db
 from app.settings import settings
 
-
 # ============================================================
 # SETTINGS HOME
 # ============================================================
 
+
 @settings.route("/")
 @login_required
 def index():
-    return render_template(
-        "settings/profile.html",
-        user=current_user
-    )
+    return render_template("settings/profile.html", user=current_user)
 
 
 # ============================================================
 # PROFILE
 # ============================================================
 
+
 @settings.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
 
     if request.method == "GET":
-        return render_template(
-            "settings/profile.html",
-            user=current_user
-        )
+        return render_template("settings/profile.html", user=current_user)
 
     data = request.get_json(silent=True) or {}
 
-    first_name = str(
-        data.get("first_name", "")
-    ).strip()
+    first_name = str(data.get("first_name", "")).strip()
 
-    last_name = str(
-        data.get("last_name", "")
-    ).strip()
+    last_name = str(data.get("last_name", "")).strip()
 
-    company = str(
-        data.get("company", "")
-    ).strip()
+    company = str(data.get("company", "")).strip()
 
     if not first_name:
-        return jsonify({
-            "success": False,
-            "message": "First name is required."
-        }), 400
+        return jsonify({"success": False, "message": "First name is required."}), 400
 
     if not last_name:
-        return jsonify({
-            "success": False,
-            "message": "Last name is required."
-        }), 400
+        return jsonify({"success": False, "message": "Last name is required."}), 400
 
     current_user.first_name = first_name
     current_user.last_name = last_name
@@ -77,15 +62,13 @@ def profile():
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": "Profile updated successfully."
-    }), 200
+    return jsonify({"success": True, "message": "Profile updated successfully."}), 200
 
 
 # ============================================================
 # CHANGE PASSWORD
 # ============================================================
+
 
 @settings.route("/profile/password", methods=["POST"])
 @login_required
@@ -93,83 +76,84 @@ def change_password():
 
     data = request.get_json(silent=True) or {}
 
-    current_password = str(
-        data.get("current_password", "")
-    )
+    current_password = str(data.get("current_password", ""))
 
-    new_password = str(
-        data.get("new_password", "")
-    )
+    new_password = str(data.get("new_password", ""))
 
-    confirm_password = str(
-        data.get("confirm_password", "")
-    )
+    confirm_password = str(data.get("confirm_password", ""))
 
     if not current_password:
-        return jsonify({
-            "success": False,
-            "message": "Current password is required."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Current password is required."}),
+            400,
+        )
 
     if not new_password:
-        return jsonify({
-            "success": False,
-            "message": "New password is required."
-        }), 400
+        return jsonify({"success": False, "message": "New password is required."}), 400
 
     if len(new_password) < 12:
-        return jsonify({
-            "success": False,
-            "message": (
-                "New password must contain at least "
-                "12 characters."
-            )
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": ("New password must contain at least " "12 characters."),
+                }
+            ),
+            400,
+        )
 
     if new_password != confirm_password:
-        return jsonify({
-            "success": False,
-            "message": "New passwords do not match."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "New passwords do not match."}),
+            400,
+        )
 
-    if not current_user.check_password(
-        current_password
-    ):
-        return jsonify({
-            "success": False,
-            "message": "Current password is incorrect."
-        }), 401
+    if not current_user.check_password(current_password):
+        return (
+            jsonify({"success": False, "message": "Current password is incorrect."}),
+            401,
+        )
 
     if current_password == new_password:
-        return jsonify({
-            "success": False,
-            "message": (
-                "New password must be different "
-                "from your current password."
-            )
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": (
+                        "New password must be different " "from your current password."
+                    ),
+                }
+            ),
+            400,
+        )
 
     current_user.set_password(new_password)
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": "Password changed successfully."
-    }), 200
+    return jsonify({"success": True, "message": "Password changed successfully."}), 200
 
 
 # ============================================================
 # GENERAL SETTINGS
 # ============================================================
-
 @settings.route("/general")
 @login_required
 def general():
 
+    general_settings = GeneralSettings.query.filter_by(user_id=current_user.id).first()
+
+    if general_settings is None:
+
+        general_settings = GeneralSettings(user_id=current_user.id)
+
+        db.session.add(general_settings)
+        db.session.commit()
+
     return render_template(
         "settings/general-settings.html",
-        user=current_user
+        user=current_user,
+        general_settings=general_settings,
     )
 
 
@@ -177,14 +161,12 @@ def general():
 # SECURITY SETTINGS
 # ============================================================
 
+
 @settings.route("/security")
 @login_required
 def security():
 
-    return render_template(
-        "settings/security-settings.html",
-        user=current_user
-    )
+    return render_template("settings/security-settings.html", user=current_user)
 
 
 # ============================================================
@@ -194,6 +176,7 @@ def security():
 # ============================================================
 # SAVE SECURITY SETTINGS
 # ============================================================
+
 
 @settings.route("/security/save", methods=["POST"])
 @login_required
@@ -206,81 +189,67 @@ def save_security_settings():
     # --------------------------------------------------------
 
     try:
-        pw_min_length = int(
-            data.get("pw_min_length", 12)
-        )
+        pw_min_length = int(data.get("pw_min_length", 12))
     except (TypeError, ValueError):
-        return jsonify({
-            "success": False,
-            "message": "Invalid minimum password length."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid minimum password length."}),
+            400,
+        )
 
     try:
-        pw_expiry = int(
-            data.get("pw_expiry", 90)
-        )
+        pw_expiry = int(data.get("pw_expiry", 90))
     except (TypeError, ValueError):
-        return jsonify({
-            "success": False,
-            "message": "Invalid password expiry value."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid password expiry value."}),
+            400,
+        )
 
     if pw_min_length < 8 or pw_min_length > 32:
-        return jsonify({
-            "success": False,
-            "message": "Password length must be between 8 and 32."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Password length must be between 8 and 32.",
+                }
+            ),
+            400,
+        )
 
     if pw_expiry < 0:
-        return jsonify({
-            "success": False,
-            "message": "Password expiry cannot be negative."
-        }), 400
+        return (
+            jsonify(
+                {"success": False, "message": "Password expiry cannot be negative."}
+            ),
+            400,
+        )
 
     # --------------------------------------------------------
     # Boolean settings
     # --------------------------------------------------------
 
-    require_case = bool(
-        data.get("require_case", True)
-    )
+    require_case = bool(data.get("require_case", True))
 
-    require_numbers = bool(
-        data.get("require_numbers", True)
-    )
+    require_numbers = bool(data.get("require_numbers", True))
 
-    require_symbols = bool(
-        data.get("require_symbols", False)
-    )
+    require_symbols = bool(data.get("require_symbols", False))
 
-    prevent_reuse = bool(
-        data.get("prevent_reuse", True)
-    )
+    prevent_reuse = bool(data.get("prevent_reuse", True))
 
-    enforce_mfa = bool(
-        data.get("enforce_mfa", True)
-    )
+    enforce_mfa = bool(data.get("enforce_mfa", True))
 
     # --------------------------------------------------------
     # Maximum sessions
     # --------------------------------------------------------
 
-    max_sessions = str(
-        data.get("max_sessions", "3")
-    ).strip()
+    max_sessions = str(data.get("max_sessions", "3")).strip()
 
-    allowed_sessions = {
-        "1",
-        "3",
-        "5",
-        "Unlimited"
-    }
+    allowed_sessions = {"1", "3", "5", "Unlimited"}
 
     if max_sessions not in allowed_sessions:
-        return jsonify({
-            "success": False,
-            "message": "Invalid maximum session value."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid maximum session value."}),
+            400,
+        )
 
     # --------------------------------------------------------
     # IP Allowlist
@@ -289,10 +258,7 @@ def save_security_settings():
     allowlist = data.get("allowlist", [])
 
     if not isinstance(allowlist, list):
-        return jsonify({
-            "success": False,
-            "message": "Invalid IP allowlist."
-        }), 400
+        return jsonify({"success": False, "message": "Invalid IP allowlist."}), 400
 
     cleaned_allowlist = []
 
@@ -317,9 +283,7 @@ def save_security_settings():
 
     if security_settings is None:
 
-        security_settings = SecuritySettings(
-            user_id=current_user.id
-        )
+        security_settings = SecuritySettings(user_id=current_user.id)
 
         db.session.add(security_settings)
 
@@ -343,9 +307,7 @@ def save_security_settings():
 
     security_settings.max_sessions = max_sessions
 
-    security_settings.allowlist = json.dumps(
-        cleaned_allowlist
-    )
+    security_settings.allowlist = json.dumps(cleaned_allowlist)
 
     # --------------------------------------------------------
     # Save
@@ -353,15 +315,16 @@ def save_security_settings():
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": "Security settings saved successfully."
-    }), 200
+    return (
+        jsonify({"success": True, "message": "Security settings saved successfully."}),
+        200,
+    )
 
 
 # ============================================================
 # GET SECURITY SETTINGS
 # ============================================================
+
 
 @settings.route("/security/data", methods=["GET"])
 @login_required
@@ -377,29 +340,32 @@ def security_data():
 
     if security_settings is None:
 
-        return jsonify({
-            "success": True,
-            "settings": {
-                "pw_min_length": 12,
-                "pw_expiry": 90,
-                "require_case": True,
-                "require_numbers": True,
-                "require_symbols": False,
-                "prevent_reuse": True,
-                "enforce_mfa": True,
-                "max_sessions": "3",
-                "allowlist": []
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "settings": {
+                        "pw_min_length": 12,
+                        "pw_expiry": 90,
+                        "require_case": True,
+                        "require_numbers": True,
+                        "require_symbols": False,
+                        "prevent_reuse": True,
+                        "enforce_mfa": True,
+                        "max_sessions": "3",
+                        "allowlist": [],
+                    },
+                }
+            ),
+            200,
+        )
 
     # --------------------------------------------------------
     # Decode allowlist
     # --------------------------------------------------------
 
     try:
-        allowlist = json.loads(
-            security_settings.allowlist or "[]"
-        )
+        allowlist = json.loads(security_settings.allowlist or "[]")
     except (TypeError, ValueError):
 
         allowlist = []
@@ -408,60 +374,45 @@ def security_data():
     # Return settings
     # --------------------------------------------------------
 
-    return jsonify({
-        "success": True,
-        "settings": {
-            "pw_min_length":
-                security_settings.pw_min_length,
+    return (
+        jsonify(
+            {
+                "success": True,
+                "settings": {
+                    "pw_min_length": security_settings.pw_min_length,
+                    "pw_expiry": security_settings.pw_expiry,
+                    "require_case": security_settings.require_case,
+                    "require_numbers": security_settings.require_numbers,
+                    "require_symbols": security_settings.require_symbols,
+                    "prevent_reuse": security_settings.prevent_reuse,
+                    "enforce_mfa": security_settings.enforce_mfa,
+                    "max_sessions": security_settings.max_sessions,
+                    "allowlist": allowlist,
+                },
+            }
+        ),
+        200,
+    )
 
-            "pw_expiry":
-                security_settings.pw_expiry,
-
-            "require_case":
-                security_settings.require_case,
-
-            "require_numbers":
-                security_settings.require_numbers,
-
-            "require_symbols":
-                security_settings.require_symbols,
-
-            "prevent_reuse":
-                security_settings.prevent_reuse,
-
-            "enforce_mfa":
-                security_settings.enforce_mfa,
-
-            "max_sessions":
-                security_settings.max_sessions,
-
-            "allowlist":
-                allowlist
-        }
-    }), 200
 
 # ============================================================
 # NOTIFICATIONS
 # ============================================================
 
+
 @settings.route("/notifications")
 @login_required
 def notifications():
 
-    return render_template(
-        "settings/notifications-settings.html",
-        user=current_user
-    )
+    return render_template("settings/notifications-settings.html", user=current_user)
+
 
 # ============================================================
 # NOTIFICATION SETTINGS API
 # ============================================================
 
 
-@settings.route(
-    "/notifications/data",
-    methods=["GET"]
-)
+@settings.route("/notifications/data", methods=["GET"])
 @login_required
 def notification_data():
 
@@ -476,42 +427,31 @@ def notification_data():
     if notification_settings is None:
 
         default_matrix = {
-            "critical": {
-                "email": True,
-                "slack": True,
-                "sms": True
-            },
-            "high": {
-                "email": True,
-                "slack": True,
-                "sms": False
-            },
-            "medium": {
-                "email": True,
-                "slack": False,
-                "sms": False
-            },
-            "low": {
-                "email": False,
-                "slack": False,
-                "sms": False
-            }
+            "critical": {"email": True, "slack": True, "sms": True},
+            "high": {"email": True, "slack": True, "sms": False},
+            "medium": {"email": True, "slack": False, "sms": False},
+            "low": {"email": False, "slack": False, "sms": False},
         }
 
-        return jsonify({
-            "success": True,
-            "settings": {
-                "email_enabled": True,
-                "slack_enabled": True,
-                "sms_enabled": False,
-                "webhook_enabled": False,
-                "notification_matrix": default_matrix,
-                "min_severity": "medium",
-                "quiet_hours_enabled": False,
-                "quiet_hours_from": "20:00",
-                "quiet_hours_to": "07:00"
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "settings": {
+                        "email_enabled": True,
+                        "slack_enabled": True,
+                        "sms_enabled": False,
+                        "webhook_enabled": False,
+                        "notification_matrix": default_matrix,
+                        "min_severity": "medium",
+                        "quiet_hours_enabled": False,
+                        "quiet_hours_from": "20:00",
+                        "quiet_hours_to": "07:00",
+                    },
+                }
+            ),
+            200,
+        )
 
     # --------------------------------------------------------
     # Decode notification matrix
@@ -531,37 +471,25 @@ def notification_data():
     # Return saved settings
     # --------------------------------------------------------
 
-    return jsonify({
-        "success": True,
-        "settings": {
-            "email_enabled":
-                notification_settings.email_enabled,
-
-            "slack_enabled":
-                notification_settings.slack_enabled,
-
-            "sms_enabled":
-                notification_settings.sms_enabled,
-
-            "webhook_enabled":
-                notification_settings.webhook_enabled,
-
-            "notification_matrix":
-                notification_matrix,
-
-            "min_severity":
-                notification_settings.min_severity,
-
-            "quiet_hours_enabled":
-                notification_settings.quiet_hours_enabled,
-
-            "quiet_hours_from":
-                notification_settings.quiet_hours_from,
-
-            "quiet_hours_to":
-                notification_settings.quiet_hours_to
-        }
-    }), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "settings": {
+                    "email_enabled": notification_settings.email_enabled,
+                    "slack_enabled": notification_settings.slack_enabled,
+                    "sms_enabled": notification_settings.sms_enabled,
+                    "webhook_enabled": notification_settings.webhook_enabled,
+                    "notification_matrix": notification_matrix,
+                    "min_severity": notification_settings.min_severity,
+                    "quiet_hours_enabled": notification_settings.quiet_hours_enabled,
+                    "quiet_hours_from": notification_settings.quiet_hours_from,
+                    "quiet_hours_to": notification_settings.quiet_hours_to,
+                },
+            }
+        ),
+        200,
+    )
 
 
 # ============================================================
@@ -569,10 +497,7 @@ def notification_data():
 # ============================================================
 
 
-@settings.route(
-    "/notifications/save",
-    methods=["POST"]
-)
+@settings.route("/notifications/save", methods=["POST"])
 @login_required
 def save_notification_settings():
 
@@ -582,59 +507,38 @@ def save_notification_settings():
     # Notification channels
     # --------------------------------------------------------
 
-    email_enabled = bool(
-        data.get("email_enabled", True)
-    )
+    email_enabled = bool(data.get("email_enabled", True))
 
-    slack_enabled = bool(
-        data.get("slack_enabled", True)
-    )
+    slack_enabled = bool(data.get("slack_enabled", True))
 
-    sms_enabled = bool(
-        data.get("sms_enabled", False)
-    )
+    sms_enabled = bool(data.get("sms_enabled", False))
 
-    webhook_enabled = bool(
-        data.get("webhook_enabled", False)
-    )
+    webhook_enabled = bool(data.get("webhook_enabled", False))
 
     # --------------------------------------------------------
     # Severity
     # --------------------------------------------------------
 
-    min_severity = str(
-        data.get("min_severity", "medium")
-    ).strip().lower()
+    min_severity = str(data.get("min_severity", "medium")).strip().lower()
 
-    allowed_severities = {
-        "low",
-        "medium",
-        "high",
-        "critical"
-    }
+    allowed_severities = {"low", "medium", "high", "critical"}
 
     if min_severity not in allowed_severities:
 
-        return jsonify({
-            "success": False,
-            "message": "Invalid notification severity."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid notification severity."}),
+            400,
+        )
 
     # --------------------------------------------------------
     # Quiet hours
     # --------------------------------------------------------
 
-    quiet_hours_enabled = bool(
-        data.get("quiet_hours_enabled", False)
-    )
+    quiet_hours_enabled = bool(data.get("quiet_hours_enabled", False))
 
-    quiet_hours_from = str(
-        data.get("quiet_hours_from", "20:00")
-    ).strip()
+    quiet_hours_from = str(data.get("quiet_hours_from", "20:00")).strip()
 
-    quiet_hours_to = str(
-        data.get("quiet_hours_to", "07:00")
-    ).strip()
+    quiet_hours_to = str(data.get("quiet_hours_to", "07:00")).strip()
 
     # --------------------------------------------------------
     # Validate time format
@@ -644,44 +548,32 @@ def save_notification_settings():
 
     time_pattern = r"^(?:[01]\d|2[0-3]):[0-5]\d$"
 
-    if not re.match(
-        time_pattern,
-        quiet_hours_from
-    ):
+    if not re.match(time_pattern, quiet_hours_from):
 
-        return jsonify({
-            "success": False,
-            "message": "Invalid quiet-hours start time."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid quiet-hours start time."}),
+            400,
+        )
 
-    if not re.match(
-        time_pattern,
-        quiet_hours_to
-    ):
+    if not re.match(time_pattern, quiet_hours_to):
 
-        return jsonify({
-            "success": False,
-            "message": "Invalid quiet-hours end time."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid quiet-hours end time."}),
+            400,
+        )
 
     # --------------------------------------------------------
     # Notification matrix
     # --------------------------------------------------------
 
-    notification_matrix = data.get(
-        "notification_matrix",
-        {}
-    )
+    notification_matrix = data.get("notification_matrix", {})
 
-    if not isinstance(
-        notification_matrix,
-        dict
-    ):
+    if not isinstance(notification_matrix, dict):
 
-        return jsonify({
-            "success": False,
-            "message": "Invalid notification matrix."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Invalid notification matrix."}),
+            400,
+        )
 
     # --------------------------------------------------------
     # Find existing settings
@@ -697,9 +589,7 @@ def save_notification_settings():
 
     if settings_record is None:
 
-        settings_record = NotificationSettings(
-            user_id=current_user.id
-        )
+        settings_record = NotificationSettings(user_id=current_user.id)
 
         db.session.add(settings_record)
 
@@ -719,9 +609,7 @@ def save_notification_settings():
     # Update matrix
     # --------------------------------------------------------
 
-    settings_record.notification_matrix = json.dumps(
-        notification_matrix
-    )
+    settings_record.notification_matrix = json.dumps(notification_matrix)
 
     # --------------------------------------------------------
     # Update severity
@@ -733,17 +621,11 @@ def save_notification_settings():
     # Update quiet hours
     # --------------------------------------------------------
 
-    settings_record.quiet_hours_enabled = (
-        quiet_hours_enabled
-    )
+    settings_record.quiet_hours_enabled = quiet_hours_enabled
 
-    settings_record.quiet_hours_from = (
-        quiet_hours_from
-    )
+    settings_record.quiet_hours_from = quiet_hours_from
 
-    settings_record.quiet_hours_to = (
-        quiet_hours_to
-    )
+    settings_record.quiet_hours_to = quiet_hours_to
 
     # --------------------------------------------------------
     # Save
@@ -751,55 +633,54 @@ def save_notification_settings():
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": "Notification settings saved successfully."
-    }), 200    
+    return (
+        jsonify(
+            {"success": True, "message": "Notification settings saved successfully."}
+        ),
+        200,
+    )
 
 
 # ============================================================
 # INTEGRATIONS
 # ============================================================
 
+
 @settings.route("/integrations")
 @login_required
 def integrations():
 
-    ensure_default_integrations(
-        current_user.id
-    )
+    ensure_default_integrations(current_user.id)
 
-    return render_template(
-        "settings/integrations.html",
-        user=current_user
-    )
+    return render_template("settings/integrations.html", user=current_user)
 
 
 # ============================================================
 # API SETTINGS
 # ============================================================
 
+
 @settings.route("/api")
 @login_required
 def api_settings():
 
-    return render_template(
-        "settings/api-settings.html",
-        user=current_user
-    )
+    return render_template("settings/api-settings.html", user=current_user)
+
+
 # ============================================================
 # API KEY DATA
 # ============================================================
+
 
 @settings.route("/api/data", methods=["GET"])
 @login_required
 def api_keys_data():
 
-    keys = APIKey.query.filter_by(
-        user_id=current_user.id
-    ).order_by(
-        APIKey.created_at.desc()
-    ).all()
+    keys = (
+        APIKey.query.filter_by(user_id=current_user.id)
+        .order_by(APIKey.created_at.desc())
+        .all()
+    )
 
     result = []
 
@@ -810,31 +691,25 @@ def api_keys_data():
         except (TypeError, ValueError):
             scopes = []
 
-        result.append({
-            "id": key.id,
-            "name": key.name,
-            "prefix": key.key_prefix,
-            "scopes": scopes,
-            "created_at": (
-                key.created_at.isoformat()
-                if key.created_at else None
-            ),
-            "last_used": (
-                key.last_used.isoformat()
-                if key.last_used else None
-            ),
-            "status": key.status,
-        })
+        result.append(
+            {
+                "id": key.id,
+                "name": key.name,
+                "prefix": key.key_prefix,
+                "scopes": scopes,
+                "created_at": (key.created_at.isoformat() if key.created_at else None),
+                "last_used": (key.last_used.isoformat() if key.last_used else None),
+                "status": key.status,
+            }
+        )
 
-    return jsonify({
-        "success": True,
-        "keys": result
-    }), 200
+    return jsonify({"success": True, "keys": result}), 200
 
 
 # ============================================================
 # GENERATE API KEY
 # ============================================================
+
 
 @settings.route("/api/generate", methods=["POST"])
 @login_required
@@ -842,29 +717,17 @@ def generate_api_key():
 
     data = request.get_json(silent=True) or {}
 
-    name = str(
-        data.get("name", "")
-    ).strip()
+    name = str(data.get("name", "")).strip()
 
     scopes = data.get("scopes", [])
 
     if not name:
-        return jsonify({
-            "success": False,
-            "message": "API key name is required."
-        }), 400
+        return jsonify({"success": False, "message": "API key name is required."}), 400
 
     if not isinstance(scopes, list):
-        return jsonify({
-            "success": False,
-            "message": "Invalid API key scopes."
-        }), 400
+        return jsonify({"success": False, "message": "Invalid API key scopes."}), 400
 
-    scopes = [
-        str(scope).strip()
-        for scope in scopes
-        if str(scope).strip()
-    ]
+    scopes = [str(scope).strip() for scope in scopes if str(scope).strip()]
 
     allowed_scopes = {
         "read:alerts",
@@ -873,31 +736,19 @@ def generate_api_key():
         "read:reports",
     }
 
-    invalid_scopes = [
-        scope
-        for scope in scopes
-        if scope not in allowed_scopes
-    ]
+    invalid_scopes = [scope for scope in scopes if scope not in allowed_scopes]
 
     if invalid_scopes:
-        return jsonify({
-            "success": False,
-            "message": "Invalid API key scope."
-        }), 400
+        return jsonify({"success": False, "message": "Invalid API key scope."}), 400
 
     if not scopes:
         scopes = ["read:alerts"]
 
     # Generate cryptographically secure secret
-    raw_key = (
-        "xdr_"
-        + secrets.token_hex(32)
-    )
+    raw_key = "xdr_" + secrets.token_hex(32)
 
     # Store only SHA-256 hash
-    key_hash = hashlib.sha256(
-        raw_key.encode("utf-8")
-    ).hexdigest()
+    key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
     key_prefix = raw_key[:12]
 
@@ -913,28 +764,33 @@ def generate_api_key():
     db.session.add(api_key)
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": "API key generated successfully.",
-        "key": raw_key,
-        "api_key": {
-            "id": api_key.id,
-            "name": api_key.name,
-            "prefix": api_key.key_prefix,
-            "scopes": scopes,
-            "status": api_key.status,
-            "created_at": (
-                api_key.created_at.isoformat()
-                if api_key.created_at else None
-            ),
-            "last_used": None,
-        }
-    }), 201
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": "API key generated successfully.",
+                "key": raw_key,
+                "api_key": {
+                    "id": api_key.id,
+                    "name": api_key.name,
+                    "prefix": api_key.key_prefix,
+                    "scopes": scopes,
+                    "status": api_key.status,
+                    "created_at": (
+                        api_key.created_at.isoformat() if api_key.created_at else None
+                    ),
+                    "last_used": None,
+                },
+            }
+        ),
+        201,
+    )
 
 
 # ============================================================
 # REVOKE API KEY
 # ============================================================
+
 
 @settings.route("/api/revoke", methods=["POST"])
 @login_required
@@ -945,36 +801,26 @@ def revoke_api_key():
     try:
         key_id = int(data.get("id"))
     except (TypeError, ValueError):
-        return jsonify({
-            "success": False,
-            "message": "Invalid API key ID."
-        }), 400
+        return jsonify({"success": False, "message": "Invalid API key ID."}), 400
 
-    api_key = APIKey.query.filter_by(
-        id=key_id,
-        user_id=current_user.id
-    ).first()
+    api_key = APIKey.query.filter_by(id=key_id, user_id=current_user.id).first()
 
     if api_key is None:
-        return jsonify({
-            "success": False,
-            "message": "API key not found."
-        }), 404
+        return jsonify({"success": False, "message": "API key not found."}), 404
 
     if api_key.status == "revoked":
-        return jsonify({
-            "success": False,
-            "message": "API key is already revoked."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "API key is already revoked."}),
+            400,
+        )
 
     api_key.status = "revoked"
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": "API key revoked successfully."
-    }), 200  
+    return jsonify({"success": True, "message": "API key revoked successfully."}), 200
+
+
 # ============================================================
 # INTEGRATIONS API
 # ============================================================
@@ -984,30 +830,29 @@ def revoke_api_key():
 @login_required
 def integrations_data():
 
-    integrations = Integration.query.filter_by(
-        user_id=current_user.id
-    ).order_by(
-        Integration.id.asc()
-    ).all()
+    integrations = (
+        Integration.query.filter_by(user_id=current_user.id)
+        .order_by(Integration.id.asc())
+        .all()
+    )
 
     result = []
 
     for integration in integrations:
 
-        result.append({
-            "id": integration.integration_key,
-            "name": integration.name,
-            "category": integration.category,
-            "icon": integration.icon,
-            "connected": integration.connected,
-            "status": integration.status,
-            "description": integration.description,
-        })
+        result.append(
+            {
+                "id": integration.integration_key,
+                "name": integration.name,
+                "category": integration.category,
+                "icon": integration.icon,
+                "connected": integration.connected,
+                "status": integration.status,
+                "description": integration.description,
+            }
+        )
 
-    return jsonify({
-        "success": True,
-        "integrations": result
-    }), 200
+    return jsonify({"success": True, "integrations": result}), 200
 
 
 # ============================================================
@@ -1021,54 +866,44 @@ def save_integration():
 
     data = request.get_json(silent=True) or {}
 
-    integration_key = str(
-        data.get("id", "")
-    ).strip()
+    integration_key = str(data.get("id", "")).strip()
 
-    webhook_url = str(
-        data.get("webhook_url", "")
-    ).strip()
+    webhook_url = str(data.get("webhook_url", "")).strip()
 
-    token = str(
-        data.get("token", "")
-    ).strip()
+    token = str(data.get("token", "")).strip()
 
     if not integration_key:
 
-        return jsonify({
-            "success": False,
-            "message": "Integration ID is required."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Integration ID is required."}),
+            400,
+        )
 
     integration = Integration.query.filter_by(
-        user_id=current_user.id,
-        integration_key=integration_key
+        user_id=current_user.id, integration_key=integration_key
     ).first()
 
     if integration is None:
 
-        return jsonify({
-            "success": False,
-            "message": "Integration not found."
-        }), 404
+        return jsonify({"success": False, "message": "Integration not found."}), 404
 
     if webhook_url:
         integration.webhook_url = webhook_url
 
     if token:
-        integration.token_hash = hashlib.sha256(
-            token.encode("utf-8")
-        ).hexdigest()
+        integration.token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     integration.connected = True
     integration.status = "active"
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": f"{integration.name} connected successfully."
-    }), 200
+    return (
+        jsonify(
+            {"success": True, "message": f"{integration.name} connected successfully."}
+        ),
+        200,
+    )
 
 
 # ============================================================
@@ -1082,38 +917,39 @@ def disconnect_integration():
 
     data = request.get_json(silent=True) or {}
 
-    integration_key = str(
-        data.get("id", "")
-    ).strip()
+    integration_key = str(data.get("id", "")).strip()
 
     if not integration_key:
 
-        return jsonify({
-            "success": False,
-            "message": "Integration ID is required."
-        }), 400
+        return (
+            jsonify({"success": False, "message": "Integration ID is required."}),
+            400,
+        )
 
     integration = Integration.query.filter_by(
-        user_id=current_user.id,
-        integration_key=integration_key
+        user_id=current_user.id, integration_key=integration_key
     ).first()
 
     if integration is None:
 
-        return jsonify({
-            "success": False,
-            "message": "Integration not found."
-        }), 404
+        return jsonify({"success": False, "message": "Integration not found."}), 404
 
     integration.connected = False
     integration.status = "disconnected"
 
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "message": f"{integration.name} disconnected successfully."
-    }), 200   
+    return (
+        jsonify(
+            {
+                "success": True,
+                "message": f"{integration.name} disconnected successfully.",
+            }
+        ),
+        200,
+    )
+
+
 # ============================================================
 # DEFAULT INTEGRATIONS
 # ============================================================
@@ -1126,9 +962,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-slack",
         "connected": True,
         "status": "active",
-        "description": (
-            "Send alert and incident notifications to Slack channels."
-        ),
+        "description": ("Send alert and incident notifications to Slack channels."),
     },
     {
         "id": "INT-2",
@@ -1137,9 +971,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-kanban",
         "connected": True,
         "status": "active",
-        "description": (
-            "Automatically create Jira tickets for confirmed incidents."
-        ),
+        "description": ("Automatically create Jira tickets for confirmed incidents."),
     },
     {
         "id": "INT-3",
@@ -1148,9 +980,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-telephone-forward",
         "connected": True,
         "status": "active",
-        "description": (
-            "Page on-call analysts for critical severity alerts."
-        ),
+        "description": ("Page on-call analysts for critical severity alerts."),
     },
     {
         "id": "INT-4",
@@ -1159,9 +989,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-diagram-3",
         "connected": False,
         "status": "disconnected",
-        "description": (
-            "Sync incidents with ServiceNow ITSM workflows."
-        ),
+        "description": ("Sync incidents with ServiceNow ITSM workflows."),
     },
     {
         "id": "INT-5",
@@ -1170,9 +998,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-bar-chart-line",
         "connected": False,
         "status": "disconnected",
-        "description": (
-            "Forward normalized events to a Splunk index."
-        ),
+        "description": ("Forward normalized events to a Splunk index."),
     },
     {
         "id": "INT-6",
@@ -1181,9 +1007,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-microsoft-teams",
         "connected": False,
         "status": "disconnected",
-        "description": (
-            "Post alert summaries to a Teams channel."
-        ),
+        "description": ("Post alert summaries to a Teams channel."),
     },
     {
         "id": "INT-7",
@@ -1192,9 +1016,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-cloud",
         "connected": True,
         "status": "error",
-        "description": (
-            "Import findings from AWS Security Hub as IOCs."
-        ),
+        "description": ("Import findings from AWS Security Hub as IOCs."),
     },
     {
         "id": "INT-8",
@@ -1203,9 +1025,7 @@ DEFAULT_INTEGRATIONS = [
         "icon": "bi-shield-lock",
         "connected": True,
         "status": "active",
-        "description": (
-            "Sync user provisioning and SSO with Okta."
-        ),
+        "description": ("Sync user provisioning and SSO with Okta."),
     },
 ]
 
@@ -1214,9 +1034,7 @@ def ensure_default_integrations(user_id):
 
     existing = {
         integration.integration_key
-        for integration in Integration.query.filter_by(
-            user_id=user_id
-        ).all()
+        for integration in Integration.query.filter_by(user_id=user_id).all()
     }
 
     created = False
@@ -1242,4 +1060,177 @@ def ensure_default_integrations(user_id):
         created = True
 
     if created:
-        db.session.commit()       
+        db.session.commit()
+
+
+# ============================================================
+# GENERAL SETTINGS API
+# ============================================================
+
+
+@settings.route("/general/data", methods=["GET"])
+@login_required
+def general_settings_data():
+
+    general_settings = GeneralSettings.query.filter_by(user_id=current_user.id).first()
+
+    if general_settings is None:
+
+        general_settings = GeneralSettings(user_id=current_user.id)
+
+        db.session.add(general_settings)
+        db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "success": True,
+                "settings": {
+                    "organization_name": general_settings.organization_name,
+                    "timezone": general_settings.timezone,
+                    "date_format": general_settings.date_format,
+                    "language": general_settings.language,
+                    "default_landing": general_settings.default_landing,
+                    "session_timeout": general_settings.session_timeout,
+                    "compact_density": general_settings.compact_density,
+                    "logo_path": general_settings.logo_path,
+                },
+            }
+        ),
+        200,
+    )
+
+
+# ============================================================
+# SAVE GENERAL SETTINGS
+# ============================================================
+
+
+@settings.route("/general/save", methods=["POST"])
+@login_required
+def save_general_settings():
+
+    data = request.get_json(silent=True) or {}
+
+    organization_name = str(data.get("organization_name", "")).strip()
+
+    timezone = str(data.get("timezone", "")).strip()
+
+    date_format = str(data.get("date_format", "")).strip()
+
+    language = str(data.get("language", "")).strip()
+
+    default_landing = str(data.get("default_landing", "")).strip()
+
+    session_timeout = data.get("session_timeout", 30)
+
+    compact_density = bool(data.get("compact_density", False))
+
+    # --------------------------------------------------------
+    # Validation
+    # --------------------------------------------------------
+
+    if not organization_name:
+
+        return (
+            jsonify({"success": False, "message": "Organization name is required."}),
+            400,
+        )
+
+    allowed_timezones = {
+        "UTC",
+        "America/New_York",
+        "America/Los_Angeles",
+        "Europe/London",
+        "Asia/Singapore",
+    }
+
+    if timezone not in allowed_timezones:
+
+        return jsonify({"success": False, "message": "Invalid time zone."}), 400
+
+    allowed_date_formats = {
+        "YYYY-MM-DD",
+        "MM/DD/YYYY",
+        "DD/MM/YYYY",
+    }
+
+    if date_format not in allowed_date_formats:
+
+        return jsonify({"success": False, "message": "Invalid date format."}), 400
+
+    allowed_languages = {
+        "en-US",
+        "en-GB",
+        "es",
+        "fr",
+    }
+
+    if language not in allowed_languages:
+
+        return jsonify({"success": False, "message": "Invalid language."}), 400
+
+    allowed_landings = {
+        "dashboard",
+        "soc",
+        "siem",
+        "alerts",
+    }
+
+    if default_landing not in allowed_landings:
+
+        return jsonify({"success": False, "message": "Invalid landing page."}), 400
+
+    try:
+
+        session_timeout = int(session_timeout)
+
+    except (TypeError, ValueError):
+
+        return jsonify({"success": False, "message": "Invalid session timeout."}), 400
+
+    if session_timeout not in {
+        15,
+        30,
+        60,
+        240,
+    }:
+
+        return jsonify({"success": False, "message": "Invalid session timeout."}), 400
+
+    # --------------------------------------------------------
+    # Get / Create Settings
+    # --------------------------------------------------------
+
+    general_settings = GeneralSettings.query.filter_by(user_id=current_user.id).first()
+
+    if general_settings is None:
+
+        general_settings = GeneralSettings(user_id=current_user.id)
+
+        db.session.add(general_settings)
+
+    # --------------------------------------------------------
+    # Update
+    # --------------------------------------------------------
+
+    general_settings.organization_name = organization_name
+
+    general_settings.timezone = timezone
+
+    general_settings.date_format = date_format
+
+    general_settings.language = language
+
+    general_settings.default_landing = default_landing
+
+    general_settings.session_timeout = session_timeout
+
+    general_settings.compact_density = compact_density
+
+    db.session.commit()
+
+    return (
+        jsonify({"success": True, "message": "General settings saved successfully."}),
+        200,
+    )
