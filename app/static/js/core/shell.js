@@ -7,43 +7,43 @@
    (function () {
     const NAV = [
       { section: "Overview", items: [
-        { key: "dashboard", label: "Dashboard", icon: "bi-speedometer2", href: "dashboard.html" },
+        { key: "dashboard", label: "Dashboard", icon: "bi-speedometer2", href: "/dashboard/" },
       ]},
       { section: "Assets", items: [
-        { key: "assets", label: "Asset Management", icon: "bi-hdd-network", href: "assets.html" },
+        { key: "assets", label: "Asset Management", icon: "bi-hdd-network", href: "/assets/" },
       ]},
       { section: "SIEM", items: [
-        { key: "siem", label: "SIEM Dashboard", icon: "bi-bar-chart-steps", href: "siem.html" },
-        { key: "log-explorer", label: "Log Explorer", icon: "bi-terminal", href: "log-explorer.html" },
+        { key: "siem", label: "SIEM Dashboard", icon: "bi-bar-chart-steps", href: "/siem/" },
+        { key: "log-explorer", label: "Log Explorer", icon: "bi-terminal", href: "/log-explorer/" },
       ]},
       { section: "Detection", items: [
-        { key: "detection-engine", label: "Detection Engine", icon: "bi-cpu", href: "detection-engine.html" },
-        { key: "alert-center", label: "Alert Center", icon: "bi-bell", href: "alert-center.html", badge: "12" },
+        { key: "detection-engine", label: "Detection Engine", icon: "bi-cpu", href: "/detection-engine/" },
+        { key: "alert-center", label: "Alert Center", icon: "bi-bell", href: "/alert-center/", badge: "12" },
       ]},
       { section: "SOC", items: [
-        { key: "soc-dashboard", label: "SOC Dashboard", icon: "bi-shield-check", href: "soc-dashboard.html" },
+        { key: "soc-dashboard", label: "SOC Dashboard", icon: "bi-shield-check", href: "/soc-dashboard/" },
         { key: "incident-response", label: "Incident Response", icon: "bi-clipboard2-pulse", href: "/incidents/dashboard" },
       ]},
       { section: "Scanner", items: [
-        { key: "vuln-scanner", label: "Vulnerability Scanner", icon: "bi-search", href: "vuln-scanner.html" },
-        { key: "scan-history", label: "Scan History", icon: "bi-clock-history", href: "scan-history.html" },
+        { key: "vuln-scanner", label: "Vulnerability Scanner", icon: "bi-search", href: "/vuln-scanner/" },
+        { key: "scan-history", label: "Scan History", icon: "bi-clock-history", href: "/scan-history/" },
       ]},
       { section: "Threat Intel", items: [
-        { key: "threat-intel", label: "Threat Intelligence", icon: "bi-globe2", href: "threat-intel.html" },
-        { key: "ioc-database", label: "IOC Database", icon: "bi-database", href: "ioc-database.html" },
+        { key: "threat-intel", label: "Threat Intelligence", icon: "bi-globe2", href: "/threat-intel/" },
+        { key: "ioc-database", label: "IOC Database", icon: "bi-database", href: "/ioc-database/" },
       ]},
       { section: "IDS", items: [
-        { key: "network-ids", label: "Network IDS", icon: "bi-diagram-3", href: "network-ids.html" },
-        { key: "packet-analysis", label: "Packet Analysis", icon: "bi-activity", href: "packet-analysis.html" },
+        { key: "network-ids", label: "Network IDS", icon: "bi-diagram-3", href: "/network-ids/" },
+        { key: "packet-analysis", label: "Packet Analysis", icon: "bi-activity", href: "/packet-analysis/" },
       ]},
       { section: "Insights", items: [
-        { key: "reports", label: "Reports", icon: "bi-file-earmark-text", href: "reports.html" },
-        { key: "ai-assistant", label: "AI Assistant", icon: "bi-stars", href: "ai-assistant.html" },
-        { key: "analytics", label: "Analytics", icon: "bi-graph-up-arrow", href: "analytics.html" },
+        { key: "reports", label: "Reports", icon: "bi-file-earmark-text", href: "/reports/" },
+        { key: "ai-assistant", label: "AI Assistant", icon: "bi-stars", href: "/ai-assistant/" },
+        { key: "analytics", label: "Analytics", icon: "bi-graph-up-arrow", href: "/analytics/" },
       ]},
       { section: "Administration", items: [
-        { key: "user-management", label: "User Management", icon: "bi-people", href: "user-management.html" },
-        { key: "audit-logs", label: "Audit Logs", icon: "bi-journal-text", href: "audit-logs.html" },
+        { key: "user-management", label: "User Management", icon: "bi-people", href: "/user-management/" },
+        { key: "audit-logs", label: "Audit Logs", icon: "bi-journal-text", href: "/audit-logs/" },
         { key: "settings", label: "Settings", icon: "bi-gear", href: "/settings/profile" },
       ]},
     ];
