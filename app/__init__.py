@@ -18,6 +18,7 @@ from app.auth import auth
 import app.auth.routes
 from app.dashboard import dashboard
 from app.settings import settings
+from app.detection import detection
 
 from app.utils.logger import configure_logger
 
@@ -60,8 +61,13 @@ def create_app():
         NotificationSettings,
         APIKey,
         Integration,
+        GeneralSettings,
     )  # noqa: F401
-
+     
+    from app.detection.models import (
+        DetectionRule,
+        DetectionEvent,
+    )  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -73,5 +79,7 @@ def create_app():
     app.register_blueprint(dashboard)
 
     app.register_blueprint(settings)
+
+    app.register_blueprint(detection)
 
     return app
