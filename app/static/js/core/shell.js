@@ -17,7 +17,7 @@
         { key: "log-explorer", label: "Log Explorer", icon: "bi-terminal", href: "/log-explorer/" },
       ]},
       { section: "Detection", items: [
-        { key: "detection-engine", label: "Detection Engine", icon: "bi-cpu", href: "/detection-engine/" },
+        { key: "detection-engine", label: "Detection Engine", icon: "bi-cpu", href: "/detection/dashboard" },
         { key: "alert-center", label: "Alert Center", icon: "bi-bell", href: "/alert-center/", badge: "12" },
       ]},
       { section: "SOC", items: [
