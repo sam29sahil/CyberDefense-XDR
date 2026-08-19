@@ -22,7 +22,7 @@
       ]},
       { section: "SOC", items: [
         { key: "soc-dashboard", label: "SOC Dashboard", icon: "bi-shield-check", href: "soc-dashboard.html" },
-        { key: "incident-response", label: "Incident Response", icon: "bi-clipboard2-pulse", href: "incident-response.html" },
+        { key: "incident-response", label: "Incident Response", icon: "bi-clipboard2-pulse", href: "/incidents/dashboard" },
       ]},
       { section: "Scanner", items: [
         { key: "vuln-scanner", label: "Vulnerability Scanner", icon: "bi-search", href: "vuln-scanner.html" },

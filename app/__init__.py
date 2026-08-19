@@ -19,6 +19,7 @@ import app.auth.routes
 from app.dashboard import dashboard
 from app.settings import settings
 from app.detection import detection
+from app.incidents import incidents
 
 from app.utils.logger import configure_logger
 
@@ -68,6 +69,8 @@ def create_app():
         DetectionRule,
         DetectionEvent,
     )  # noqa: F401
+
+    from app.incidents.models import Incident  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -81,5 +84,7 @@ def create_app():
     app.register_blueprint(settings)
 
     app.register_blueprint(detection)
+
+    app.register_blueprint(incidents)
 
     return app

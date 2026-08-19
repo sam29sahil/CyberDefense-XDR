@@ -272,7 +272,7 @@ def create_detection_event(
         rule_id=rule.id if rule else None,
         source=source,
         host=host,
-        severity=severity or rule.severity,
+        severity=severity or (rule.severity if rule else "medium"),
         status=status,
         mitre_id=rule.mitre_id if rule else None,
         raw_event=json.dumps(raw_event)
