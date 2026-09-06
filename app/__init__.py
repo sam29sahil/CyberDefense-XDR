@@ -21,6 +21,7 @@ from app.settings import settings
 from app.detection import detection
 from app.incidents import incidents
 from app.alerts import alerts
+from app.threatintel import threatintel
 
 from app.utils.logger import configure_logger
 
@@ -73,6 +74,12 @@ def create_app():
 
     from app.incidents.models import Incident  # noqa: F401
     from app.alerts.models import Alert  # noqa: F401
+    from app.threatintel.models import (
+    IOC,
+    ThreatCampaign,
+    ThreatFeed,
+    ThreatActor,
+)  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -90,5 +97,6 @@ def create_app():
     app.register_blueprint(incidents)
 
     app.register_blueprint(alerts)
+    app.register_blueprint(threatintel)
 
     return app
