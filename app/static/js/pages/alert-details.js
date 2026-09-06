@@ -1,103 +1,323 @@
 /* ==========================================================================
-   alert-details.js — page module for app/alert-details.html
-   Depends on: ALERTS_DATA, ANALYSTS_DATA
+   alert-details.js
+   Single Alert Detail Page Module
+   Uses:
+     - /alert-center/<alert_id>/data
+     - XDRUtils
    ========================================================================== */
 
-   (function () {
-    const STATUS_BADGE = { open: "badge-info", investigating: "badge-warning", closed: "badge-success" };
-  
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    const alert = ALERTS_DATA.find((a) => a.id === id) || ALERTS_DATA[0];
-  
-    document.getElementById("breadcrumbAlertId").textContent = alert.title;
-    document.getElementById("alertTitle").textContent = alert.title;
-    document.getElementById("alertDesc").textContent = alert.description;
-    document.getElementById("alertPriorityPill").innerHTML = `<span class="priority-pill p-${alert.priority}">${alert.priority}</span>`;
-    document.getElementById("alertSevBadge").innerHTML = XDRUtils.severityBadge(alert.severity);
-    document.getElementById("alertStatusBadge").innerHTML = `<span class="badge ${STATUS_BADGE[alert.status]}">${alert.status}</span>`;
-    document.getElementById("alertMitreRow").innerHTML = `<span class="mitre-chip">${alert.mitreId} <span class="tname">${alert.mitreName}</span></span>`;
-  
-    document.getElementById("statAsset").textContent = alert.asset;
-    document.getElementById("statSource").textContent = alert.source;
-    document.getElementById("statRule").innerHTML = `<a href="rule-details.html?id=${alert.ruleId}" style="color:inherit;">${alert.ruleId}</a>`;
-    document.getElementById("statAnalyst").textContent = alert.assignedAnalyst || "Unassigned";
-  
-    // ---------- Related alerts — same host ----------
-    const related = ALERTS_DATA.filter((a) => a.host === alert.host && a.id !== alert.id).slice(0, 6);
-    document.getElementById("relatedAlertsBody").innerHTML = related.length
-      ? related.map((a) => `
-          <tr>
-            <td><a href="alert-details.html?id=${a.id}" style="color:var(--text);font-weight:600;text-decoration:none;">${XDRUtils.escapeHtml(a.title)}</a></td>
-            <td>${XDRUtils.severityBadge(a.severity)}</td>
-            <td><span class="cell-mono text-sm">${XDRUtils.formatTime(a.ts)}</span></td>
-            <td><span class="badge ${STATUS_BADGE[a.status]}">${a.status}</span></td>
-          </tr>`).join("")
-      : `<tr><td colspan="4"><div class="empty-state"><i class="bi bi-inbox"></i><h3>No related alerts</h3><p>No other alerts on ${alert.host} right now.</p></div></td></tr>`;
-  
-    // ---------- Timeline ----------
-    const timelineEvents = [
-      { ts: alert.ts, label: `Alert generated from ${alert.source}`, sev: alert.severity },
-      ...(alert.assignedAnalyst ? [{ ts: alert.ts, label: `Assigned to ${alert.assignedAnalyst}`, sev: "low" }] : []),
-      ...alert.comments.map((c) => ({ ts: c.ts, label: `${c.author} commented`, sev: "info" })),
-    ].sort((a, b) => new Date(a.ts) - new Date(b.ts));
-  
-    document.getElementById("alertTimeline").innerHTML = timelineEvents.map((t) => `
-      <div class="timeline-item sev-${t.sev}">
-        <div class="timeline-time">${XDRUtils.formatTime(t.ts)}</div>
-        <strong>${XDRUtils.escapeHtml(t.label)}</strong>
-      </div>`).join("");
-  
-    // ---------- Evidence (synthesized from alert context) ----------
-    const evidenceItems = [
-      { icon: "bi-file-earmark-text", name: `${alert.source} raw event`, sub: `log-explorer.html · ${alert.host}` },
-      { icon: "bi-hdd-network", name: alert.asset, sub: `asset-details.html · ${alert.host}` },
-      { icon: "bi-diagram-3", name: `MITRE ${alert.mitreId}`, sub: alert.mitreName },
-    ];
-    document.getElementById("evidenceList").innerHTML = evidenceItems.map((e) => `
-      <div class="evidence-item">
-        <span class="ev-icon"><i class="bi ${e.icon}"></i></span>
-        <div class="ev-meta"><div class="ev-name">${e.name}</div><div class="ev-sub">${e.sub}</div></div>
-      </div>`).join("");
-  
-    // ---------- Comments ----------
-    function renderComments() {
-      document.getElementById("commentsList").innerHTML = alert.comments.length
-        ? alert.comments.map((c) => `
-            <div class="note-item">
-              <span class="avatar avatar-sm">${c.initials}</span>
-              <div class="note-body">
-                <div class="d-flex justify-content-between"><span class="note-author">${c.author}</span><span class="note-time">${XDRUtils.formatTime(c.ts)}</span></div>
-                <p class="mb-0 mt-1">${XDRUtils.escapeHtml(c.text)}</p>
-              </div>
-            </div>`).join("")
-        : `<p class="text-muted text-sm">No comments yet — be the first to add investigation notes.</p>`;
+(function () {
+  "use strict";
+
+  const headerCard = document.getElementById("alertHeaderCard");
+  if (!headerCard) return;
+
+  const alertId = headerCard.dataset.alertId;
+  if (!alertId) return;
+
+  function escapeHtml(val) {
+    if (val === null || val === undefined) return "";
+    return String(val)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function showToast(type, title, msg) {
+    if (window.showToast) {
+      window.showToast({ type, title, msg });
     }
-    renderComments();
-  
-    document.getElementById("addCommentBtn").addEventListener("click", () => {
-      const text = document.getElementById("newCommentText").value.trim();
-      if (!text) return;
-      alert.comments.push({ author: "Aria Reyes", initials: "AR", ts: new Date().toISOString(), text });
-      document.getElementById("newCommentText").value = "";
-      renderComments();
-      if (window.showToast) window.showToast({ type: "success", title: "Comment added" });
-    });
-  
-    // ---------- Header actions ----------
-    document.getElementById("assignBtn").addEventListener("click", () => {
-      if (window.showToast) window.showToast({ type: "info", title: "Open Alert Center to assign", msg: "Use the Assign action from the alerts table." });
-      setTimeout(() => { window.location.href = "alerts.html"; }, 700);
-    });
-    document.getElementById("investigateBtn").addEventListener("click", () => {
-      if (alert.status === "open") alert.status = "investigating";
-      document.getElementById("alertStatusBadge").innerHTML = `<span class="badge ${STATUS_BADGE[alert.status]}">${alert.status}</span>`;
-      if (window.showToast) window.showToast({ type: "info", title: "Investigation started", msg: alert.title });
-    });
-    document.getElementById("closeBtn").addEventListener("click", () => {
-      alert.status = "closed";
-      document.getElementById("alertStatusBadge").innerHTML = `<span class="badge ${STATUS_BADGE[alert.status]}">${alert.status}</span>`;
-      if (window.showToast) window.showToast({ type: "danger", title: "Alert closed", msg: alert.title });
-    });
-  })();
-  
+  }
+
+  const STATUS_BADGE = {
+    new: "badge-info",
+    acknowledged: "badge-secondary",
+    investigating: "badge-warning",
+    escalated: "badge-danger",
+    resolved: "badge-success",
+    false_positive: "badge-neutral",
+    suppressed: "badge-neutral",
+  };
+
+  const STATUS_LABEL = {
+    new: "New",
+    acknowledged: "Acknowledged",
+    investigating: "Investigating",
+    escalated: "Escalated",
+    resolved: "Resolved",
+    false_positive: "False Positive",
+    suppressed: "Suppressed",
+  };
+
+  async function loadAlertData() {
+    try {
+      const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/data`, {
+        headers: { Accept: "application/json" },
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || "Failed to load alert details.");
+
+      const alert = json.data;
+
+      // Render Badges
+      const sevBadge = document.getElementById("alertSevBadge");
+      if (sevBadge) {
+        if (window.XDRUtils && window.XDRUtils.severityBadge) {
+          sevBadge.innerHTML = window.XDRUtils.severityBadge(alert.severity);
+        } else {
+          sevBadge.className = `badge ${alert.severity === "critical" ? "badge-danger" : alert.severity === "high" ? "badge-warning" : "badge-info"}`;
+          sevBadge.textContent = alert.severity;
+        }
+      }
+
+      const statusBadge = document.getElementById("alertStatusBadge");
+      if (statusBadge) {
+        statusBadge.className = `badge ${STATUS_BADGE[alert.status] || "badge-neutral"}`;
+        statusBadge.textContent = STATUS_LABEL[alert.status] || alert.status;
+      }
+
+      // Render Related Alerts
+      const relatedBody = document.getElementById("relatedAlertsBody");
+      if (relatedBody) {
+        const related = json.related || [];
+        if (related.length === 0) {
+          relatedBody.innerHTML = `<tr><td colspan="3" class="text-muted text-center py-3">No other alerts for this host.</td></tr>`;
+        } else {
+          relatedBody.innerHTML = related
+            .map(
+              (r) => `<tr>
+                <td>
+                  <a href="/alert-center/${encodeURIComponent(r.alert_id)}" style="color:var(--text);font-weight:600;text-decoration:none;">${escapeHtml(r.alert_id)}</a>
+                  <div class="text-xs text-muted">${escapeHtml(r.title)}</div>
+                </td>
+                <td><span class="badge ${r.severity === "critical" ? "badge-danger" : r.severity === "high" ? "badge-warning" : "badge-info"}">${escapeHtml(r.severity)}</span></td>
+                <td><span class="badge ${STATUS_BADGE[r.status] || "badge-neutral"}">${escapeHtml(STATUS_LABEL[r.status] || r.status)}</span></td>
+              </tr>`
+            )
+            .join("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load alert details:", err);
+      showToast("danger", "Detail Load Error", err.message);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadAlertData();
+
+    // Acknowledge Action
+    const btnAck = document.getElementById("btnAcknowledge");
+    if (btnAck) {
+      btnAck.addEventListener("click", async () => {
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/acknowledge`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("success", "Acknowledged", `Alert ${alertId} acknowledged.`);
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Action Failed", err.message);
+        }
+      });
+    }
+
+    // Mark Investigating
+    const btnInv = document.getElementById("btnInvestigate");
+    if (btnInv) {
+      btnInv.addEventListener("click", async () => {
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "investigating", notes: "Investigation initiated by analyst." }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("info", "Status Updated", "Alert marked as Investigating.");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Action Failed", err.message);
+        }
+      });
+    }
+
+    // Reopen Alert
+    const btnReopen = document.getElementById("btnReopen");
+    if (btnReopen) {
+      btnReopen.addEventListener("click", async () => {
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "investigating", notes: "Reopened for further review." }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("info", "Alert Reopened", "Alert returned to Investigating status.");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Action Failed", err.message);
+        }
+      });
+    }
+
+    // Confirm Assign
+    const btnConfirmAssign = document.getElementById("btnConfirmAssign");
+    if (btnConfirmAssign) {
+      btnConfirmAssign.addEventListener("click", async () => {
+        const sel = document.getElementById("detailAssignSelect");
+        const note = document.getElementById("detailAssignNote");
+        const userId = sel ? sel.value : null;
+        const notes = note ? note.value.trim() : "";
+
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/assign`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assigned_to: userId ? parseInt(userId, 10) : null, notes }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("success", "Assigned", "Alert assignee updated.");
+          if (window.xdrCloseModal) window.xdrCloseModal("assignModal");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Assignment Failed", err.message);
+        }
+      });
+    }
+
+    // Confirm Resolve
+    const btnConfirmResolve = document.getElementById("btnConfirmResolve");
+    if (btnConfirmResolve) {
+      btnConfirmResolve.addEventListener("click", async () => {
+        const reasonSel = document.getElementById("detailResolveReasonSelect");
+        const notesEl = document.getElementById("detailResolveNotes");
+
+        const reason = reasonSel ? reasonSel.value : "";
+        const custom = notesEl ? notesEl.value.trim() : "";
+        const resolutionNotes = custom ? `${reason}: ${custom}` : reason;
+
+        if (!resolutionNotes) {
+          showToast("warning", "Missing Notes", "Please supply resolution notes.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/resolve`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resolution_notes: resolutionNotes }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("success", "Alert Resolved", `Alert ${alertId} resolved.`);
+          if (window.xdrCloseModal) window.xdrCloseModal("resolveModal");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Resolution Failed", err.message);
+        }
+      });
+    }
+
+    // Post Note
+    const btnPostNote = document.getElementById("btnPostNote");
+    if (btnPostNote) {
+      btnPostNote.addEventListener("click", async () => {
+        const noteEl = document.getElementById("appendNoteText");
+        const notes = noteEl ? noteEl.value.trim() : "";
+        if (!notes) {
+          showToast("warning", "Empty Note", "Please enter a note before posting.");
+          return;
+        }
+
+        const currentStatus = headerCard.dataset.alertStatus || "investigating";
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: currentStatus, notes }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("success", "Note Added", "Investigation note appended.");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Note Failed", err.message);
+        }
+      });
+    }
+
+    // Create Incident from Alert
+    const btnConfirmCreateInc = document.getElementById("btnConfirmCreateIncident");
+    if (btnConfirmCreateInc) {
+      btnConfirmCreateInc.addEventListener("click", async () => {
+        const title = document.getElementById("newIncTitle")?.value?.trim();
+        const severity = document.getElementById("newIncSeverity")?.value || "medium";
+        const category = document.getElementById("newIncCategory")?.value?.trim() || "Security";
+        const description = document.getElementById("newIncDesc")?.value?.trim();
+
+        if (!title) {
+          showToast("warning", "Missing Title", "Incident title is required.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/link-incident`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              create_new: true,
+              title,
+              severity,
+              category,
+              description,
+            }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("success", "Incident Created", `Created Incident ${json.data.incident.incident_id}`);
+          if (window.xdrCloseModal) window.xdrCloseModal("createIncidentModal");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Escalation Failed", err.message);
+        }
+      });
+    }
+
+    // Link Existing Incident
+    const btnConfirmLinkInc = document.getElementById("btnConfirmLinkIncident");
+    if (btnConfirmLinkInc) {
+      btnConfirmLinkInc.addEventListener("click", async () => {
+        const incIdInput = document.getElementById("linkIncIdInput")?.value?.trim();
+        if (!incIdInput) {
+          showToast("warning", "Missing ID", "Incident ID is required.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`/alert-center/${encodeURIComponent(alertId)}/link-incident`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ incident_id: incIdInput }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message);
+          showToast("success", "Incident Linked", `Alert linked to ${incIdInput}.`);
+          if (window.xdrCloseModal) window.xdrCloseModal("linkIncidentModal");
+          window.location.reload();
+        } catch (err) {
+          showToast("danger", "Link Failed", err.message);
+        }
+      });
+    }
+  });
+})();

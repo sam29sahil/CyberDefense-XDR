@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ alert.alert_id }} — Alert Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head>
+<body data-page="alert-center" data-title="Alert Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <div class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('alerts.index') }}">Alert Center</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current" id="breadcrumbAlertId">{{ alert.alert_id }}</span>
+      </nav>
+
+      <!-- Alert Header Card -->
+      <div class="card mb-4" id="alertHeaderCard" data-alert-id="{{ alert.alert_id }}" data-alert-status="{{ alert.status }}">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div class="d-flex gap-3">
+            <div class="brand-mark brand-mark-lg">
+              <i class="bi bi-shield-exclamation text-warning"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 class="fs-detail-title mb-0" id="alertTitle">{{ alert.title }}</h1>
+                <span class="badge cell-mono text-sm" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">{{ alert.alert_id }}</span>
+                <span id="alertSevBadge"></span>
+                <span id="alertStatusBadge"></span>
+              </div>
+              <p class="text-muted mb-2" id="alertSubtitle">
+                Category: <strong>{{ alert.category or 'Security' }}</strong> &middot; 
+                Source: <strong>{{ alert.source or 'System' }}</strong>
+              </p>
+              <div class="d-flex gap-2 flex-wrap" id="alertMitreRow">
+                {% if alert.mitre_id %}
+                <span class="badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3);">
+                  <i class="bi bi-diagram-3"></i> {{ alert.mitre_id }} {% if alert.mitre_name %}&mdash; {{ alert.mitre_name }}{% endif %}
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Action Buttons -->
+          <div class="d-flex gap-2 flex-wrap" id="alertActionButtons">
+            {% if alert.status == 'new' %}
+            <button class="btn btn-primary btn-sm" id="btnAcknowledge">
+              <i class="bi bi-check2-circle"></i> Acknowledge
+            </button>
+            {% endif %}
+
+            {% if alert.status in ['new', 'acknowledged'] %}
+            <button class="btn btn-warning btn-sm" id="btnInvestigate">
+              <i class="bi bi-search"></i> Mark Investigating
+            </button>
+            {% endif %}
+
+            <button class="btn btn-secondary btn-sm" data-modal-open="assignModal">
+              <i class="bi bi-person-plus"></i> Assign
+            </button>
+
+            {% if not alert.incident_id %}
+            <button class="btn btn-danger btn-sm" data-modal-open="createIncidentModal">
+              <i class="bi bi-lightning-charge"></i> Create Incident
+            </button>
+            {% else %}
+            <a href="{{ url_for('incidents.incident_details', incident_id=alert.incident_id) }}" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-box-arrow-up-right"></i> View Incident ({{ alert.incident_id }})
+            </a>
+            {% endif %}
+
+            {% if alert.status != 'resolved' %}
+            <button class="btn btn-success btn-sm" data-modal-open="resolveModal">
+              <i class="bi bi-check-lg"></i> Resolve
+            </button>
+            {% else %}
+            <button class="btn btn-outline-secondary btn-sm" id="btnReopen">
+              <i class="bi bi-arrow-counterclockwise"></i> Reopen
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick KPI Stat Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-6">
+          <div class="card stat-card accent-primary">
+            <div class="eyebrow">Affected Host</div>
+            <div class="stat-value fs-inherit-lg">{{ alert.affected_host or 'Unknown / Unspecified' }}</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="card stat-card accent-info">
+            <div class="eyebrow">Affected Asset</div>
+            <div class="stat-value fs-inherit-lg">{{ alert.affected_asset or alert.affected_host or 'N/A' }}</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="card stat-card accent-warning">
+            <div class="eyebrow">Rule Reference</div>
+            <div class="stat-value fs-inherit-lg">{{ alert.rule_id or 'Manual / None' }}</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="card stat-card accent-success">
+            <div class="eyebrow">Assigned Analyst</div>
+            <div class="stat-value fs-inherit-lg" id="statAnalyst">
+              {{ alert.assignee.full_name or alert.assignee.email if alert.assignee else 'Unassigned' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Columns -->
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <!-- Description & Detection Findings -->
+          <section class="card mb-4" aria-labelledby="descSectionTitle">
+            <div class="card-header">
+              <h2 id="descSectionTitle" class="fs-6 fw-bold mb-0">Alert Description & Context</h2>
+            </div>
+            <div class="card-body">
+              <p style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">{{ alert.description or 'No detailed description provided.' }}</p>
+
+              {% if alert.detection_event %}
+              <hr>
+              <h3 class="fs-6 fw-bold text-muted mb-2"><i class="bi bi-cpu"></i> Linked Detection Event</h3>
+              <div class="table-responsive">
+                <table class="table table-sm text-sm" style="color: inherit;">
+                  <tr><th style="width:140px;">Event ID:</th><td><code>{{ alert.detection_event.event_id }}</code></td></tr>
+                  <tr><th>Timestamp:</th><td>{{ alert.detection_event.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') if alert.detection_event.timestamp else 'N/A' }}</td></tr>
+                  <tr><th>Source / Host:</th><td>{{ alert.detection_event.source }} &middot; {{ alert.detection_event.host or 'N/A' }}</td></tr>
+                  {% if alert.detection_event.rule %}
+                  <tr><th>Rule:</th><td><a href="{{ url_for('detection.rule_details', rule_id=alert.detection_event.rule.rule_id) }}">{{ alert.detection_event.rule.name }} ({{ alert.detection_event.rule.rule_id }})</a></td></tr>
+                  {% endif %}
+                </table>
+              </div>
+              {% if alert.detection_event.raw_event %}
+              <div class="mt-2">
+                <span class="eyebrow mb-1 d-block">Raw Event Payload</span>
+                <pre class="cell-mono text-xs p-3 rounded" style="background: rgba(0,0,0,0.3); max-height: 200px; overflow-y: auto; color: #38bdf8;">{{ alert.detection_event.raw_event }}</pre>
+              </div>
+              {% endif %}
+              {% endif %}
+            </div>
+          </section>
+
+          <!-- Notes & Investigation History -->
+          <section class="card mb-4" aria-labelledby="notesSectionTitle">
+            <div class="card-header">
+              <h2 id="notesSectionTitle" class="fs-6 fw-bold mb-0">Investigation & Resolution Notes</h2>
+            </div>
+            <div class="card-body">
+              {% if alert.investigation_notes %}
+              <div class="mb-3">
+                <span class="eyebrow mb-1 d-block">Investigation Activity Log</span>
+                <pre class="p-3 rounded text-sm" style="background: rgba(0,0,0,0.2); white-space: pre-wrap; font-family: inherit; line-height: 1.5; color: #cbd5e1;">{{ alert.investigation_notes }}</pre>
+              </div>
+              {% endif %}
+
+              {% if alert.resolution_notes %}
+              <div class="mb-3">
+                <span class="eyebrow mb-1 d-block text-success">Resolution Summary</span>
+                <div class="p-3 rounded text-sm" style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); color: #86efac;">
+                  <i class="bi bi-check-circle me-1"></i> {{ alert.resolution_notes }}
+                </div>
+              </div>
+              {% endif %}
+
+              {% if not alert.investigation_notes and not alert.resolution_notes %}
+              <p class="text-muted text-sm mb-3">No analyst notes recorded yet.</p>
+              {% endif %}
+
+              <!-- Add note form -->
+              <div class="mt-3">
+                <label class="form-label text-sm fw-bold">Append Investigation Note</label>
+                <textarea class="form-control mb-2" id="appendNoteText" rows="2" placeholder="Record triage findings, IOC observations, or actions taken..."></textarea>
+                <button class="btn btn-primary btn-sm" id="btnPostNote">
+                  <i class="bi bi-send"></i> Add Note
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right Side: Timestamps, Incident Link, Related -->
+        <div class="col-lg-5">
+          <!-- Timestamps & Lifecycle -->
+          <section class="card mb-4" aria-labelledby="lifecycleTitle">
+            <div class="card-header">
+              <h2 id="lifecycleTitle" class="fs-6 fw-bold mb-0">Lifecycle & Timestamps</h2>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted text-sm">Created</span>
+                <span class="cell-mono text-sm">{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') if alert.created_at else '—' }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted text-sm">Acknowledged</span>
+                <span class="cell-mono text-sm">{{ alert.acknowledged_at.strftime('%Y-%m-%d %H:%M:%S UTC') if alert.acknowledged_at else 'Pending' }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted text-sm">Resolved</span>
+                <span class="cell-mono text-sm">{{ alert.resolved_at.strftime('%Y-%m-%d %H:%M:%S UTC') if alert.resolved_at else 'Unresolved' }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-2">
+                <span class="text-muted text-sm">Last Updated</span>
+                <span class="cell-mono text-sm">{{ alert.updated_at.strftime('%Y-%m-%d %H:%M:%S UTC') if alert.updated_at else '—' }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Incident Escalation Card -->
+          <section class="card mb-4" aria-labelledby="incidentCardTitle">
+            <div class="card-header">
+              <h2 id="incidentCardTitle" class="fs-6 fw-bold mb-0">Incident Management</h2>
+            </div>
+            <div class="card-body">
+              {% if alert.incident_id %}
+              <div class="p-3 rounded mb-3" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25);">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <span class="eyebrow text-danger d-block">Linked Security Incident</span>
+                    <strong class="fs-6">{{ alert.incident_id }}</strong>
+                  </div>
+                  <a href="{{ url_for('incidents.incident_details', incident_id=alert.incident_id) }}" class="btn btn-danger btn-sm">
+                    Open Incident <i class="bi bi-arrow-right"></i>
+                  </a>
+                </div>
+              </div>
+              {% else %}
+              <p class="text-muted text-sm mb-3">This alert has not been escalated into an incident.</p>
+              <div class="d-flex gap-2">
+                <button class="btn btn-danger btn-sm flex-fill" data-modal-open="createIncidentModal">
+                  <i class="bi bi-plus-lg"></i> Create Incident
+                </button>
+                <button class="btn btn-secondary btn-sm" data-modal-open="linkIncidentModal">
+                  <i class="bi bi-link-45deg"></i> Link Existing
+                </button>
+              </div>
+              {% endif %}
+            </div>
+          </section>
+
+          <!-- Related Alerts Table -->
+          <section class="card mb-4" aria-labelledby="relatedAlertsTitle">
+            <div class="card-header">
+              <h2 id="relatedAlertsTitle" class="fs-6 fw-bold mb-0">Related Alerts &middot; Same Host</h2>
+            </div>
+            <div class="xdr-table-wrap flush">
+              <table class="xdr-table">
+                <thead><tr><th>Alert</th><th>Severity</th><th>Status</th></tr></thead>
+                <tbody id="relatedAlertsBody">
+                  <tr><td colspan="3" class="text-muted text-center py-3">Loading related alerts...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Modal -->
+<div class="xdr-modal-backdrop" data-modal-backdrop="assignModal"></div>
+<div class="xdr-modal" id="assignModal">
+  <div class="xdr-modal-header">
+    <h3>Assign Alert {{ alert.alert_id }}</h3>
+    <button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="xdr-modal-body">
+    <div class="mb-3">
+      <label class="form-label">Assign Analyst</label>
+      <select class="form-select" id="detailAssignSelect">
+        <option value="">-- Unassigned --</option>
+        {% for u in users %}
+        <option value="{{ u.id }}" {% if alert.assigned_to == u.id %}selected{% endif %}>
+          {{ u.full_name or u.username }} ({{ u.email }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-0">
+      <label class="form-label">Assignment Notes (Optional)</label>
+      <input class="form-control" id="detailAssignNote" placeholder="Instructions or escalation note...">
+    </div>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-primary" id="btnConfirmAssign">Save Assignment</button>
+  </div>
+</div>
+
+<!-- Resolve Modal -->
+<div class="xdr-modal-backdrop" data-modal-backdrop="resolveModal"></div>
+<div class="xdr-modal" id="resolveModal">
+  <div class="xdr-modal-header">
+    <h3>Resolve Alert {{ alert.alert_id }}</h3>
+    <button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="xdr-modal-body">
+    <div class="mb-3">
+      <label class="form-label">Resolution Summary *</label>
+      <select class="form-select mb-2" id="detailResolveReasonSelect">
+        <option value="True Positive — Remediated">True Positive — Remediated</option>
+        <option value="False Positive — Verified Benign">False Positive — Verified Benign</option>
+        <option value="Authorized Testing Activity">Authorized Testing Activity</option>
+        <option value="Duplicate — Handled Elsewhere">Duplicate — Handled Elsewhere</option>
+        <option value="Custom">Custom Resolution</option>
+      </select>
+      <textarea class="form-control" id="detailResolveNotes" rows="3" placeholder="Provide investigation findings and resolution steps..."></textarea>
+    </div>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-success" id="btnConfirmResolve">Mark Resolved</button>
+  </div>
+</div>
+
+<!-- Create Incident Modal -->
+<div class="xdr-modal-backdrop" data-modal-backdrop="createIncidentModal"></div>
+<div class="xdr-modal" id="createIncidentModal">
+  <div class="xdr-modal-header">
+    <h3>Create Incident from Alert</h3>
+    <button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="xdr-modal-body">
+    <div class="mb-3">
+      <label class="form-label">Incident Title *</label>
+      <input class="form-control" id="newIncTitle" value="Incident: {{ alert.title }}">
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Severity</label>
+        <select class="form-select" id="newIncSeverity">
+          <option value="critical" {% if alert.severity == 'critical' %}selected{% endif %}>Critical</option>
+          <option value="high" {% if alert.severity == 'high' %}selected{% endif %}>High</option>
+          <option value="medium" {% if alert.severity == 'medium' %}selected{% endif %}>Medium</option>
+          <option value="low" {% if alert.severity == 'low' %}selected{% endif %}>Low</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Category</label>
+        <input class="form-control" id="newIncCategory" value="{{ alert.category or 'Security' }}">
+      </div>
+    </div>
+    <div class="mb-0">
+      <label class="form-label">Initial Incident Description</label>
+      <textarea class="form-control" id="newIncDesc" rows="3">Escalated from Alert {{ alert.alert_id }}.
+Host: {{ alert.affected_host or 'N/A' }}
+Category: {{ alert.category or 'Security' }}
+
+{{ alert.description or '' }}</textarea>
+    </div>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-danger" id="btnConfirmCreateIncident">Create Security Incident</button>
+  </div>
+</div>
+
+<!-- Link Existing Incident Modal -->
+<div class="xdr-modal-backdrop" data-modal-backdrop="linkIncidentModal"></div>
+<div class="xdr-modal" id="linkIncidentModal">
+  <div class="xdr-modal-header">
+    <h3>Link Existing Incident</h3>
+    <button data-modal-close class="btn btn-icon btn-ghost"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="xdr-modal-body">
+    <div class="mb-0">
+      <label class="form-label">Incident Identifier *</label>
+      <input class="form-control" id="linkIncIdInput" placeholder="e.g. INC-482910">
+      <div class="form-text">Enter the exact Incident ID to associate with this alert.</div>
+    </div>
+  </div>
+  <div class="xdr-modal-footer">
+    <button class="btn btn-secondary" data-modal-close>Cancel</button>
+    <button class="btn btn-primary" id="btnConfirmLinkIncident">Link Incident</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/modal-helpers.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/alert-details.js') }}"></script>
+</body>
+</html>
+

@@ -111,7 +111,7 @@
       <div class="row g-4 mb-4">
         <div class="col-lg-7">
           <section class="card h-100" aria-labelledby="recentAlertsTitle">
-            <div class="card-header"><h2 id="recentAlertsTitle">Recent Alerts</h2><a href="alert-center.html" class="text-sm">View all <i class="bi bi-arrow-right"></i></a></div>
+            <div class="card-header"><h2 id="recentAlertsTitle">Recent Alerts</h2><a href="{{ url_for('alerts.index') }}" class="text-sm">View all <i class="bi bi-arrow-right"></i></a></div>
             <div class="xdr-table-wrap flush">
               <table class="xdr-table">
                 <thead><tr><th>Severity</th><th>Alert</th><th>Asset</th><th>Time</th></tr></thead>

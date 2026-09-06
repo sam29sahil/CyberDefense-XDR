@@ -286,4 +286,11 @@ def create_detection_event(
     db.session.add(event)
     db.session.commit()
 
+    # Automatically generate corresponding alert in Alert Center
+    try:
+        from app.alerts.services import create_alert_from_detection_event
+        create_alert_from_detection_event(event)
+    except Exception:
+        pass
+
     return event
