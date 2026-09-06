@@ -22,6 +22,8 @@ from app.detection import detection
 from app.incidents import incidents
 from app.alerts import alerts
 from app.threatintel import threatintel
+from app.siem import siem
+from app.scanner import scanner
 
 from app.utils.logger import configure_logger
 
@@ -75,11 +77,20 @@ def create_app():
     from app.incidents.models import Incident  # noqa: F401
     from app.alerts.models import Alert  # noqa: F401
     from app.threatintel.models import (
-    IOC,
-    ThreatCampaign,
-    ThreatFeed,
-    ThreatActor,
-)  # noqa: F401
+        IOC,
+        ThreatCampaign,
+        ThreatFeed,
+        ThreatActor,
+    )  # noqa: F401
+    from app.siem.models import (
+        SiemEvent,
+        SiemSavedSearch,
+    )  # noqa: F401
+    from app.scanner.models import (
+        Scan,
+        VulnerabilityFinding,
+        ScanTarget,
+    )  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -98,5 +109,7 @@ def create_app():
 
     app.register_blueprint(alerts)
     app.register_blueprint(threatintel)
+    app.register_blueprint(siem)
+    app.register_blueprint(scanner)
 
     return app

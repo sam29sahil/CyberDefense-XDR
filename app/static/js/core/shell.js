@@ -29,8 +29,8 @@
         { key: "scan-history", label: "Scan History", icon: "bi-clock-history", href: "/scan-history/" },
       ]},
       { section: "Threat Intel", items: [
-        { key: "threat-intel", label: "Threat Intelligence", icon: "bi-globe2", href: "/threat-intel/" },
-        { key: "ioc-database", label: "IOC Database", icon: "bi-database", href: "/ioc-database/" },
+        { key: "threat-intel", label: "Threat Intelligence", icon: "bi-globe2", href: "/threat-intelligence/dashboard" },
+        { key: "ioc-database", label: "IOC Database", icon: "bi-database", href: "/threat-intelligence/ioc-feed" },
       ]},
       { section: "IDS", items: [
         { key: "network-ids", label: "Network IDS", icon: "bi-diagram-3", href: "/network-ids/" },

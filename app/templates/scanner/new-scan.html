@@ -7,7 +7,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link href="../assets/css/main.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
 </head>
 <body data-page="vuln-scanner" data-title="New Scan">
 <div class="app-shell">
@@ -17,18 +17,26 @@
 
     <div class="page-wrap fade-in">
       <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
-        <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i>
-        <a href="scanner-dashboard.html">Vulnerability Scanner</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('scanner.index') }}">Vulnerability Scanner</a><i class="bi bi-chevron-right sep"></i>
         <span class="current">New Scan</span>
       </nav>
+
+      <div class="alert alert-warning d-flex align-items-center mb-4" role="alert" style="border-left: 4px solid #f59e0b;">
+        <i class="bi bi-shield-exclamation me-3 fs-4 text-warning"></i>
+        <div>
+          <div style="font-weight:600;">Authorized Scanning Only</div>
+          <div class="text-sm">Only scan systems you own or have explicit authorization to test. Supports authorized IPv4, IPv6, Domain, Hostname, CIDR (/24 max), and HTTP/HTTPS URLs.</div>
+        </div>
+      </div>
 
       <div class="section-title-row">
         <div>
           <h1>New Scan</h1>
-          <p class="text-muted mt-1">Configure targets and scan options, then launch or schedule</p>
+          <p class="text-muted mt-1">Configure targets, scan profile, and multi-tool options, then launch or schedule</p>
         </div>
         <div class="d-flex gap-2">
-          <a href="scanner-dashboard.html" class="btn btn-secondary btn-sm"><i class="bi bi-x-lg"></i> Cancel</a>
+          <a href="{{ url_for('scanner.index') }}" class="btn btn-secondary btn-sm"><i class="bi bi-x-lg"></i> Cancel</a>
           <button class="btn btn-primary btn-sm" id="launchScanBtn"><i class="bi bi-play-fill"></i> Launch Scan</button>
         </div>
       </div>
@@ -40,14 +48,23 @@
               <div class="builder-section">
                 <div class="builder-section-title"><i class="bi bi-card-text"></i> Scan Basics</div>
                 <div class="row g-3">
-                  <div class="col-md-8">
+                  <div class="col-md-5">
                     <label class="form-label">Scan name</label>
-                    <input class="form-control" id="scanName" placeholder="e.g. Weekly Production Sweep">
+                    <input class="form-control" id="scanName" placeholder="e.g. Authorized Infrastructure Audit">
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <label class="form-label">Scan type</label>
                     <select class="form-select" id="scanType">
-                      <option>Full Scan</option><option>Quick Scan</option><option>Compliance Scan</option><option>Custom Scan</option>
+                      <option>Standard Scan</option><option>Quick Scan</option><option>Web Application Scan</option><option>Full Scan</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Scan Profile</label>
+                    <select class="form-select" id="scanProfile">
+                      <option value="STANDARD" selected>STANDARD (Port &amp; Version)</option>
+                      <option value="QUICK">QUICK (Top Ports Fast Sweep)</option>
+                      <option value="WEB">WEB (WhatWeb &amp; Web Findings)</option>
+                      <option value="DEEP">DEEP (Multi-Tool Comprehensive)</option>
                     </select>
                   </div>
                 </div>
@@ -55,19 +72,33 @@
 
               <div class="builder-section">
                 <div class="builder-section-title"><i class="bi bi-crosshair"></i> Target Selection</div>
-                <p class="text-muted text-sm mb-2">Select one or more targets to scan</p>
-                <div class="target-picker" id="targetPicker"></div>
+                <p class="text-muted text-sm mb-2">Select configured targets or enter an authorized target below:</p>
+                <div class="target-picker mb-3" id="targetPicker"></div>
+
+                <label class="form-label">Enter Target (IPv4, IPv6, Domain, Hostname, CIDR /24, URL)</label>
+                <div class="input-group mb-2">
+                  <span class="input-group-text"><i class="bi bi-globe"></i></span>
+                  <input type="text" class="form-control" id="customTargetInput" placeholder="e.g. 127.0.0.1, scanme.nmap.org, http://127.0.0.1:5000, 192.168.1.0/24">
+                  <button class="btn btn-secondary" type="button" id="addCustomTargetBtn"><i class="bi bi-plus-lg"></i> Add Target</button>
+                </div>
+                <div id="customTargetsList" class="d-flex flex-wrap gap-2 mb-2"></div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="authConfirmCheck" checked>
+                  <label class="form-check-label text-sm text-muted" for="authConfirmCheck">
+                    I confirm that I own or have explicit authorization to assess all selected targets.
+                  </label>
+                </div>
               </div>
 
               <div class="builder-section">
                 <div class="builder-section-title"><i class="bi bi-sliders"></i> Scan Options</div>
                 <div class="action-check-grid">
-                  <label class="action-check"><input type="checkbox" checked> Service &amp; version detection</label>
-                  <label class="action-check"><input type="checkbox" checked> Known CVE matching</label>
-                  <label class="action-check"><input type="checkbox"> Web application checks</label>
-                  <label class="action-check"><input type="checkbox"> Credentialed scan</label>
-                  <label class="action-check"><input type="checkbox"> Compliance benchmark (CIS)</label>
-                  <label class="action-check"><input type="checkbox"> Safe checks only (no exploit attempts)</label>
+                  <label class="action-check"><input type="checkbox" id="optService" checked> Service &amp; version detection (Nmap)</label>
+                  <label class="action-check"><input type="checkbox" id="optCve" checked> Known CVE matching &amp; Vulners</label>
+                  <label class="action-check"><input type="checkbox" id="optWeb" checked> Web technology detection (WhatWeb)</label>
+                  <label class="action-check"><input type="checkbox" id="optNikto"> Web server vulnerability audit (Nikto)</label>
+                  <label class="action-check"><input type="checkbox" id="optThreatIntel" checked> Threat Intelligence correlation</label>
+                  <label class="action-check"><input type="checkbox" id="optSafe" checked> Safe checks only (non-destructive)</label>
                 </div>
               </div>
 
@@ -96,15 +127,42 @@
         </div>
 
         <div class="col-lg-4">
-          <section class="card">
+          <section class="card mb-4">
             <div class="card-header"><h2>Scan Summary</h2></div>
             <div class="card-body">
-              <div class="info-row"><span class="text-muted">Type</span><span id="summaryType">Full Scan</span></div>
+              <div class="info-row"><span class="text-muted">Profile</span><span id="summaryProfile" class="badge bg-primary-subtle text-primary">STANDARD</span></div>
+              <div class="info-row"><span class="text-muted">Type</span><span id="summaryType">Standard Scan</span></div>
               <div class="info-row"><span class="text-muted">Targets selected</span><span id="summaryTargetCount">0</span></div>
               <div class="info-row"><span class="text-muted">Assets in scope</span><span id="summaryAssetCount">0</span></div>
               <div class="info-row"><span class="text-muted">Schedule</span><span id="summarySchedule">Run now</span></div>
               <hr class="divider">
-              <p class="text-muted text-sm mb-0">Estimated duration scales with target count and scan type. Full scans typically take 30–140 minutes.</p>
+              <p class="text-muted text-sm mb-0">Multi-tool pipeline executes Nmap, WhatWeb, and Nikto with safe non-destructive flags. Findings are normalized and deduplicated.</p>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><h2>Tool Availability</h2></div>
+            <div class="card-body" id="toolsAvailabilityBox">
+              <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                <span class="text-sm fw-medium">Nmap</span>
+                <span class="badge bg-secondary-subtle text-secondary" id="toolNmapStatus">checking…</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                <span class="text-sm fw-medium">WhatWeb</span>
+                <span class="badge bg-secondary-subtle text-secondary" id="toolWhatwebStatus">checking…</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                <span class="text-sm fw-medium">Nikto</span>
+                <span class="badge bg-secondary-subtle text-secondary" id="toolNiktoStatus">checking…</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                <span class="text-sm fw-medium">Nuclei</span>
+                <span class="badge bg-secondary-subtle text-secondary" id="toolNucleiStatus">checking…</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between py-1">
+                <span class="text-sm fw-medium">testssl.sh</span>
+                <span class="badge bg-secondary-subtle text-secondary" id="toolTestsslStatus">checking…</span>
+              </div>
             </div>
           </section>
         </div>
@@ -113,11 +171,12 @@
   </div>
 </div>
 
+<script>window.XDR_ACTIVE = "vuln-scanner";</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/app.js"></script>
-<script src="../assets/js/core/shell.js"></script>
-<script src="../assets/js/core/toast.js"></script>
-<script src="../assets/js/data/targets-data.js"></script>
-<script src="../assets/js/pages/new-scan.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/data/target-data.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/new-scan.js') }}"></script>
 </body>
 </html>
