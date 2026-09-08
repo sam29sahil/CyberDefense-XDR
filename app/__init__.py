@@ -25,6 +25,7 @@ from app.threatintel import threatintel
 from app.siem import siem
 from app.scanner import scanner
 from app.ids import ids
+from app.packet_analysis import packet_analysis
 
 from app.utils.logger import configure_logger
 
@@ -96,6 +97,7 @@ def create_app():
         NetworkIDSEvent,
         IDSSensor,
     )  # noqa: F401
+    from app.packet_analysis.models import PacketAnalysis  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -117,5 +119,6 @@ def create_app():
     app.register_blueprint(siem)
     app.register_blueprint(scanner)
     app.register_blueprint(ids)
+    app.register_blueprint(packet_analysis)
 
     return app

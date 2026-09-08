@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload PCAP — Packet Analysis — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+.upload-dropzone {
+  border: 2px dashed var(--bs-border-color, #334155);
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--bs-body-bg, #0f172a);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.upload-dropzone:hover, .upload-dropzone.dragover {
+  border-color: var(--bs-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+.upload-icon {
+  font-size: 3rem;
+  color: var(--bs-primary, #3b82f6);
+  margin-bottom: 12px;
+}
+</style>
+</head>
+<body data-page="packet-analysis" data-title="Upload PCAP">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('packet_analysis.index') }}">Packet Analysis</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Upload PCAP</span>
+      </nav>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          
+          <div class="card mb-4">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-cloud-arrow-up text-primary"></i>
+              <span class="fw-semibold">Upload Authorized Network Capture</span>
+            </div>
+            <div class="card-body p-4">
+
+              <div id="alertBox" class="alert d-none mb-4" role="alert"></div>
+
+              <form id="pcapUploadForm" enctype="multipart/form-data">
+                <div class="upload-dropzone mb-4" id="dropZone">
+                  <i class="bi bi-file-earmark-binary upload-icon"></i>
+                  <h5 class="mb-1" id="fileLabel">Drag & drop your PCAP file here</h5>
+                  <p class="text-muted small mb-3">Or browse files from your computer (.pcap, .pcapng up to {{ max_upload_mb }} MB)</p>
+                  <input type="file" id="pcapFileInput" name="pcap_file" accept=".pcap,.pcapng" class="d-none">
+                  <button type="button" class="btn btn-outline-primary btn-sm" id="btnBrowseFile">
+                    <i class="bi bi-folder2-open me-1"></i>Choose Capture File
+                  </button>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small text-muted">Correlate with Network IDS Event (Optional)</label>
+                  <input type="number" class="form-control form-control-sm" name="ids_event_id" placeholder="e.g. 1042 (Leave empty if independent)">
+                  <div class="form-text">Optionally link this PCAP investigation to an existing Suricata IDS event ID.</div>
+                </div>
+
+                <div class="form-check mb-4">
+                  <input class="form-check-input" type="checkbox" id="forceReanalyze" name="force_reanalyze" value="true">
+                  <label class="form-check-label small" for="forceReanalyze">
+                    Force re-analysis if a capture with identical SHA-256 already exists
+                  </label>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <a href="{{ url_for('packet_analysis.index') }}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                  </a>
+                  <button type="submit" class="btn btn-primary" id="btnUploadSubmit" disabled>
+                    <i class="bi bi-play-circle me-1"></i>Upload & Analyze
+                  </button>
+                </div>
+              </form>
+
+              <!-- Progress bar container -->
+              <div id="uploadProgressContainer" class="d-none mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-1 small text-muted">
+                  <span id="progressStatusText">Uploading & executing TShark analysis...</span>
+                  <span id="progressPercent">Processing</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Security Policy Notice -->
+          <div class="card">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-2"><i class="bi bi-shield-check text-success me-2"></i>Security & Analysis Policy</h6>
+              <ul class="text-muted small mb-0 ps-3">
+                <li>Only inspect PCAP files from authorized environments, internal lab captures, or simulated attack sessions.</li>
+                <li>Files are strictly validated for PCAP/PCAPNG binary headers and saved outside web roots under secure UUID identifiers.</li>
+                <li>All analysis is performed directly using non-interactive TShark (v4.4.7) subprocess executions without shell interpreters.</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.XDR_ACTIVE = "packet-analysis";</script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const dropZone = document.getElementById("dropZone");
+  const fileInput = document.getElementById("pcapFileInput");
+  const fileLabel = document.getElementById("fileLabel");
+  const btnBrowse = document.getElementById("btnBrowseFile");
+  const btnSubmit = document.getElementById("btnUploadSubmit");
+  const form = document.getElementById("pcapUploadForm");
+  const alertBox = document.getElementById("alertBox");
+  const progressContainer = document.getElementById("uploadProgressContainer");
+
+  btnBrowse.addEventListener("click", () => fileInput.click());
+  dropZone.addEventListener("click", (e) => {
+    if (e.target !== btnBrowse) fileInput.click();
+  });
+
+  ["dragenter", "dragover"].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    }, false);
+  });
+
+  ["dragleave", "drop"].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+    }, false);
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      handleFileSelected(files[0]);
+    }
+  });
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+      handleFileSelected(fileInput.files[0]);
+    }
+  });
+
+  function handleFileSelected(file) {
+    fileLabel.textContent = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+    btnSubmit.disabled = false;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!fileInput.files.length) return;
+
+    btnSubmit.disabled = true;
+    progressContainer.classList.remove("d-none");
+    alertBox.classList.add("d-none");
+
+    const formData = new FormData(form);
+
+    try {
+      const res = await fetch("{{ url_for('packet_analysis.api_upload') }}", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alertBox.className = "alert alert-success";
+        alertBox.textContent = data.is_new 
+          ? "PCAP uploaded and analyzed successfully! Redirecting..." 
+          : "Identical PCAP found; existing completed analysis loaded! Redirecting...";
+        alertBox.classList.remove("d-none");
+
+        setTimeout(() => {
+          window.location.href = data.redirect_url || `/packet-analysis/analyses/${data.analysis.id}`;
+        }, 800);
+      } else {
+        alertBox.className = "alert alert-danger";
+        alertBox.textContent = data.error || "Failed to process PCAP.";
+        alertBox.classList.remove("d-none");
+        btnSubmit.disabled = false;
+        progressContainer.classList.add("d-none");
+      }
+    } catch (err) {
+      alertBox.className = "alert alert-danger";
+      alertBox.textContent = `Network error: ${err.message}`;
+      alertBox.classList.remove("d-none");
+      btnSubmit.disabled = false;
+      progressContainer.classList.add("d-none");
+    }
+  });
+});
+</script>
+</body>
+</html>
+

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ analysis.filename }} — Packet Analysis — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+.cell-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+.packet-row { cursor: pointer; }
+.packet-row:hover { background-color: rgba(59, 130, 246, 0.1) !important; }
+.packet-row.table-active { background-color: rgba(59, 130, 246, 0.2) !important; font-weight: 500; }
+.tree-node { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+.tree-node-title { cursor: pointer; padding: 4px 8px; border-radius: 4px; display: block; }
+.tree-node-title:hover { background: rgba(255, 255, 255, 0.05); }
+.hexdump-viewer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  background: #020617;
+  color: #94a3b8;
+  padding: 16px;
+  border-radius: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.nav-tabs .nav-link { color: var(--bs-secondary-color); font-weight: 500; }
+.nav-tabs .nav-link.active { color: var(--bs-primary); border-bottom: 2px solid var(--bs-primary); }
+</style>
+</head>
+<body data-page="packet-analysis" data-title="Packet Analysis Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('packet_analysis.index') }}">Packet Analysis</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">{{ analysis.filename }}</span>
+      </nav>
+
+      <!-- Analysis Title & Actions Strip -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="brand-mark brand-mark-lg"><i class="bi bi-file-earmark-binary"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 class="fs-detail-title mb-0">{{ analysis.filename }}</h1>
+                {% if analysis.status == 'completed' %}
+                  <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Completed</span>
+                {% elif analysis.status == 'running' %}
+                  <span class="badge bg-warning-subtle text-warning"><i class="bi bi-arrow-repeat spin me-1"></i>Running</span>
+                {% elif analysis.status == 'failed' %}
+                  <span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Failed</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary">{{ analysis.status | upper }}</span>
+                {% endif %}
+                <span class="badge bg-primary-subtle text-primary">{{ analysis.file_type | upper }}</span>
+                <span class="badge bg-secondary-subtle text-secondary">{{ analysis.encapsulation or 'Ethernet' }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-3 text-muted small flex-wrap">
+                <span><i class="bi bi-fingerprint me-1"></i>SHA-256: <code class="cell-mono text-info">{{ analysis.sha256[:16] }}...{{ analysis.sha256[-8:] }}</code></span>
+                <button class="btn btn-link btn-xs p-0 text-muted" onclick="navigator.clipboard.writeText('{{ analysis.sha256 }}')"><i class="bi bi-clipboard"></i> Copy</button>
+                <span><i class="bi bi-clock me-1"></i>Uploaded: {{ analysis.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button class="btn btn-secondary btn-sm" id="btnRerunAnalysis" data-id="{{ analysis.id }}">
+              <i class="bi bi-arrow-repeat me-1"></i>Re-run TShark
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="btnDeleteAnalysis" data-id="{{ analysis.id }}">
+              <i class="bi bi-trash me-1"></i>Delete
+            </button>
+            <a href="{{ url_for('packet_analysis.index') }}" class="btn btn-secondary btn-sm">
+              <i class="bi bi-arrow-left me-1"></i>Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Telemetry Stats Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Total Packets</div>
+            <div class="stat-value text-primary cell-mono fs-4">{{ analysis.packet_count }}</div>
+            <div class="stat-sub text-muted">Parsed frames</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Capture Duration</div>
+            <div class="stat-value text-info cell-mono fs-4">{{ "%.3f"|format(analysis.duration) }} s</div>
+            <div class="stat-sub text-muted">Elapsed time span</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">File Size</div>
+            <div class="stat-value text-success cell-mono fs-4">{{ analysis._format_size(analysis.file_size) }}</div>
+            <div class="stat-sub text-muted">Storage disk footprint</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Earliest Packet</div>
+            <div class="stat-value text-muted cell-mono fs-6">{{ analysis.first_packet_time.strftime('%H:%M:%S.%f')[:12] if analysis.first_packet_time else 'N/A' }}</div>
+            <div class="stat-sub text-muted">{{ analysis.first_packet_time.strftime('%Y-%m-%d') if analysis.first_packet_time else '-' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <ul class="nav nav-tabs mb-4" id="analysisTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overviewTabPane" type="button" role="tab">
+            <i class="bi bi-pie-chart me-1"></i>Overview & Protocols
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="conv-tab" data-bs-toggle="tab" data-bs-target="#convTabPane" type="button" role="tab">
+            <i class="bi bi-arrow-left-right me-1"></i>Conversations & Endpoints
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="inspector-tab" data-bs-toggle="tab" data-bs-target="#inspectorTabPane" type="button" role="tab">
+            <i class="bi bi-layers me-1"></i>Packet Inspector (Wireshark)
+          </button>
+        </li>
+      </ul>
+
+      <!-- Tab Contents -->
+      <div class="tab-content" id="analysisTabContent">
+
+        <!-- TAB 1: OVERVIEW & PROTOCOLS -->
+        <div class="tab-pane fade show active" id="overviewTabPane" role="tabpanel">
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold"><i class="bi bi-diagram-2 text-primary me-2"></i>Protocol Hierarchy Breakdown</span>
+                  <span class="badge bg-secondary-subtle text-muted">tshark -z io,phs</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Protocol</th>
+                        <th>Frames</th>
+                        <th>Bytes</th>
+                        <th style="width: 35%;">Distribution</th>
+                      </tr>
+                    </thead>
+                    <tbody id="protocolHierarchyBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted py-4">Loading protocol hierarchy...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-5">
+              <div class="card h-100">
+                <div class="card-header">
+                  <span class="fw-semibold"><i class="bi bi-info-circle text-info me-2"></i>Capture Metadata Details</span>
+                </div>
+                <div class="card-body">
+                  <table class="table table-sm table-borderless mb-0">
+                    <tbody id="captureMetaTable">
+                      <tr><th class="text-muted w-50">Original Filename:</th><td class="cell-mono">{{ analysis.filename }}</td></tr>
+                      <tr><th class="text-muted">Encapsulation Type:</th><td><span class="badge bg-secondary-subtle text-secondary">{{ analysis.encapsulation or 'Ethernet' }}</span></td></tr>
+                      <tr><th class="text-muted">Total Packets:</th><td class="cell-mono">{{ analysis.packet_count }}</td></tr>
+                      <tr><th class="text-muted">Duration:</th><td class="cell-mono">{{ "%.4f"|format(analysis.duration) }} seconds</td></tr>
+                      <tr><th class="text-muted">Earliest Time:</th><td class="cell-mono">{{ analysis.first_packet_time or 'N/A' }}</td></tr>
+                      <tr><th class="text-muted">Latest Time:</th><td class="cell-mono">{{ analysis.last_packet_time or 'N/A' }}</td></tr>
+                      <tr><th class="text-muted">SHA-256 Hash:</th><td class="cell-mono text-break small">{{ analysis.sha256 }}</td></tr>
+                      {% if analysis.ids_event_id %}
+                      <tr><th class="text-muted">Correlated IDS Event:</th><td><a href="/network-ids/events/{{ analysis.ids_event_id }}" class="badge bg-warning-subtle text-warning">Event #{{ analysis.ids_event_id }}</a></td></tr>
+                      {% endif %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: CONVERSATIONS & ENDPOINTS -->
+        <div class="tab-pane fade" id="convTabPane" role="tabpanel">
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold"><i class="bi bi-arrow-left-right text-primary me-2"></i>Top Conversations</span>
+                  <span class="badge bg-secondary-subtle text-muted">tshark -z conv,ip</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Source</th>
+                        <th></th>
+                        <th>Destination</th>
+                        <th>Proto</th>
+                        <th>Frames</th>
+                        <th>Bytes</th>
+                      </tr>
+                    </thead>
+                    <tbody id="conversationsTableBody">
+                      <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Loading conversations...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-5">
+              <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold"><i class="bi bi-hdd-network text-success me-2"></i>Top Endpoints</span>
+                  <span class="badge bg-secondary-subtle text-muted">tshark -z endpoints,ip</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>IP Address</th>
+                        <th>Packets</th>
+                        <th>Bytes</th>
+                      </tr>
+                    </thead>
+                    <tbody id="endpointsTableBody">
+                      <tr>
+                        <td colspan="3" class="text-center text-muted py-4">Loading endpoints...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: PACKET INSPECTOR (WIRESHARK) -->
+        <div class="tab-pane fade" id="inspectorTabPane" role="tabpanel">
+          
+          <!-- Filter Bar -->
+          <div class="card mb-3">
+            <div class="card-body py-2">
+              <form id="filterForm" class="d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-funnel"></i></span>
+                  <input type="text" class="form-control border-start-0 cell-mono" id="displayFilterInput" placeholder="Wireshark display filter, e.g. 'tcp.port == 80', 'icmp', 'ip.addr == 192.168.1.1'">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm px-3" id="btnApplyFilter">Apply</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnClearFilter">Clear</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- PANE 1: PACKET LIST TABLE -->
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold small"><i class="bi bi-list-ul me-1"></i>Captured Packets</span>
+              <div class="d-flex align-items-center gap-2 small text-muted">
+                <span id="packetRangeText">Showing 0-0 of 0</span>
+                <button class="btn btn-outline-secondary btn-xs" id="btnPrevPackets" disabled><i class="bi bi-chevron-left"></i></button>
+                <span id="packetPageText" class="cell-mono">Page 1 / 1</span>
+                <button class="btn btn-outline-secondary btn-xs" id="btnNextPackets" disabled><i class="bi bi-chevron-right"></i></button>
+              </div>
+            </div>
+            <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0 cell-mono">
+                <thead class="sticky-top bg-dark">
+                  <tr>
+                    <th style="width: 60px;">No.</th>
+                    <th style="width: 140px;">Time</th>
+                    <th style="width: 180px;">Source</th>
+                    <th style="width: 180px;">Destination</th>
+                    <th style="width: 90px;">Protocol</th>
+                    <th style="width: 70px;">Length</th>
+                    <th>Info</th>
+                  </tr>
+                </thead>
+                <tbody id="packetsTableBody">
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Click "Packet Inspector" or Apply to load packets...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2-COLUMN SPLIT: DISSECTION TREE & HEX DUMP -->
+          <div class="row g-3">
+            
+            <!-- PANE 2: PACKET DISSECTION TREE -->
+            <div class="col-lg-6">
+              <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                  <span class="fw-semibold small"><i class="bi bi-diagram-3 me-1"></i>Packet Dissection Tree</span>
+                  <span class="badge bg-primary-subtle text-primary" id="selectedPacketBadge">No packet selected</span>
+                </div>
+                <div class="card-body p-2" style="max-height: 280px; overflow-y: auto;" id="dissectionTreeContainer">
+                  <div class="text-muted text-center py-4 small">Select any packet from the table above to view protocol layer dissections.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANE 3: HEX & ASCII DUMP -->
+            <div class="col-lg-6">
+              <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                  <span class="fw-semibold small"><i class="bi bi-code-square me-1"></i>Raw Packet Hex & ASCII Dump</span>
+                  <span class="badge bg-secondary-subtle text-muted">tshark -x</span>
+                </div>
+                <div class="card-body p-2">
+                  <div class="hexdump-viewer" id="hexdumpContainer">Select a packet to view raw byte hex dump.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+window.XDR_ACTIVE = "packet-analysis";
+window.ANALYSIS_ID = {{ analysis.id }};
+window.ANALYSIS_UUID = "{{ analysis.analysis_uuid }}";
+</script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/packet-analysis-details.js') }}"></script>
+</body>
+</html>
+
