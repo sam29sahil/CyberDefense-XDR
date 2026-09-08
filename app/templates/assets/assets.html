@@ -8,6 +8,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link href="../assets/css/main.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
 </head>
 <body data-page="assets" data-title="Asset Management">
 <div class="app-shell">
@@ -18,16 +19,22 @@
     <div class="page-wrap fade-in">
       <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
         <a href="dashboard.html">Home</a><i class="bi bi-chevron-right sep"></i><span class="current">Asset Management</span>
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Asset Management</span>
       </nav>
 
       <div class="section-title-row">
+      <div class="section-title-row mb-4">
         <div>
           <h1>Asset Management</h1>
           <p class="text-muted mt-1">1,266 assets discovered across 6 environments</p>
+          <p class="text-muted mt-1" id="headerSubtitle">Enterprise asset inventory and correlated security posture</p>
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-secondary btn-sm"><i class="bi bi-arrow-repeat"></i> Rescan Inventory</button>
           <button class="btn btn-primary btn-sm" data-modal-open="addAssetModal"><i class="bi bi-plus-lg"></i> Add Asset</button>
+          <button class="btn btn-secondary btn-sm" id="btnRescanInventory"><i class="bi bi-arrow-repeat me-1"></i>Rescan Inventory</button>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAssetModal"><i class="bi bi-plus-lg me-1"></i>Add Asset</button>
         </div>
       </div>
 
@@ -37,31 +44,83 @@
         <div class="card stat-card accent-success"><div class="eyebrow">Online</div><div class="stat-value text-success">1,248</div></div>
         <div class="card stat-card accent-danger"><div class="eyebrow">Critical Risk</div><div class="stat-value text-danger">2</div></div>
         <div class="card stat-card accent-warning"><div class="eyebrow">Unassigned Owner</div><div class="stat-value text-warning">9</div></div>
+      <!-- Real Inventory Statistics Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card stat-card accent-primary">
+            <div class="eyebrow">Total Assets</div>
+            <div class="stat-value text-primary fs-3" id="statTotalAssets">0</div>
+            <div class="stat-sub text-muted">Protected network devices</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card stat-card accent-success">
+            <div class="eyebrow">Online</div>
+            <div class="stat-value text-success fs-3" id="statOnlineAssets">0</div>
+            <div class="stat-sub text-muted">Actively communicating</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card stat-card accent-danger">
+            <div class="eyebrow">Critical Risk</div>
+            <div class="stat-value text-danger fs-3" id="statCriticalAssets">0</div>
+            <div class="stat-sub text-muted">Risk score &ge; 80 / critical findings</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card stat-card accent-warning">
+            <div class="eyebrow">Unassigned Owner</div>
+            <div class="stat-value text-warning fs-3" id="statUnassignedAssets">0</div>
+            <div class="stat-sub text-muted">Require team assignment</div>
+          </div>
+        </div>
       </div>
 
       <!-- Table -->
+      <!-- Table Toolbar & Filters -->
       <section class="xdr-table-wrap" aria-label="Assets table">
         <div class="table-toolbar">
           <div class="search-input-wrap">
+        <div class="table-toolbar d-flex flex-wrap gap-2 align-items-center mb-3">
+          <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
             <i class="bi bi-search"></i>
             <input class="form-control search-input" id="assetSearch" placeholder="Search by name, IP, or owner…">
+            <input class="form-control search-input" id="assetSearch" placeholder="Search by name, hostname, IP, or owner…">
           </div>
           <select class="form-select filter-w-md" id="filterType">
             <option value="">All types</option>
             <option>Server</option><option>Database</option><option>Workstation</option>
             <option>Firewall</option><option>Router</option><option>Domain Controller</option>
             <option>Mail Gateway</option><option>Container Host</option><option>Load Balancer</option>
+            <option value="Server">Server</option>
+            <option value="Database">Database</option>
+            <option value="Workstation">Workstation</option>
+            <option value="Firewall">Firewall</option>
+            <option value="Router">Router</option>
+            <option value="Domain Controller">Domain Controller</option>
+            <option value="Mail Gateway">Mail Gateway</option>
+            <option value="Container Host">Container Host</option>
+            <option value="Load Balancer">Load Balancer</option>
           </select>
           <select class="form-select filter-w-sm" id="filterSev">
             <option value="">All severities</option>
             <option value="critical">Critical</option><option value="high">High</option>
             <option value="medium">Medium</option><option value="low">Low</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
           <select class="form-select filter-w-sm" id="filterStatus">
             <option value="">All statuses</option>
             <option value="online">Online</option><option value="offline">Offline</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="decommissioned">Decommissioned</option>
           </select>
           <button class="btn btn-ghost btn-sm ms-auto" id="clearFilters"><i class="bi bi-x-circle"></i> Clear</button>
+          <button class="btn btn-secondary btn-sm" id="clearFilters"><i class="bi bi-x-circle me-1"></i>Clear</button>
         </div>
 
         <div class="bulk-action-bar" id="bulkBar">
@@ -69,6 +128,26 @@
           <button class="btn btn-secondary btn-sm"><i class="bi bi-tag"></i> Tag</button>
           <button class="btn btn-secondary btn-sm"><i class="bi bi-search"></i> Scan Now</button>
           <button class="btn btn-outline-danger btn-sm ms-auto"><i class="bi bi-trash"></i> Remove</button>
+        <div class="table-responsive">
+          <table class="xdr-table table table-hover align-middle mb-0" id="assetsTable">
+            <thead>
+              <tr>
+                <th>Asset Name</th>
+                <th>IP Address</th>
+                <th>OS / Platform</th>
+                <th>Owner Team</th>
+                <th>Status</th>
+                <th>Risk Score</th>
+                <th>Severity</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="assetsTableBody">
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">Loading asset inventory from database...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <table class="xdr-table" id="assetsTable">
@@ -76,6 +155,11 @@
           <tbody></tbody>
         </table>
         <div class="xdr-pagination" id="assetsPagination"></div>
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3" id="assetsPagination">
+          <div class="text-muted small" id="paginationInfo">Showing 0 of 0 assets</div>
+          <div class="d-flex gap-1" id="paginationButtons"></div>
+        </div>
       </section>
     </div>
   </div>
@@ -89,6 +173,99 @@
     <div class="mb-3"><label class="form-label">Asset name</label><input class="form-control" placeholder="e.g. WEB-PROD-04"></div>
     <div class="mb-3"><label class="form-label">Type</label>
       <select class="form-select"><option>Server</option><option>Database</option><option>Workstation</option><option>Firewall</option></select>
+<div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="addAssetModalLabel"><i class="bi bi-hdd-network text-primary me-2"></i>Add New Asset</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="addAssetForm">
+        <div class="modal-body">
+          <div id="addAssetAlert" class="alert alert-danger d-none mb-3"></div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Asset Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="addAssetName" name="name" placeholder="e.g. srv-prod-db01" required>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Asset Type</label>
+              <select class="form-select form-select-sm" id="addAssetType" name="asset_type">
+                <option value="Server">Server</option>
+                <option value="Database">Database</option>
+                <option value="Workstation">Workstation</option>
+                <option value="Firewall">Firewall</option>
+                <option value="Router">Router</option>
+                <option value="Container Host">Container Host</option>
+                <option value="Domain Controller">Domain Controller</option>
+                <option value="Load Balancer">Load Balancer</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Environment</label>
+              <select class="form-select form-select-sm" id="addAssetEnv" name="environment">
+                <option value="Production">Production</option>
+                <option value="Staging">Staging</option>
+                <option value="Development">Development</option>
+                <option value="Internal">Internal</option>
+                <option value="DMZ">DMZ</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">IP Address</label>
+              <input type="text" class="form-control form-control-sm cell-mono" id="addAssetIP" name="ip_address" placeholder="192.168.1.50">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Hostname / FQDN</label>
+              <input type="text" class="form-control form-control-sm" id="addAssetHostname" name="hostname" placeholder="db01.corp.local">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">MAC Address</label>
+              <input type="text" class="form-control form-control-sm cell-mono" id="addAssetMAC" name="mac_address" placeholder="00:0C:29:XX:XX:XX">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Criticality</label>
+              <select class="form-select form-select-sm" id="addAssetCrit" name="criticality">
+                <option value="high">High</option>
+                <option value="medium" selected>Medium</option>
+                <option value="low">Low</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Operating System</label>
+              <input type="text" class="form-control form-control-sm" id="addAssetOS" name="operating_system" placeholder="e.g. Linux / Ubuntu 22.04">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Owner / Team</label>
+              <input type="text" class="form-control form-control-sm" id="addAssetOwner" name="owner_team" placeholder="e.g. Platform Engineering">
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Tags (comma-separated)</label>
+            <input type="text" class="form-control form-control-sm" id="addAssetTags" name="tags_input" placeholder="prod, database, pci-dss">
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitAddAsset">
+            <i class="bi bi-check-lg me-1"></i>Save Asset
+          </button>
+        </div>
+      </form>
     </div>
     <div class="mb-3"><label class="form-label">IP address</label><input class="form-control" placeholder="10.0.x.x"></div>
     <div><label class="form-label">Owner team</label><input class="form-control" placeholder="e.g. Platform Team"></div>
@@ -107,5 +284,8 @@
 <script src="../assets/js/core/datatable.js"></script>
 <script src="../assets/js/data/assets-data.js"></script>
 <script src="../assets/js/pages/assets.js"></script>
+<script>window.XDR_ACTIVE = "assets";</script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/assets.js') }}"></script>
 </body>
 </html>

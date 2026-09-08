@@ -26,6 +26,7 @@ from app.siem import siem
 from app.scanner import scanner
 from app.ids import ids
 from app.packet_analysis import packet_analysis
+from app.assets import assets
 
 from app.utils.logger import configure_logger
 
@@ -98,6 +99,7 @@ def create_app():
         IDSSensor,
     )  # noqa: F401
     from app.packet_analysis.models import PacketAnalysis  # noqa: F401
+    from app.assets.models import Asset  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -120,5 +122,6 @@ def create_app():
     app.register_blueprint(scanner)
     app.register_blueprint(ids)
     app.register_blueprint(packet_analysis)
+    app.register_blueprint(assets)
 
     return app
