@@ -131,7 +131,13 @@ def get_safe_report_path(report_id: str, file_format: str) -> str:
     Constructs and strictly validates that the generated file resides within
     the reports directory to prevent directory traversal attacks.
     """
+    if not report_id or ".." in report_id or "/" in report_id or "\\" in report_id:
+        raise ValueError("Illegal file path resolution detected: Path traversal attempt.")
+
     safe_id = "".join(c for c in report_id if c.isalnum() or c in ("-", "_"))
+    if not safe_id:
+        raise ValueError("Invalid report ID provided.")
+
     safe_ext = "pdf" if file_format.lower() == "pdf" else "csv"
     reports_dir = get_reports_dir()
     candidate_path = os.path.abspath(os.path.join(reports_dir, f"{safe_id}.{safe_ext}"))

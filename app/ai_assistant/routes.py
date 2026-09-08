@@ -128,6 +128,14 @@ def api_history():
 @login_required
 def api_get_conversation(conversation_id):
     conv = AIConversation.query.filter_by(conversation_id=conversation_id).first_or_404()
+    # IDOR Defense: only allow owner or admin
+    if conv.user_id and getattr(current_user, "id", None) and conv.user_id != current_user.id:
+        if getattr(current_user, "role", "") != "admin":
+            return jsonify({
+                "status": "error",
+                "message": "Access denied. You do not have permission to view this conversation."
+            }), 403
+
     return jsonify({
         "status": "success",
         "conversation": conv.to_dict(include_messages=True)
@@ -138,6 +146,14 @@ def api_get_conversation(conversation_id):
 @login_required
 def api_delete_conversation(conversation_id):
     conv = AIConversation.query.filter_by(conversation_id=conversation_id).first_or_404()
+    # IDOR Defense: only allow owner or admin
+    if conv.user_id and getattr(current_user, "id", None) and conv.user_id != current_user.id:
+        if getattr(current_user, "role", "") != "admin":
+            return jsonify({
+                "status": "error",
+                "message": "Access denied. You do not have permission to delete this conversation."
+            }), 403
+
     db.session.delete(conv)
     db.session.commit()
     return jsonify({

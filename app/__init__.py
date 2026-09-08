@@ -3,7 +3,7 @@ CyberDefense XDR
 Application Factory
 """
 
-from flask import Flask
+from flask import Flask, request, jsonify, render_template
 
 from config.config import Config
 
@@ -11,6 +11,7 @@ from app.extensions import (
     db,
     migrate,
     login_manager,
+    csrf,
 )
 
 from app.routes import main
@@ -58,6 +59,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # ==========================================================
     # Logging
@@ -141,5 +143,57 @@ def create_app():
     app.register_blueprint(correlation)
     app.register_blueprint(ai_assistant)
     app.register_blueprint(soar)
+
+    # ==========================================================
+    # Security Response Headers (OWASP Hardening)
+    # ==========================================================
+    @app.after_request
+    def apply_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("X-XSS-Protection", "1; mode=block")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if "Content-Security-Policy" not in response.headers:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+                "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+                "img-src 'self' data: blob: https:; "
+                "connect-src 'self' https:;"
+            )
+        return response
+
+    # ==========================================================
+    # Global Error Handlers (Information Disclosure Defense)
+    # ==========================================================
+    @app.errorhandler(400)
+    def handle_bad_request(e):
+        if request.path.startswith("/api") or "/api/" in request.path or request.is_json:
+            return jsonify({"success": False, "error": "Bad Request", "message": str(e)}), 400
+        return jsonify({"success": False, "error": "Bad Request", "message": "The server could not understand the request."}), 400
+
+    @app.errorhandler(403)
+    def handle_forbidden(e):
+        if request.path.startswith("/api") or "/api/" in request.path or request.is_json:
+            return jsonify({"success": False, "error": "Forbidden", "message": "Access is denied to the requested resource."}), 403
+        return jsonify({"success": False, "error": "Forbidden", "message": "Access is denied to the requested resource."}), 403
+
+    @app.errorhandler(404)
+    def handle_not_found(e):
+        if request.path.startswith("/api") or "/api/" in request.path or request.is_json:
+            return jsonify({"success": False, "error": "Not Found", "message": "The requested endpoint does not exist."}), 404
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    def handle_server_error(e):
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        if request.path.startswith("/api") or "/api/" in request.path or request.is_json:
+            return jsonify({"success": False, "error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
+        return render_template("errors/500.html"), 500
 
     return app

@@ -5,21 +5,22 @@ Vulnerability Scanner & Scan History Database Models
 
 import json
 import random
+import uuid
 from datetime import datetime
 
 from app.extensions import db
 
 
 def generate_scan_id():
-    return f"SCAN-{random.randint(1000, 9999)}"
+    return f"SCAN-{uuid.uuid4().hex[:8].upper()}"
 
 
 def generate_vuln_id():
-    return f"VULN-{random.randint(1000, 9999)}"
+    return f"VULN-{uuid.uuid4().hex[:8].upper()}"
 
 
 def generate_target_id():
-    return f"TGT-{random.randint(500, 999)}"
+    return f"TGT-{uuid.uuid4().hex[:8].upper()}"
 
 
 class Scan(db.Model):

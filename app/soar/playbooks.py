@@ -2,7 +2,7 @@
 CyberDefense XDR
 SOAR Playbooks Registry
 Defines 10 safe, non-destructive automated SOC response playbooks.
-No arbitrary shell commands (shell=True prohibited).
+No arbitrary shell commands (shell executions are strictly prohibited).
 """
 
 from datetime import datetime, timezone

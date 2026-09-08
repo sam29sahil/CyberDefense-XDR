@@ -34,6 +34,37 @@ from app.auth.services import (
     authenticate_user,
 )
 
+import time
+from collections import defaultdict
+import threading
+
+# Brute-force protection: in-memory failed attempt tracker
+_failed_logins = defaultdict(list)
+_rate_lock = threading.Lock()
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION = 900  # 15 minutes
+
+
+def is_login_locked(identifier: str) -> bool:
+    now = time.time()
+    with _rate_lock:
+        attempts = _failed_logins[identifier]
+        _failed_logins[identifier] = [t for t in attempts if now - t < LOCKOUT_DURATION]
+        return len(_failed_logins[identifier]) >= MAX_LOGIN_ATTEMPTS
+
+
+def record_failed_login(identifier: str):
+    now = time.time()
+    with _rate_lock:
+        _failed_logins[identifier].append(now)
+
+
+def clear_failed_logins(identifier: str):
+    with _rate_lock:
+        if identifier in _failed_logins:
+            del _failed_logins[identifier]
+
+
 # ============================================================
 # LOGIN
 # ============================================================
@@ -61,11 +92,27 @@ def login():
             400,
         )
 
+    # Brute-force rate limiting check
+    ip = request.remote_addr or "127.0.0.1"
+    rate_key = f"{ip}:{email}"
+    if is_login_locked(rate_key):
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Too many failed login attempts. Account temporarily locked for 15 minutes.",
+                }
+            ),
+            429,
+        )
+
     user = authenticate_user(email=email, password=password)
 
     if user is None:
+        record_failed_login(rate_key)
         return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
+    clear_failed_logins(rate_key)
     login_user(user, remember=remember)
 
     return (
@@ -241,30 +288,32 @@ def forgot_password():
 
     user = get_user_by_email(email)
 
+    # OWASP Defense against User Enumeration: return generic message
     if user is None:
-
         return (
             jsonify(
                 {
-                    "success": False,
-                    "message": "No account was found with that email address.",
+                    "success": True,
+                    "message": "If an account exists with that email address, password reset instructions have been generated.",
                 }
             ),
-            404,
+            200,
         )
 
     token = generate_reset_token(email)
 
     reset_url = url_for("auth.reset_password", token=token, _external=True)
 
+    response_payload = {
+        "success": True,
+        "message": "If an account exists with that email address, password reset instructions have been generated.",
+    }
+    # Expose reset_url only in DEBUG or TESTING environments
+    if current_app.config.get("DEBUG") or current_app.config.get("TESTING"):
+        response_payload["reset_url"] = reset_url
+
     return (
-        jsonify(
-            {
-                "success": True,
-                "message": "Password reset link generated.",
-                "reset_url": reset_url,
-            }
-        ),
+        jsonify(response_payload),
         200,
     )
 
