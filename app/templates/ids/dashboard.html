@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network IDS — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head>
+<body data-page="network-ids" data-title="Network IDS Dashboard">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Network IDS Dashboard</span>
+      </nav>
+
+      <!-- Section Title & Sensor Controls -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="brand-mark brand-mark-lg"><i class="bi bi-diagram-3"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 class="fs-detail-title mb-0">Network IDS (Suricata)</h1>
+                <span id="sensorStatusPill" class="status-pill st-stopped"><span class="dot"></span>CHECKING</span>
+                <span class="badge bg-primary-subtle text-primary" id="versionBadge">Suricata 8.0.6</span>
+              </div>
+              <p class="text-muted mb-0" id="sensorSubtext">Real-time passive network threat monitoring and signature matching</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button class="btn btn-success btn-sm" id="btnStartSensor"><i class="bi bi-play-fill me-1"></i>Start Sensor</button>
+            <button class="btn btn-danger btn-sm" id="btnStopSensor" disabled><i class="bi bi-stop-fill me-1"></i>Stop</button>
+            <button class="btn btn-secondary btn-sm" id="btnRestartSensor"><i class="bi bi-arrow-repeat me-1"></i>Restart</button>
+            <button class="btn btn-secondary btn-sm" id="btnUpdateRules"><i class="bi bi-shield-check me-1"></i>Update Rules</button>
+            <a href="{{ url_for('ids.events') }}" class="btn btn-primary btn-sm"><i class="bi bi-list-ul me-1"></i>Events Explorer</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensor Operational Telemetry Strip -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Capture Interface</div>
+            <div class="stat-value text-primary cell-mono fs-4" id="sensorInterface">eth0</div>
+            <div class="stat-sub text-muted">Primary capture link</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Active Signatures</div>
+            <div class="stat-value text-success fs-4" id="rulesCount">52,678</div>
+            <div class="stat-sub text-muted">Suricata threat rules loaded</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Sensor Process (PID)</div>
+            <div class="stat-value cell-mono fs-4" id="sensorPid">—</div>
+            <div class="stat-sub text-muted" id="sensorLastSeen">Status: stopped</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Engine Mode</div>
+            <div class="stat-value fs-4" id="engineMode">Passive IDS</div>
+            <div class="stat-sub text-muted">Non-intrusive stream inspection</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Traffic & Security Alerts KPIs -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card">
+            <div class="stat-label">Events Processed Today</div>
+            <div class="stat-value" id="totalEventsToday">0</div>
+            <div class="stat-sub text-muted">Flows, protocols &amp; telemetry</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card">
+            <div class="stat-label">Security Alerts Today</div>
+            <div class="stat-value text-warning" id="alertsToday">0</div>
+            <div class="stat-sub text-muted">Matched intrusion signatures</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card">
+            <div class="stat-label">Critical Alerts</div>
+            <div class="stat-value text-danger" id="criticalAlerts">0</div>
+            <div class="stat-sub text-muted">Immediate action required</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card">
+            <div class="stat-label">High Alerts</div>
+            <div class="stat-value text-danger" id="highAlerts">0</div>
+            <div class="stat-sub text-muted">Exploits &amp; lateral movement</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <section class="card h-100" aria-labelledby="protoTitle">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h2 id="protoTitle" class="mb-0">Observed Protocol Distribution</h2>
+              <span class="text-xs text-muted">Live network traffic</span>
+            </div>
+            <div class="card-body"><div class="chart-box"><canvas id="protocolChart"></canvas></div></div>
+          </section>
+        </div>
+        <div class="col-lg-6">
+          <section class="card h-100" aria-labelledby="topSigTitle">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h2 id="topSigTitle" class="mb-0">Top Intrusion Signatures</h2>
+              <a href="{{ url_for('ids.events', alert_only='true') }}" class="text-xs">View all alerts <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body p-0">
+              <div class="xdr-table-wrap flush">
+                <table class="xdr-table">
+                  <thead><tr><th>Signature</th><th>Severity</th><th>Category</th><th class="text-end">Count</th></tr></thead>
+                  <tbody id="topSignaturesBody">
+                    <tr><td colspan="4" class="text-center text-muted py-3">No intrusion signatures detected yet</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Top Source & Destination IPs -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <section class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h2 class="mb-0">Top Source IPs (Active Senders)</h2>
+              <span class="text-xs text-muted">Ingress &amp; internal</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="xdr-table-wrap flush">
+                <table class="xdr-table">
+                  <thead><tr><th>Source IP</th><th class="text-end">Events</th></tr></thead>
+                  <tbody id="topSrcIpsBody">
+                    <tr><td colspan="2" class="text-center text-muted py-3">No active source IPs</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="col-lg-6">
+          <section class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h2 class="mb-0">Top Destination IPs (Target Hosts)</h2>
+              <span class="text-xs text-muted">Monitored endpoints</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="xdr-table-wrap flush">
+                <table class="xdr-table">
+                  <thead><tr><th>Destination IP</th><th class="text-end">Events</th></tr></thead>
+                  <tbody id="topDestIpsBody">
+                    <tr><td colspan="2" class="text-center text-muted py-3">No active destination IPs</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Recent Security Alerts Table -->
+      <section class="xdr-table-wrap mb-4" aria-label="Recent Network Alerts">
+        <div class="table-toolbar d-flex align-items-center">
+          <div>
+            <h2 class="mb-0">Recent Security Alerts</h2>
+            <p class="text-xs text-muted mb-0">Signature-matched intrusion detections</p>
+          </div>
+          <div class="ms-auto">
+            <a href="{{ url_for('ids.events', alert_only='true') }}" class="btn btn-secondary btn-sm">All Alerts <i class="bi bi-arrow-right ms-1"></i></a>
+          </div>
+        </div>
+        <table class="xdr-table" id="recentAlertsTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Severity</th>
+              <th>Signature</th>
+              <th>Source</th>
+              <th>Destination</th>
+              <th>Protocol</th>
+              <th>Action</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="recentAlertsBody">
+            <tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-shield-check text-success d-block mb-1 fs-3"></i>No security alerts recorded</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Recent Network Events Table (all telemetry) -->
+      <section class="xdr-table-wrap mb-4" aria-label="Recent Network Events">
+        <div class="table-toolbar d-flex align-items-center">
+          <div>
+            <h2 class="mb-0">Recent Network Events &amp; Flows</h2>
+            <p class="text-xs text-muted mb-0">Raw network flows, DNS queries, and transport telemetry</p>
+          </div>
+          <div class="ms-auto">
+            <a href="{{ url_for('ids.events') }}" class="btn btn-secondary btn-sm">All Events <i class="bi bi-arrow-right ms-1"></i></a>
+          </div>
+        </div>
+        <table class="xdr-table" id="recentEventsTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Event Type</th>
+              <th>Source</th>
+              <th>Destination</th>
+              <th>Protocol</th>
+              <th>Flow ID</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="recentEventsBody">
+            <tr><td colspan="7" class="text-center text-muted py-4">No events captured yet</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+  window.XDR_ACTIVE = "network-ids";
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/network-ids.js') }}"></script>
+</body>
+</html>
+

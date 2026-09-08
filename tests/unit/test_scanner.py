@@ -590,17 +590,18 @@ class ScannerTestCase(unittest.TestCase):
         self.assertIn("nuclei", tools)
         self.assertIn("testssl", tools)
 
-        # Host tools: nmap, whatweb, nikto are installed; nuclei and testssl are not
+        # Host tools truthful check
+        import shutil
         self.assertTrue(tools["nmap"]["available"])
         self.assertTrue(tools["whatweb"]["available"])
         self.assertTrue(tools["nikto"]["available"])
-        self.assertFalse(tools["nuclei"]["available"])
-        self.assertFalse(tools["testssl"]["available"])
+        self.assertEqual(tools["nuclei"]["available"], bool(shutil.which("nuclei")))
+        self.assertEqual(tools["testssl"]["available"], bool(shutil.which("testssl.sh") or shutil.which("testssl")))
 
         # Also check boolean availability dictionary
         avail = data.get("availability", {})
-        self.assertFalse(avail.get("nuclei"))
-        self.assertFalse(avail.get("testssl"))
+        self.assertEqual(avail.get("nuclei"), bool(shutil.which("nuclei")))
+        self.assertEqual(avail.get("testssl"), bool(shutil.which("testssl.sh") or shutil.which("testssl")))
 
     def test_api_scan_services_endpoint(self):
         """Verifies GET /scanner/api/scans/<scan_id>/services returns service observations."""

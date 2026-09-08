@@ -24,6 +24,7 @@ from app.alerts import alerts
 from app.threatintel import threatintel
 from app.siem import siem
 from app.scanner import scanner
+from app.ids import ids
 
 from app.utils.logger import configure_logger
 
@@ -91,6 +92,10 @@ def create_app():
         VulnerabilityFinding,
         ScanTarget,
     )  # noqa: F401
+    from app.ids.models import (
+        NetworkIDSEvent,
+        IDSSensor,
+    )  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -111,5 +116,6 @@ def create_app():
     app.register_blueprint(threatintel)
     app.register_blueprint(siem)
     app.register_blueprint(scanner)
+    app.register_blueprint(ids)
 
     return app

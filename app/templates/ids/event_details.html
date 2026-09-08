@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network IDS Event Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+.json-viewer {
+  background: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  max-height: 450px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+</style>
+</head>
+<body data-page="network-ids" data-title="Network IDS Event Details">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('ids.dashboard') }}">Network IDS</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('ids.events') }}">Events Explorer</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">{{ event.eventUuid[:12] if event else event_id }}</span>
+      </nav>
+
+      {% if not event %}
+      <div class="card p-5 text-center">
+        <i class="bi bi-exclamation-triangle text-warning fs-1 mb-2"></i>
+        <h2>Event Not Found</h2>
+        <p class="text-muted">No Network IDS event was found with ID: {{ event_id }}</p>
+        <div>
+          <a href="{{ url_for('ids.events') }}" class="btn btn-primary btn-sm">Back to Events Explorer</a>
+        </div>
+      </div>
+      {% else %}
+
+      <!-- Header Card -->
+      <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="brand-mark brand-mark-lg"><i class="bi bi-diagram-3"></i></div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 class="fs-detail-title mb-0">{{ event.signature or ('Network ' + event.eventType.upper() + ' Event') }}</h1>
+                {% if event.classification == 'diagnostic' or event.is_diagnostic %}
+                <span class="badge bg-info-subtle text-info"><i class="bi bi-gear-wide-connected me-1"></i>DIAGNOSTIC (NIC Offload)</span>
+                {% else %}
+                <span class="badge badge-sev-{{ event.severity }}">{{ event.severity.upper() }}</span>
+                {% endif %}
+                <span class="badge bg-secondary text-light">{{ event.eventType.upper() }}</span>
+              </div>
+              <p class="text-muted mb-0 cell-mono text-xs">UUID: {{ event.eventUuid }}</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('ids.events') }}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Back</a>
+            {% if event.eventType == 'alert' and event.classification != 'diagnostic' and not event.is_diagnostic %}
+            <button class="btn btn-warning btn-sm" id="btnEscalateIncident" data-id="{{ event.id }}"><i class="bi bi-shield-exclamation me-1"></i> Escalate to Incident</button>
+            {% elif event.classification == 'diagnostic' or event.is_diagnostic %}
+            <span class="badge bg-secondary-subtle text-muted border px-2 py-1"><i class="bi bi-info-circle me-1"></i>Diagnostic Telemetry (No Escalation)</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if event.classification == 'diagnostic' or event.is_diagnostic %}
+      <div class="alert alert-info py-2 px-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-info-circle-fill fs-5 text-info"></i>
+        <div class="text-sm">
+          <strong>Diagnostic / Hardware Offload Notice:</strong> This event is triggered by Linux NIC hardware/kernel checksum offloading (such as TCP segmentation offload or deferred checksumming on wire packet capture). It is safely retained for network diagnostic and forensic visibility, but is intentionally excluded from active SOC security alerts and incident escalation.
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Overview Cards -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+          <section class="card h-100">
+            <div class="card-header"><h2 class="mb-0">Traffic &amp; Flow Specification</h2></div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <div class="info-row">
+                    <span class="text-muted">Source IP:Port:</span>
+                    <span class="cell-mono fw-semibold">{{ event.srcIp or '—' }}{% if event.srcPort %}:{{ event.srcPort }}{% endif %}</span>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="info-row">
+                    <span class="text-muted">Destination IP:Port:</span>
+                    <span class="cell-mono fw-semibold">{{ event.destIp or '—' }}{% if event.destPort %}:{{ event.destPort }}{% endif %}</span>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="info-row">
+                    <span class="text-muted">Transport Protocol:</span>
+                    <span class="badge bg-dark border text-light">{{ event.protocol or 'IP' }}</span>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="info-row">
+                    <span class="text-muted">Application Layer:</span>
+                    <span class="badge bg-info-subtle text-info">{{ event.appProtocol or 'None / Unspecified' }}</span>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="info-row">
+                    <span class="text-muted">Flow ID:</span>
+                    <span class="cell-mono text-xs">{{ event.flowId or '—' }}</span>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="info-row">
+                    <span class="text-muted">Suricata Action:</span>
+                    <span class="badge bg-{{ 'danger' if event.action == 'blocked' else 'success' }}-subtle text-{{ 'danger' if event.action == 'blocked' else 'success' }}">{{ event.action.upper() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-lg-5">
+          <section class="card h-100">
+            <div class="card-header"><h2 class="mb-0">Detection &amp; Sensor Telemetry</h2></div>
+            <div class="card-body">
+              <div class="info-row mb-2">
+                <span class="text-muted">Signature ID (SID):</span>
+                <span class="cell-mono fw-bold text-primary">{{ event.signatureId or '—' }}</span>
+              </div>
+              <div class="info-row mb-2">
+                <span class="text-muted">Alert Category:</span>
+                <span>{{ event.category or 'General / Non-categorized' }}</span>
+              </div>
+              <div class="info-row mb-2">
+                <span class="text-muted">Sensor Node:</span>
+                <span>{{ event.sensorName }}</span>
+              </div>
+              <div class="info-row mb-2">
+                <span class="text-muted">Capture Interface:</span>
+                <span class="cell-mono">{{ event.interface }}</span>
+              </div>
+              <div class="info-row mb-2">
+                <span class="text-muted">Packet Timestamp:</span>
+                <span class="cell-mono text-xs">{{ event.timestamp }}</span>
+              </div>
+              <div class="info-row">
+                <span class="text-muted">Ingested In DB:</span>
+                <span class="cell-mono text-xs">{{ event.createdAt }}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Raw Suricata JSON Viewer -->
+      <section class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="mb-0">Raw Suricata EVE JSON Record</h2>
+          <button class="btn btn-secondary btn-sm" id="btnCopyJson"><i class="bi bi-clipboard me-1"></i>Copy JSON</button>
+        </div>
+        <div class="card-body">
+          <pre class="json-viewer mb-0" id="rawJsonBlock">{{ event.rawData | tojson(indent=2) }}</pre>
+        </div>
+      </section>
+
+      {% endif %}
+    </main>
+  </div>
+</div>
+
+<script>
+  window.XDR_ACTIVE = "network-ids";
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/toast.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const copyBtn = document.getElementById("btnCopyJson");
+  const jsonBlock = document.getElementById("rawJsonBlock");
+  if (copyBtn && jsonBlock) {
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(jsonBlock.textContent).then(() => {
+        if (window.showToast) window.showToast({ type: "success", title: "Copied", msg: "Raw JSON copied to clipboard." });
+      });
+    };
+  }
+
+  const escalateBtn = document.getElementById("btnEscalateIncident");
+  if (escalateBtn) {
+    escalateBtn.onclick = () => {
+      const eventId = escalateBtn.getAttribute("data-id");
+      if (!confirm("Are you sure you want to create an Incident from this Network IDS alert?")) return;
+      
+      escalateBtn.disabled = true;
+      escalateBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Escalating...`;
+
+      fetch(`/network-ids/api/events/${eventId}/create-incident`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: "Escalated by SOC Analyst from Network IDS detail view." }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          if (window.showToast) window.showToast({ type: "success", title: "Incident Created", msg: data.message });
+          setTimeout(() => {
+            window.location.href = `/incidents/dashboard`;
+          }, 1200);
+        } else {
+          alert("Error creating incident: " + data.message);
+          escalateBtn.disabled = false;
+          escalateBtn.innerHTML = `<i class="bi bi-shield-exclamation me-1"></i> Escalate to Incident`;
+        }
+      })
+      .catch(err => {
+        alert("Failed to escalate: " + err);
+        escalateBtn.disabled = false;
+        escalateBtn.innerHTML = `<i class="bi bi-shield-exclamation me-1"></i> Escalate to Incident`;
+      });
+    };
+  }
+});
+</script>
+</body>
+</html>
+
