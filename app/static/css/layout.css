@@ -58,16 +58,6 @@
    .nav-item .nav-badge{ margin-left:auto; }
    .xdr-sidebar.collapsed .nav-badge{ display:none; }
    
-   /* Tooltip for collapsed state */
-   .xdr-sidebar.collapsed .nav-item .tooltip-label{
-     position:absolute; left: calc(100% + 10px); top:50%; transform: translateY(-50%);
-     background: var(--bg-elevated); border:1px solid var(--border); color: var(--text);
-     font-size: var(--fs-xs); font-weight:600; padding: 4px 10px; border-radius: var(--radius-sm);
-     white-space:nowrap; opacity:0; pointer-events:none; box-shadow: var(--shadow-md);
-     transition: opacity var(--dur-fast) var(--ease); z-index: var(--z-tooltip);
-   }
-   .xdr-sidebar.collapsed .nav-item:hover .tooltip-label{ opacity:1; }
-   
    .sidebar-footer{ padding: var(--space-3); border-top: 1px solid var(--border); }
    
    /* ---------- Navbar ---------- */

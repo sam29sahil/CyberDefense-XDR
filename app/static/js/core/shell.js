@@ -53,11 +53,10 @@
         <div class="nav-section">
           <div class="nav-section-label">${sec.section}</div>
           ${sec.items.map(it => `
-            <a href="${it.href}" class="nav-item ${it.key === active ? 'active' : ''}">
+            <a href="${it.href}" class="nav-item ${it.key === active ? 'active' : ''}" title="${it.label}">
               <i class="bi ${it.icon}"></i>
               <span class="nav-label">${it.label}</span>
               ${it.badge ? `<span class="badge badge-danger nav-badge">${it.badge}</span>` : ''}
-              <span class="tooltip-label">${it.label}</span>
             </a>`).join('')}
         </div>`).join('');
   
@@ -69,10 +68,9 @@
           </div>
           <nav class="sidebar-nav">${sections}</nav>
           <div class="sidebar-footer">
-            <a href="/auth/logout" class="nav-item">
+            <a href="/auth/logout" class="nav-item" title="Logout">
               <i class="bi bi-box-arrow-left"></i>
               <span class="nav-label">Logout</span>
-              <span class="tooltip-label">Logout</span>
             </a>
           </div>
         </aside>

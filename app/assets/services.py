@@ -697,6 +697,8 @@ def get_asset_inventory_stats():
         "byType": type_counts,
         "by_environment": env_counts,
         "byEnvironment": env_counts,
+        "environmentCount": len(env_counts),
+        "environment_count": len(env_counts),
     }
 
 

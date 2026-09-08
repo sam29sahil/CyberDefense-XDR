@@ -1,0 +1,97 @@
+/* ==========================================================================
+   soc-dashboard.css — Scoped styling for SOC Dashboard module (.soc-dashboard-page)
+   ========================================================================== */
+
+.soc-dashboard-page {
+  --table-border-color: rgba(255, 255, 255, 0.08);
+}
+
+.soc-dashboard-page .stat-card {
+  background-color: var(--surface, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.soc-dashboard-page .stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.soc-dashboard-page .stat-card.accent-primary::before { background-color: #3b82f6; }
+.soc-dashboard-page .stat-card.accent-success::before { background-color: #10b981; }
+.soc-dashboard-page .stat-card.accent-danger::before { background-color: #ef4444; }
+.soc-dashboard-page .stat-card.accent-warning::before { background-color: #f59e0b; }
+.soc-dashboard-page .stat-card.accent-info::before { background-color: #06b6d4; }
+
+.soc-dashboard-page .stat-card .eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 0.4rem;
+}
+
+.soc-dashboard-page .stat-card .stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.soc-dashboard-page .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text, #f1f5f9);
+  --bs-table-border-color: rgba(255, 255, 255, 0.08);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+  --bs-table-hover-color: var(--text, #f1f5f9);
+}
+
+.soc-dashboard-page .table thead th {
+  background-color: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.6rem 0.75rem;
+}
+
+.soc-dashboard-page .table tbody td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+  color: #f1f5f9;
+}
+
+.soc-dashboard-page .hover-primary:hover {
+  color: #3b82f6 !important;
+}
+
+.soc-dashboard-page .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.soc-dashboard-page .soc-feed-item {
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 0 6px 6px 0;
+}
+
+.soc-dashboard-page .soc-feed-item.sev-critical { border-left-color: #ef4444; }
+.soc-dashboard-page .soc-feed-item.sev-high { border-left-color: #f97316; }
+.soc-dashboard-page .soc-feed-item.sev-medium { border-left-color: #f59e0b; }
+.soc-dashboard-page .soc-feed-item.sev-low { border-left-color: #06b6d4; }

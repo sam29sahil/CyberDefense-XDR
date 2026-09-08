@@ -1,31 +1,16 @@
-/* ==========================================================================
-   assets.js — page module for Asset Management (app/assets.html)
-   Depends on: ASSETS_DATA (data/assets-data.js), XDRTable (core/datatable.js)
-   ========================================================================== */
 /**
  * CyberDefense XDR
- * Asset Management Inventory Frontend JavaScript
+ * Asset Management Inventory Controller
  * Connects directly to backend PostgreSQL REST APIs (/assets/api).
  */
 
-   (function () {
-    const TYPE_ICON = {
-      "Server": "bi-hdd-rack", "Database": "bi-database", "Workstation": "bi-pc-display",
-      "Firewall": "bi-bricks", "Router": "bi-router", "Domain Controller": "bi-diagram-2",
-      "Mail Gateway": "bi-envelope", "Container Host": "bi-boxes", "Load Balancer": "bi-signpost-split",
-    };
-  
-    function statusDot(status) {
-      return `<span class="d-flex align-items-center gap-2">
-        <span class="dot dot-${status} ${status === 'online' ? 'dot-pulse' : ''}"></span>
-        ${status === 'online' ? 'Online' : 'Offline'}
-      </span>`;
 document.addEventListener("DOMContentLoaded", () => {
   // Stat elements
   const statTotal = document.getElementById("statTotalAssets");
   const statOnline = document.getElementById("statOnlineAssets");
   const statCritical = document.getElementById("statCriticalAssets");
   const statUnassigned = document.getElementById("statUnassignedAssets");
+  const headerSubtitle = document.getElementById("headerSubtitle");
 
   // Table and controls
   const tableBody = document.getElementById("assetsTableBody");
@@ -54,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "Workstation": "bi-pc-display",
     "Firewall": "bi-bricks",
     "Router": "bi-router",
+    "Switch": "bi-diagram-3",
     "Domain Controller": "bi-diagram-2",
     "Mail Gateway": "bi-envelope",
     "Container Host": "bi-boxes",
@@ -61,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "Cloud Instance": "bi-cloud",
     "Network Device": "bi-diagram-3",
     "IoT/OT Device": "bi-cpu",
+    "Other": "bi-hdd-network",
   };
 
   // ============================================================================
@@ -71,55 +58,32 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/assets/api/stats");
       const data = await res.json();
       if (data.success) {
-        if (statTotal) statTotal.textContent = (data.totalAssets || 0).toLocaleString();
+        const total = data.totalAssets || 0;
+        const envCount = data.environmentCount ?? data.environment_count ?? 0;
+        if (statTotal) statTotal.textContent = total.toLocaleString();
         if (statOnline) statOnline.textContent = (data.onlineAssets || 0).toLocaleString();
         if (statCritical) statCritical.textContent = (data.criticalRiskAssets || 0).toLocaleString();
         if (statUnassigned) statUnassigned.textContent = (data.unassignedOwnerAssets || 0).toLocaleString();
+
+        if (headerSubtitle) {
+          headerSubtitle.textContent = `${total.toLocaleString()} asset${total === 1 ? '' : 's'} discovered across ${envCount} environment${envCount === 1 ? '' : 's'}`;
+        }
       }
     } catch (err) {
       console.error("Failed to load asset stats:", err);
+      if (headerSubtitle) {
+        headerSubtitle.textContent = "Asset telemetry unavailable";
+      }
     }
-  
-    const columns = [
-      { key: "select", label: `<input type="checkbox" id="selectAll" class="form-check-input">`, sortable: false,
-        render: (r) => `<input type="checkbox" class="form-check-input row-check" data-id="${r.id}">` },
-      { key: "name", label: "Asset", sortable: true,
-        render: (r) => `<a href="asset-details.html?id=${r.id}" class="d-flex align-items-center gap-2" style="color:var(--text);font-weight:600;">
-            <i class="bi ${TYPE_ICON[r.type] || 'bi-hdd'} text-muted"></i> ${r.name}
-          </a>
-          <div class="text-xs text-muted" style="margin-left:22px;">${r.type} · ${r.env}</div>` },
-      { key: "ip", label: "IP Address", sortable: true, render: (r) => `<span class="cell-mono">${r.ip}</span>` },
-      { key: "os", label: "OS / Platform", sortable: false, render: (r) => `<span class="text-sm">${r.os}</span>` },
-      { key: "owner", label: "Owner", sortable: true },
-      { key: "status", label: "Status", sortable: true, render: (r) => statusDot(r.status) },
-      { key: "risk", label: "Risk", sortable: true,
-        render: (r) => `<div class="d-flex align-items-center gap-2" style="min-width:110px;">
-            <div class="xdr-progress" style="flex:1;"><div class="xdr-progress-bar bar-${r.sev === 'critical' || r.sev === 'high' ? 'danger' : r.sev === 'medium' ? 'warning' : 'success'}" style="width:${r.risk}%"></div></div>
-            <span class="text-xs text-muted">${r.risk}</span>
-          </div>` },
-      { key: "sev", label: "Severity", sortable: true, render: (r) => XDRUtils.severityBadge(r.sev) },
-      { key: "actions", label: "", sortable: false,
-        render: (r) => `<div class="row-actions">
-            <a href="asset-details.html?id=${r.id}" class="btn btn-icon btn-ghost btn-sm" title="View details"><i class="bi bi-eye"></i></a>
-            <button class="btn btn-icon btn-ghost btn-sm" title="Scan now"><i class="bi bi-search"></i></button>
-          </div>` },
-    ];
-  
-    const table = new XDRTable({
-      tableEl: document.getElementById("assetsTable"),
-      searchInput: document.getElementById("assetSearch"),
-      paginationEl: document.getElementById("assetsPagination"),
-      data: ASSETS_DATA,
-      pageSize: 8,
-      searchKeys: ["name", "ip", "owner"],
-      columns,
   }
 
   // ============================================================================
   // Fetch Real Assets from /assets/api
   // ============================================================================
   async function fetchAssets(page = 1) {
-    tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading assets...</td></tr>`;
+    if (tableBody) {
+      tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading assets...</td></tr>`;
+    }
 
     const search = searchInput ? searchInput.value.trim() : "";
     const type = filterType ? filterType.value : "";
@@ -132,17 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
       sort_by: "created_at",
       sort_dir: "desc",
     });
-  
-    function applyFilters() {
-      const type = document.getElementById("filterType").value;
-      const sev = document.getElementById("filterSev").value;
-      const status = document.getElementById("filterStatus").value;
-      table.setFilter((row) =>
-        (!type || row.type === type) &&
-        (!sev || row.sev === sev) &&
-        (!status || row.status === status)
-      );
-      wireRowChecks();
 
     if (search) params.append("search", search);
     if (type) params.append("type", type);
@@ -154,7 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
 
       if (!data.success) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Error loading assets: ${escapeHtml(data.error)}</td></tr>`;
+        if (tableBody) {
+          tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Error loading assets: ${escapeHtml(data.error || "Unknown error")}</td></tr>`;
+        }
         return;
       }
 
@@ -166,25 +121,17 @@ document.addEventListener("DOMContentLoaded", () => {
       renderPagination(total, currentPage, totalPages);
 
     } catch (err) {
-      tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Network error loading assets: ${err.message}</td></tr>`;
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Network error loading assets: ${escapeHtml(err.message)}</td></tr>`;
+      }
     }
-  
-    ["filterType", "filterSev", "filterStatus"].forEach((id) =>
-      document.getElementById(id).addEventListener("change", applyFilters)
-    );
-  
-    document.getElementById("clearFilters").addEventListener("click", () => {
-      document.getElementById("assetSearch").value = "";
-      document.getElementById("filterType").value = "";
-      document.getElementById("filterSev").value = "";
-      document.getElementById("filterStatus").value = "";
-      table.state.query = "";
-      table.setFilter(null);
   }
 
   function renderTable(items) {
+    if (!tableBody) return;
+
     if (!items.length) {
-      tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No assets found in inventory. Click "Add Asset" to register one.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No assets found in inventory. Click "Add Asset" to register one.</td></tr>`;
       return;
     }
 
@@ -201,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <i class="bi ${icon} text-primary"></i>
               <span>${escapeHtml(a.name)}</span>
             </a>
-            <div class="text-muted small ps-4">${escapeHtml(a.asset_type)} &middot; <span class="badge bg-secondary-subtle text-muted">${escapeHtml(a.environment)}</span></div>
+            <div class="text-muted small ps-4">${escapeHtml(a.asset_type)} &middot; <span class="badge bg-secondary-subtle text-muted">${escapeHtml(a.environment || "Unspecified")}</span></div>
           </td>
           <td>
             <code class="cell-mono text-info">${escapeHtml(a.ip_address || '-')}</code>
@@ -216,20 +163,20 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>
             <div class="d-flex align-items-center gap-2" style="min-width: 110px;">
               <div class="progress flex-grow-1" style="height: 6px;">
-                <div class="progress-bar ${riskBarClass}" style="width: ${a.risk_score}%;"></div>
+                <div class="progress-bar ${riskBarClass}" style="width: ${Math.min(100, Math.max(0, a.risk_score || 0))}%;"></div>
               </div>
-              <span class="cell-mono small text-muted">${a.risk_score}</span>
+              <span class="cell-mono small text-muted">${a.risk_score || 0}</span>
             </div>
           </td>
           <td>${sevBadge}</td>
           <td class="text-end">
-            <a href="/assets/${a.asset_id}" class="btn btn-outline-primary btn-xs me-1" title="View details">
+            <a href="/assets/${a.asset_id}" class="btn btn-outline-primary btn-sm me-1" title="View details">
               <i class="bi bi-eye"></i>
             </a>
-            <button class="btn btn-outline-secondary btn-xs btn-scan-asset me-1" data-id="${a.asset_id}" title="Scan asset">
+            <button class="btn btn-outline-secondary btn-sm btn-scan-asset me-1" data-id="${a.asset_id}" title="Scan asset">
               <i class="bi bi-search"></i>
             </button>
-            <button class="btn btn-outline-danger btn-xs btn-delete-asset" data-id="${a.asset_id}" title="Delete asset">
+            <button class="btn btn-outline-danger btn-sm btn-delete-asset" data-id="${a.asset_id}" title="Delete asset">
               <i class="bi bi-trash"></i>
             </button>
           </td>
@@ -246,17 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     });
-  
-    // Bulk select — re-wired after every render since rows are re-created
-    function wireRowChecks() {
-      const bulkBar = document.getElementById("bulkBar");
-      const bulkCount = document.getElementById("bulkCount");
-      const rowChecks = () => document.querySelectorAll(".row-check");
-  
-      function updateBulkBar() {
-        const checked = document.querySelectorAll(".row-check:checked").length;
-        bulkCount.textContent = checked;
-        bulkBar.classList.toggle("active", checked > 0);
 
     document.querySelectorAll(".btn-scan-asset").forEach(btn => {
       btn.addEventListener("click", async (e) => {
@@ -279,19 +215,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pages <= 1) return;
 
     const prevBtn = document.createElement("button");
-    prevBtn.className = "btn btn-outline-secondary btn-xs";
+    prevBtn.className = "btn btn-outline-secondary btn-sm";
     prevBtn.innerHTML = `<i class="bi bi-chevron-left"></i>`;
     prevBtn.disabled = page <= 1;
     prevBtn.addEventListener("click", () => fetchAssets(page - 1));
     paginationButtons.appendChild(prevBtn);
 
     const pageIndicator = document.createElement("span");
-    pageIndicator.className = "btn btn-secondary btn-xs disabled text-light";
+    pageIndicator.className = "btn btn-secondary btn-sm disabled text-light";
     pageIndicator.textContent = `${page} / ${pages}`;
     paginationButtons.appendChild(pageIndicator);
 
     const nextBtn = document.createElement("button");
-    nextBtn.className = "btn btn-outline-secondary btn-xs";
+    nextBtn.className = "btn btn-outline-secondary btn-sm";
     nextBtn.innerHTML = `<i class="bi bi-chevron-right"></i>`;
     nextBtn.disabled = page >= pages;
     nextBtn.addEventListener("click", () => fetchAssets(page + 1));
@@ -309,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
       case "decommissioned":
         return `<span class="badge bg-danger-subtle text-danger"><i class="bi bi-archive me-1"></i>Decommissioned</span>`;
       default:
-        return `<span class="badge bg-secondary-subtle text-muted">${escapeHtml(status)}</span>`;
+        return `<span class="badge bg-secondary-subtle text-muted">${escapeHtml(status || "Unknown")}</span>`;
     }
   }
 
@@ -324,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
       case "low":
         return `<span class="badge bg-success-subtle text-success">Low</span>`;
       default:
-        return `<span class="badge bg-secondary-subtle text-muted">Unknown</span>`;
+        return `<span class="badge bg-secondary-subtle text-muted">Low</span>`;
     }
   }
 
@@ -338,14 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         alert("Delete failed: " + (data.error || "Unknown error"));
       }
-  
-      rowChecks().forEach((cb) => cb.addEventListener("change", updateBulkBar));
-  
-      const selectAll = document.getElementById("selectAll");
-      if (selectAll) {
-        selectAll.addEventListener("change", () => {
-          rowChecks().forEach((cb) => (cb.checked = selectAll.checked));
-          updateBulkBar();
     } catch (err) {
       alert("Delete error: " + err.message);
     }
@@ -378,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addAssetForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (addAssetAlert) addAssetAlert.classList.add("d-none");
-      btnSubmitAddAsset.disabled = true;
+      if (btnSubmitAddAsset) btnSubmitAddAsset.disabled = true;
 
       const rawTags = (document.getElementById("addAssetTags")?.value || "")
         .split(",")
@@ -392,7 +320,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ip_address: document.getElementById("addAssetIP")?.value.trim() || null,
         hostname: document.getElementById("addAssetHostname")?.value.trim() || null,
         mac_address: document.getElementById("addAssetMAC")?.value.trim() || null,
-        criticality: document.getElementById("addAssetCrit")?.value,
+        status: document.getElementById("addAssetStatus")?.value || "online",
+        criticality: document.getElementById("addAssetCrit")?.value || "medium",
         operating_system: document.getElementById("addAssetOS")?.value.trim() || null,
         owner_team: document.getElementById("addAssetOwner")?.value.trim() || null,
         tags: rawTags,
@@ -427,14 +356,8 @@ document.addEventListener("DOMContentLoaded", () => {
           addAssetAlert.classList.remove("d-none");
         }
       } finally {
-        btnSubmitAddAsset.disabled = false;
+        if (btnSubmitAddAsset) btnSubmitAddAsset.disabled = false;
       }
-    }
-  
-    table.onRowsChange = wireRowChecks;
-    wireRowChecks();
-  })();
-  
     });
   }
 
