@@ -1,0 +1,117 @@
+/* ==========================================================================
+   analytics.css — Scoped styling for Analytics module (.analytics-page)
+   ========================================================================== */
+
+.analytics-page {
+  --table-border-color: rgba(255, 255, 255, 0.08);
+}
+
+.analytics-page .stat-card {
+  background-color: var(--surface, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.analytics-page .stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.analytics-page .stat-card.accent-primary::before { background-color: #3b82f6; }
+.analytics-page .stat-card.accent-danger::before { background-color: #ef4444; }
+.analytics-page .stat-card.accent-warning::before { background-color: #f59e0b; }
+.analytics-page .stat-card.accent-info::before { background-color: #06b6d4; }
+.analytics-page .stat-card.accent-success::before { background-color: #10b981; }
+.analytics-page .stat-card.accent-purple::before { background-color: #8b5cf6; }
+
+.analytics-page .stat-card .eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.analytics-page .stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.analytics-page .stat-card .stat-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.analytics-page .chart-box {
+  position: relative;
+  height: 280px;
+  width: 100%;
+}
+
+.analytics-page .chart-box-sm {
+  position: relative;
+  height: 220px;
+  width: 100%;
+}
+
+.analytics-page .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text, #f1f5f9);
+  --bs-table-border-color: rgba(255, 255, 255, 0.08);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+  --bs-table-hover-color: var(--text, #f1f5f9);
+}
+
+.analytics-page .table thead th {
+  background-color: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.65rem 0.75rem;
+}
+
+.analytics-page .table tbody td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+  color: #f1f5f9;
+}
+
+.analytics-page .correlation-card {
+  background: var(--surface, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.analytics-page .correlation-card .cor-val {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+
+.analytics-page .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.analytics-page .cell-mono {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}

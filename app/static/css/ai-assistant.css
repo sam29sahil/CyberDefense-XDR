@@ -1,0 +1,116 @@
+/* CyberDefense XDR - AI Security Assistant Styles */
+
+.ai-assistant-page .card {
+  background: #11141d;
+  border: 1px solid #1e2433;
+}
+
+.chat-container {
+  height: calc(100vh - 240px);
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.chat-bubble-user {
+  align-self: flex-end;
+  background: #1e3a8a;
+  color: #f1f5f9;
+  border-bottom-right-radius: 2px;
+}
+
+.chat-bubble-assistant {
+  align-self: flex-start;
+  background: #151924;
+  border: 1px solid #232d44;
+  color: #e2e8f0;
+  border-bottom-left-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.chat-bubble-assistant h2,
+.chat-bubble-assistant h3 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #38bdf8;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 4px;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-bubble-assistant h2:first-child {
+  margin-top: 0;
+}
+
+.chat-bubble-assistant ul,
+.chat-bubble-assistant ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.chat-bubble-assistant li {
+  margin-bottom: 0.25rem;
+}
+
+.chat-sidebar {
+  border-right: 1px solid #1e2433;
+  height: calc(100vh - 240px);
+  min-height: 520px;
+  overflow-y: auto;
+}
+
+.conv-item {
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+}
+
+.conv-item:hover, .conv-item.active {
+  background: #1e2538;
+}
+
+.advisory-banner {
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  color: #7dd3fc;
+}
+
+.prompt-starter-btn {
+  font-size: 0.8rem;
+  background: #151924;
+  border: 1px solid #232d44;
+  color: #94a3b8;
+  border-radius: 16px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.prompt-starter-btn:hover {
+  background: #1e2538;
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+

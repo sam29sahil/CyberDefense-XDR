@@ -1,0 +1,46 @@
+/* CyberDefense XDR - SOAR Automation Styles */
+
+.soar-page .card {
+  background: #11141d;
+  border: 1px solid #1e2433;
+}
+
+.cell-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.playbook-card {
+  border: 1px solid #1e273b;
+  background: #131722;
+  transition: all 0.2s ease-in-out;
+}
+
+.playbook-card:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.approval-card {
+  background: #1a1b26;
+  border-left: 4px solid #f59e0b;
+}
+
+.execution-step-row {
+  border-left: 2px solid #334155;
+  padding-left: 12px;
+  margin-bottom: 8px;
+}
+
+.step-completed {
+  border-color: #10b981;
+}
+
+.step-failed {
+  border-color: #ef4444;
+}
+
+.step-pending {
+  border-color: #f59e0b;
+}
+

@@ -19,10 +19,13 @@
       { section: "Detection", items: [
         { key: "detection-engine", label: "Detection Engine", icon: "bi-cpu", href: "/detection/dashboard" },
         { key: "alert-center", label: "Alert Center", icon: "bi-bell", href: "/alert-center/", badge: "12" },
+        { key: "threat-hunting", label: "Threat Hunting", icon: "bi-crosshair2", href: "/threat-hunting/" },
+        { key: "correlation", label: "Correlation Engine", icon: "bi-bezier2", href: "/correlation/" },
       ]},
       { section: "SOC", items: [
         { key: "soc-dashboard", label: "SOC Dashboard", icon: "bi-shield-check", href: "/soc-dashboard/" },
         { key: "incident-response", label: "Incident Response", icon: "bi-clipboard2-pulse", href: "/incidents/dashboard" },
+        { key: "soar", label: "SOAR Automation", icon: "bi-lightning-charge", href: "/soar/" },
       ]},
       { section: "Scanner", items: [
         { key: "vuln-scanner", label: "Vulnerability Scanner", icon: "bi-search", href: "/vuln-scanner/" },

@@ -29,6 +29,11 @@ from app.packet_analysis import packet_analysis
 from app.assets import assets
 from app.soc_dashboard import soc_dashboard
 from app.reports import reports
+from app.analytics import analytics
+from app.threat_hunting import threat_hunting
+from app.correlation import correlation
+from app.ai_assistant import ai_assistant
+from app.soar import soar
 
 from app.utils.logger import configure_logger
 
@@ -103,6 +108,9 @@ def create_app():
     from app.packet_analysis.models import PacketAnalysis  # noqa: F401
     from app.assets.models import Asset  # noqa: F401
     from app.reports.models import Report  # noqa: F401
+    from app.threat_hunting.models import ThreatHuntQuery  # noqa: F401
+    from app.ai_assistant.models import AIConversation, AIMessage  # noqa: F401
+    from app.soar.models import SoarPlaybookExecution, SoarApproval  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -128,5 +136,10 @@ def create_app():
     app.register_blueprint(assets)
     app.register_blueprint(soc_dashboard)
     app.register_blueprint(reports)
+    app.register_blueprint(analytics)
+    app.register_blueprint(threat_hunting)
+    app.register_blueprint(correlation)
+    app.register_blueprint(ai_assistant)
+    app.register_blueprint(soar)
 
     return app

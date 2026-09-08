@@ -1,0 +1,107 @@
+/* CyberDefense XDR - Correlation Engine Styles */
+
+.correlation-page .card {
+  background: #11141d;
+  border: 1px solid #1e2433;
+}
+
+.correlation-page .card-header {
+  background: #151924;
+  border-bottom: 1px solid #1e2433;
+}
+
+.cell-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Graph Visualization Container */
+.correlation-graph-container {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  background: radial-gradient(circle at center, #161c2d 0%, #0d1017 100%);
+  border: 1px solid #1f273b;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.correlation-graph-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.correlation-graph-canvas:active {
+  cursor: grabbing;
+}
+
+.graph-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(15, 19, 29, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid #232d44;
+  border-radius: 6px;
+  padding: 8px 12px;
+  z-index: 10;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+/* Risk Score Box */
+.risk-score-box {
+  background: linear-gradient(145deg, #131722, #0e121a);
+  border: 1px solid #232d44;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.risk-number {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.risk-level-badge {
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.risk-critical { color: #ff4d4f; }
+.risk-high { color: #fa8c16; }
+.risk-medium { color: #faad14; }
+.risk-low { color: #52c41a; }
+.risk-clean { color: #13c2c2; }
+
+/* Reasons List */
+.reason-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #3b82f6;
+  font-size: 0.825rem;
+  margin-bottom: 6px;
+}
+
+.campaign-card {
+  border-left: 4px solid #ef4444;
+  background: #141824;
+  transition: transform 0.15s ease-in-out;
+}
+
+.campaign-card:hover {
+  transform: translateY(-2px);
+  border-color: #f87171;
+}
+

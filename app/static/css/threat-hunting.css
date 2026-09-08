@@ -1,0 +1,142 @@
+/* ==========================================================================
+   threat-hunting.css — Styling for Threat Hunting Module
+   CyberDefense XDR
+   ========================================================================== */
+
+.threat-hunting-page {
+    background-color: var(--bg-body, #0a0e17);
+    color: var(--text-primary, #f1f5f9);
+}
+
+.threat-hunting-page .page-wrap {
+    padding: 1.5rem;
+    max-width: 1700px;
+    margin: 0 auto;
+}
+
+/* Stat Cards */
+.threat-hunting-page .stat-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+}
+
+.threat-hunting-page .stat-card.accent-primary { border-top: 3px solid var(--primary, #0d6efd); }
+.threat-hunting-page .stat-card.accent-danger { border-top: 3px solid var(--danger, #dc3545); }
+.threat-hunting-page .stat-card.accent-warning { border-top: 3px solid var(--warning, #ffc107); }
+.threat-hunting-page .stat-card.accent-info { border-top: 3px solid var(--info, #0dcaf0); }
+.threat-hunting-page .stat-card.accent-success { border-top: 3px solid var(--success, #198754); }
+.threat-hunting-page .stat-card.accent-purple { border-top: 3px solid #6f42c1; }
+
+.threat-hunting-page .stat-card .eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #94a3b8);
+    margin-bottom: 0.25rem;
+}
+
+.threat-hunting-page .stat-card .stat-value {
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* Search Hero Box */
+.hunt-search-box {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+}
+
+.hunt-search-input {
+    background: rgba(10, 14, 23, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.05rem;
+}
+
+.hunt-search-input:focus {
+    border-color: var(--primary, #0d6efd) !important;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Unified Timeline */
+.unified-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.unified-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.timeline-event-item {
+    position: relative;
+    margin-bottom: 1.25rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.timeline-event-item:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(15, 23, 42, 0.75);
+}
+
+.timeline-event-dot {
+    position: absolute;
+    left: -1.75rem;
+    top: 1rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #0a0e17;
+}
+
+.timeline-event-dot.dot-danger { background: #dc3545; }
+.timeline-event-dot.dot-warning { background: #ffc107; }
+.timeline-event-dot.dot-info { background: #0dcaf0; }
+.timeline-event-dot.dot-success { background: #198754; }
+.timeline-event-dot.dot-purple { background: #6f42c1; }
+.timeline-event-dot.dot-secondary { background: #6c757d; }
+
+/* Table Dark Theme & Monospace */
+.threat-hunting-page .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #f1f5f9;
+}
+
+.threat-hunting-page .table th {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+}
+
+.threat-hunting-page .table td {
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.cell-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+

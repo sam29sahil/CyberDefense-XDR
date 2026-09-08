@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Threat Hunting — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/threat-hunting.css') }}" rel="stylesheet">
+</head>
+<body data-page="threat-hunting" data-title="Threat Hunting" class="threat-hunting-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Threat Hunting</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 class="h3 fw-bold mb-1"><i class="bi bi-crosshair2 text-primary me-2"></i>Threat Hunting Engine</h1>
+          <p class="text-muted mb-0 small">Cross-module entity resolution, multi-domain telemetry search, and unified chronological attack timeline.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('correlation.dashboard') }}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-bezier2 me-1"></i>Correlation Engine
+          </a>
+          <a href="{{ url_for('ai_assistant.chat_page') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-stars me-1"></i>AI Assistant
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Telemetry Summary Tiles -->
+      <div class="row g-3 mb-4" id="huntStatsRow">
+        <div class="col-6 col-md-3 col-xl">
+          <div class="stat-card accent-primary h-100">
+            <div class="eyebrow"><i class="bi bi-hdd-network me-1"></i>Assets</div>
+            <div class="stat-value cell-mono text-primary" id="statAssets">-</div>
+            <div class="small text-muted">Registered hosts</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="stat-card accent-danger h-100">
+            <div class="eyebrow"><i class="bi bi-bell me-1"></i>Alerts (24h)</div>
+            <div class="stat-value cell-mono text-danger" id="statAlerts">-</div>
+            <div class="small text-muted">Security alerts</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="stat-card accent-info h-100">
+            <div class="eyebrow"><i class="bi bi-diagram-3 me-1"></i>IDS Threats (24h)</div>
+            <div class="stat-value cell-mono text-info" id="statIdsThreats">-</div>
+            <div class="small text-muted">Suricata alerts</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="stat-card accent-success h-100">
+            <div class="eyebrow"><i class="bi bi-bar-chart-steps me-1"></i>SIEM Logs (24h)</div>
+            <div class="stat-value cell-mono text-success" id="statSiemLogs">-</div>
+            <div class="small text-muted">Ingested events</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="stat-card accent-purple h-100">
+            <div class="eyebrow"><i class="bi bi-globe2 me-1"></i>Threat IOCs</div>
+            <div class="stat-value cell-mono text-light" id="statIocs">-</div>
+            <div class="small text-muted">Threat Intel indicators</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Hero Console -->
+      <div class="hunt-search-box mb-4">
+        <form id="huntSearchForm">
+          <div class="row g-2 mb-3">
+            <div class="col-lg-8">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-primary"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control hunt-search-input" id="huntQueryInput" placeholder="Hunt entity: IP, hostname, hash, CVE, IOC, alert ID (e.g. 192.168.1.50, CVE-2026-0001, ALT-1234)..." required autofocus>
+              </div>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+              <select class="form-select form-select-sm h-100 cell-mono bg-dark text-light border-secondary" id="huntSearchType">
+                <option value="auto">Auto-detect Type</option>
+                <option value="ip">IP Address</option>
+                <option value="hostname">Hostname / Domain</option>
+                <option value="hash">Hash (MD5/SHA)</option>
+                <option value="cve">CVE ID</option>
+                <option value="ioc">IOC Value</option>
+                <option value="alert_id">Alert ID</option>
+                <option value="incident_id">Incident ID</option>
+                <option value="asset_id">Asset ID</option>
+              </select>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+              <button type="submit" class="btn btn-primary w-100 h-100 fw-semibold" id="btnRunHunt">
+                <i class="bi bi-crosshair2 me-1" id="huntSpinIcon"></i>Hunt Now
+              </button>
+            </div>
+          </div>
+
+          <!-- Advanced Filters Row -->
+          <div class="row g-2 align-items-center small text-muted">
+            <div class="col-auto">
+              <span><i class="bi bi-funnel me-1"></i>Filters:</span>
+            </div>
+            <div class="col-auto">
+              <select class="form-select form-select-sm cell-mono bg-dark text-light border-secondary" id="huntTimeRange">
+                <option value="24h">Time: Last 24 Hours</option>
+                <option value="7d" selected>Time: Last 7 Days</option>
+                <option value="30d">Time: Last 30 Days</option>
+                <option value="90d">Time: Last 90 Days</option>
+                <option value="all">Time: All Time</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select class="form-select form-select-sm cell-mono bg-dark text-light border-secondary" id="huntSeverity">
+                <option value="">Severity: All</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select class="form-select form-select-sm cell-mono bg-dark text-light border-secondary" id="huntModule">
+                <option value="all">Source: All Modules</option>
+                <option value="alerts">Alert Center</option>
+                <option value="ids">Network IDS</option>
+                <option value="siem">SIEM Logs</option>
+                <option value="incidents">Incidents</option>
+                <option value="detection">Detection Engine</option>
+                <option value="vulnerabilities">Vulnerability Findings</option>
+                <option value="threat_intel">Threat Intel IOCs</option>
+                <option value="assets">Assets</option>
+              </select>
+            </div>
+            <div class="col-auto ms-auto">
+              <button type="button" class="btn btn-outline-secondary btn-sm py-1" id="btnSaveHunt">
+                <i class="bi bi-bookmark me-1"></i>Save Hunt
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Quick Preset Example Badges -->
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-4 small">
+        <span class="text-muted">Sample Queries:</span>
+        <button class="badge bg-dark-subtle border border-secondary text-light preset-query-btn" data-query="192.168.1.50">192.168.1.50 (IP)</button>
+        <button class="badge bg-dark-subtle border border-secondary text-light preset-query-btn" data-query="auditd">auditd (SIEM Source)</button>
+        <button class="badge bg-dark-subtle border border-secondary text-light preset-query-btn" data-query="CVE-2026-0001">CVE-2026-0001 (CVE)</button>
+        <button class="badge bg-dark-subtle border border-secondary text-light preset-query-btn" data-query="Nmap">Nmap (Signature)</button>
+        <button class="badge bg-dark-subtle border border-secondary text-light preset-query-btn" data-query="AbuseCH">AbuseCH (Threat Feed)</button>
+      </div>
+
+      <!-- Search Results Area -->
+      <div id="huntResultsArea" class="d-none">
+        <!-- Results Overview Bar -->
+        <div class="card mb-4 bg-dark-subtle border-secondary">
+          <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <span class="text-muted">Search Query:</span>
+              <strong class="cell-mono text-light ms-1" id="resQueryText">-</strong>
+              <span class="badge bg-primary ms-2" id="resQueryType">IP</span>
+              <span class="text-muted ms-3">Total Matches:</span>
+              <span class="badge bg-success ms-1 cell-mono fs-6" id="resTotalMatches">0</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-info btn-xs" id="btnCorrelateCurrent">
+                <i class="bi bi-bezier2 me-1"></i>Correlate This Entity
+              </button>
+              <button class="btn btn-outline-primary btn-xs" id="btnAskAiCurrent">
+                <i class="bi bi-stars me-1"></i>Investigate with AI
+              </button>
+              <button class="btn btn-outline-warning btn-xs" id="btnSoarCurrent">
+                <i class="bi bi-lightning-charge me-1"></i>Run SOAR Playbook
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs for Domains -->
+        <ul class="nav nav-tabs border-secondary mb-3" id="huntTabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" id="tab-timeline" data-bs-toggle="tab" data-bs-target="#pane-timeline">
+              <i class="bi bi-clock-history me-1"></i>Unified Timeline (<span id="count-timeline">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-alerts" data-bs-toggle="tab" data-bs-target="#pane-alerts">
+              <i class="bi bi-bell me-1"></i>Alerts (<span id="count-alerts">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-ids" data-bs-toggle="tab" data-bs-target="#pane-ids">
+              <i class="bi bi-diagram-3 me-1"></i>Network IDS (<span id="count-ids">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-siem" data-bs-toggle="tab" data-bs-target="#pane-siem">
+              <i class="bi bi-bar-chart-steps me-1"></i>SIEM Logs (<span id="count-siem">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-incidents" data-bs-toggle="tab" data-bs-target="#pane-incidents">
+              <i class="bi bi-clipboard2-pulse me-1"></i>Incidents (<span id="count-incidents">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-vulns" data-bs-toggle="tab" data-bs-target="#pane-vulns">
+              <i class="bi bi-shield-exclamation me-1"></i>Vulnerabilities (<span id="count-vulns">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-threatintel" data-bs-toggle="tab" data-bs-target="#pane-threatintel">
+              <i class="bi bi-globe2 me-1"></i>Threat Intel (<span id="count-iocs">0</span>)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-assets" data-bs-toggle="tab" data-bs-target="#pane-assets">
+              <i class="bi bi-hdd-network me-1"></i>Assets (<span id="count-assets">0</span>)
+            </button>
+          </li>
+        </ul>
+
+        <!-- Tab Content Panes -->
+        <div class="tab-content mb-4">
+          <!-- 1. Timeline Tab -->
+          <div class="tab-pane fade show active" id="pane-timeline">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-activity text-primary me-2"></i>Multi-Source Chronological Attack Timeline</span>
+                <span class="text-muted small">Ordered newest first</span>
+              </div>
+              <div class="card-body">
+                <div class="unified-timeline" id="unifiedTimelineContainer">
+                  <div class="text-muted text-center py-4">No timeline events recorded.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Alerts Tab -->
+          <div class="tab-pane fade" id="pane-alerts">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>Alert ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Host / Asset</th><th>Source</th><th>Time</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblAlertsBody"><tr><td colspan="8" class="text-center text-muted py-3">No alerts found.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Network IDS Tab -->
+          <div class="tab-pane fade" id="pane-ids">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>Event UUID</th><th>Signature</th><th>SID</th><th>Severity</th><th>Source</th><th>Destination</th><th>Classification</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblIdsBody"><tr><td colspan="8" class="text-center text-muted py-3">No IDS events found.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. SIEM Tab -->
+          <div class="tab-pane fade" id="pane-siem">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>Event ID</th><th>Source</th><th>Host</th><th>Severity</th><th>Message</th><th>Timestamp</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblSiemBody"><tr><td colspan="7" class="text-center text-muted py-3">No SIEM logs found.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Incidents Tab -->
+          <div class="tab-pane fade" id="pane-incidents">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>Incident ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Category</th><th>Created At</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblIncidentsBody"><tr><td colspan="7" class="text-center text-muted py-3">No incidents found.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. Vulnerabilities Tab -->
+          <div class="tab-pane fade" id="pane-vulns">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>CVE</th><th>Title</th><th>Severity</th><th>CVSS</th><th>Host</th><th>Status</th><th>Discovered</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblVulnsBody"><tr><td colspan="8" class="text-center text-muted py-3">No vulnerability findings found.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7. Threat Intel Tab -->
+          <div class="tab-pane fade" id="pane-threatintel">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>IOC ID</th><th>Value</th><th>Type</th><th>Threat Level</th><th>Confidence</th><th>Source</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblIocsBody"><tr><td colspan="7" class="text-center text-muted py-3">No IOC matches found.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8. Assets Tab -->
+          <div class="tab-pane fade" id="pane-assets">
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead>
+                    <tr><th>Asset Name</th><th>Asset ID</th><th>IP Address</th><th>Type</th><th>Environment</th><th>Criticality</th><th>Risk Score</th><th>Status</th><th class="text-end">Actions</th></tr>
+                  </thead>
+                  <tbody id="tblAssetsBody"><tr><td colspan="9" class="text-center text-muted py-3">No assets matched.</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Hunts & Bookmarks Section -->
+      <div class="row g-4 mt-2">
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-clock-history text-secondary me-2"></i>Recent Hunt Queries</span>
+            </div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush small" id="recentQueriesList">
+                <li class="list-group-item bg-transparent text-muted py-3 text-center">Loading recent searches...</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-bookmark-star text-warning me-2"></i>Saved Hunt Bookmarks</span>
+            </div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush small" id="savedHuntsList">
+                <li class="list-group-item bg-transparent text-muted py-3 text-center">No saved bookmarks yet.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+window.XDR_ACTIVE = "threat-hunting";
+</script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/threat-hunting.js') }}"></script>
+</body>
+</html>

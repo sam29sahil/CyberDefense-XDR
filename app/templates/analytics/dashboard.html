@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Analytics — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/analytics.css') }}" rel="stylesheet">
+</head>
+<body data-page="analytics" data-title="Security Analytics" class="analytics-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Security Analytics</span>
+      </nav>
+
+      <!-- Header & Time Filter Bar -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 class="h3 fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Security Analytics</h1>
+          <p class="text-muted mb-0 small">Cross-domain telemetry aggregation, historical time-series trends, and threat correlation.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Preset Buttons -->
+          <div class="btn-group btn-group-sm" role="group" aria-label="Time range presets" id="rangeButtonGroup">
+            <button type="button" class="btn btn-outline-secondary" data-range="24h">24h</button>
+            <button type="button" class="btn btn-primary" data-range="7d">7d</button>
+            <button type="button" class="btn btn-outline-secondary" data-range="30d">30d</button>
+            <button type="button" class="btn btn-outline-secondary" data-range="90d">90d</button>
+            <button type="button" class="btn btn-outline-secondary" data-range="custom">Custom</button>
+          </div>
+
+          <!-- Controls -->
+          <button class="btn btn-outline-secondary btn-sm" id="btnAutoRefresh" data-enabled="true">
+            <i class="bi bi-arrow-repeat me-1"></i>Auto: <span id="autoRefreshStatus">30s</span>
+          </button>
+          <button class="btn btn-primary btn-sm" id="btnRefreshNow">
+            <i class="bi bi-arrow-clockwise me-1" id="refreshIcon"></i>Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Date Range Bar (Hidden by default) -->
+      <div class="card mb-4 d-none" id="customRangeCard">
+        <div class="card-body py-2">
+          <form id="customDateForm" class="row g-2 align-items-center">
+            <div class="col-auto">
+              <label class="col-form-label col-form-label-sm small fw-semibold text-muted">From:</label>
+            </div>
+            <div class="col-auto">
+              <input type="date" class="form-control form-control-sm cell-mono" id="customStartDate" required>
+            </div>
+            <div class="col-auto">
+              <label class="col-form-label col-form-label-sm small fw-semibold text-muted">To:</label>
+            </div>
+            <div class="col-auto">
+              <input type="date" class="form-control form-control-sm cell-mono" id="customEndDate" required>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check2 me-1"></i>Apply Range
+              </button>
+            </div>
+            <div class="col-auto">
+              <span id="customDateError" class="text-danger small ms-2"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Active Window Indicator -->
+      <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
+        <div>
+          <i class="bi bi-funnel me-1"></i>Evaluating window: <strong class="text-light cell-mono" id="evaluatedWindowText">Loading...</strong>
+        </div>
+        <div>
+          Updated: <span class="cell-mono text-light" id="lastUpdatedText">-</span>
+        </div>
+      </div>
+
+      <!-- ROW 1: 8 Real Security KPI Tiles -->
+      <div class="row g-3 mb-4">
+        <!-- 1. Assets -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-primary h-100">
+            <div class="eyebrow"><i class="bi bi-hdd-network me-1"></i>Assets</div>
+            <div class="stat-value cell-mono text-primary" id="kpiTotalAssets">-</div>
+            <div class="stat-sub"><span class="text-success fw-semibold" id="kpiOnlineAssets">-</span> online</div>
+          </div>
+        </div>
+        <!-- 2. Security Alerts -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-danger h-100">
+            <div class="eyebrow"><i class="bi bi-bell me-1"></i>Alerts</div>
+            <div class="stat-value cell-mono text-danger" id="kpiTotalAlerts">-</div>
+            <div class="stat-sub"><span class="text-danger fw-semibold" id="kpiCriticalAlerts">-</span> critical</div>
+          </div>
+        </div>
+        <!-- 3. Incidents -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-warning h-100">
+            <div class="eyebrow"><i class="bi bi-clipboard2-pulse me-1"></i>Incidents</div>
+            <div class="stat-value cell-mono text-warning" id="kpiActiveIncidents">-</div>
+            <div class="stat-sub"><span id="kpiTotalIncidents">-</span> in window</div>
+          </div>
+        </div>
+        <!-- 4. Vulnerabilities -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-danger h-100">
+            <div class="eyebrow"><i class="bi bi-shield-exclamation me-1"></i>Vuln Findings</div>
+            <div class="stat-value cell-mono text-danger" id="kpiTotalVulns">-</div>
+            <div class="stat-sub"><span class="text-danger fw-semibold" id="kpiCriticalVulns">-</span> critical</div>
+          </div>
+        </div>
+        <!-- 5. Detection Events -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-warning h-100">
+            <div class="eyebrow"><i class="bi bi-cpu me-1"></i>Detections</div>
+            <div class="stat-value cell-mono text-warning" id="kpiDetectionEvents">-</div>
+            <div class="stat-sub">Rule Triggers</div>
+          </div>
+        </div>
+        <!-- 6. IDS Security Alerts -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-info h-100">
+            <div class="eyebrow"><i class="bi bi-diagram-3 me-1"></i>IDS Alerts</div>
+            <div class="stat-value cell-mono text-info" id="kpiIdsAlerts">-</div>
+            <div class="stat-sub">Security Threats</div>
+          </div>
+        </div>
+        <!-- 7. SIEM Events -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-success h-100">
+            <div class="eyebrow"><i class="bi bi-bar-chart-steps me-1"></i>SIEM Logs</div>
+            <div class="stat-value cell-mono text-success" id="kpiSiemEvents">-</div>
+            <div class="stat-sub">Events Ingested</div>
+          </div>
+        </div>
+        <!-- 8. Threat IOCs -->
+        <div class="col-6 col-md-3 col-xl">
+          <div class="card stat-card accent-purple h-100">
+            <div class="eyebrow"><i class="bi bi-globe2 me-1"></i>Threat IOCs</div>
+            <div class="stat-value cell-mono text-light" id="kpiTotalIocs">-</div>
+            <div class="stat-sub">Active Threat Intel</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Primary Charts (Multi-Series Trend & Alert Distribution) -->
+      <div class="row g-4 mb-4">
+        <!-- Multi-Series Chronological Trend -->
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span class="fw-semibold"><i class="bi bi-activity text-primary me-2"></i>Multi-Domain Telemetry Trends</span>
+              <div class="d-flex gap-2 flex-wrap" id="trendDatasetBadges">
+                <span class="badge bg-danger-subtle text-danger">Alerts</span>
+                <span class="badge bg-info-subtle text-info">IDS Alerts</span>
+                <span class="badge bg-success-subtle text-success">SIEM Logs</span>
+                <span class="badge bg-warning-subtle text-warning">Detections</span>
+                <span class="badge bg-secondary-subtle text-light">Incidents</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-box">
+                <canvas id="chartMultiTrend"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alert Severity & Status Distribution -->
+        <div class="col-lg-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-pie-chart text-danger me-2"></i>Alert Severity Profile</span>
+            </div>
+            <div class="card-body d-flex flex-column align-items-center justify-content-center">
+              <div class="chart-box-sm">
+                <canvas id="chartAlertSeverity"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3: Incidents & Vulnerabilities Deep Dive -->
+      <div class="row g-4 mb-4">
+        <!-- Incident Analytics & MTTR -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-clipboard2-pulse text-warning me-2"></i>Incident Response Metrics</span>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary-subtle text-light cell-mono">
+                  MTTR: <strong class="text-primary" id="incMttrValue">N/A</strong>
+                </span>
+                <a href="{{ url_for('incidents.dashboard') }}" class="btn btn-outline-warning btn-xs">Incidents <i class="bi bi-arrow-right"></i></a>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6 d-flex flex-column justify-content-center">
+                  <div class="chart-box-sm">
+                    <canvas id="chartIncidentStatus"></canvas>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="p-3 bg-dark-subtle rounded border border-secondary mb-3">
+                    <div class="text-muted small">Mean Time to Resolution (MTTR)</div>
+                    <div class="fs-4 fw-bold text-primary cell-mono" id="mttrDisplay">N/A</div>
+                    <div class="text-muted small">Calculated from closed incident timestamps</div>
+                  </div>
+                  <div class="text-muted small mb-2 fw-semibold">Top Incident Categories:</div>
+                  <ul class="list-group list-group-flush small" id="incidentCategoriesList">
+                    <li class="list-group-item bg-transparent text-muted py-1 px-0">No incidents in this window.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vulnerability Scanner Findings & CVSS -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-shield-x text-danger me-2"></i>Vulnerability Scanner Findings</span>
+              <a href="{{ url_for('scanner.index') }}" class="btn btn-outline-primary btn-xs">Scanner <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6 d-flex flex-column justify-content-center">
+                  <div class="chart-box-sm">
+                    <canvas id="chartVulnSeverity"></canvas>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted small mb-2 fw-semibold">Scanner Tool Breakdown:</div>
+                  <div id="vulnToolBadges" class="d-flex flex-wrap gap-1 mb-3">
+                    <span class="badge bg-secondary-subtle text-muted">No findings</span>
+                  </div>
+                  <div class="text-muted small mb-1 fw-semibold">Top Identified CVEs:</div>
+                  <div id="topCvesList" class="small">
+                    <span class="text-muted">No CVE findings evaluated.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 4: Network IDS & SIEM Telemetry -->
+      <div class="row g-4 mb-4">
+        <!-- Network IDS Intrusion Profile -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-diagram-3 text-info me-2"></i>Network IDS Telemetry</span>
+              <a href="{{ url_for('ids.dashboard') }}" class="btn btn-outline-info btn-xs">Network IDS <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6 d-flex flex-column justify-content-center">
+                  <div class="chart-box-sm">
+                    <canvas id="chartIdsBreakdown"></canvas>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted small mb-1 fw-semibold">Security Alerts vs Diagnostics:</div>
+                  <div class="small mb-3">
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary">
+                      <span class="text-danger"><i class="bi bi-shield-exclamation me-1"></i>Security Threats:</span>
+                      <strong class="cell-mono text-danger" id="idsThreatsCount">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary">
+                      <span class="text-muted"><i class="bi bi-tools me-1"></i>Checksum Diagnostics:</span>
+                      <span class="cell-mono text-muted" id="idsDiagCount">0</span>
+                    </div>
+                  </div>
+                  <div class="text-muted small mb-1 fw-semibold">Top Threat Signatures:</div>
+                  <ul class="list-group list-group-flush small" id="idsSignaturesList">
+                    <li class="list-group-item bg-transparent text-muted py-1 px-0">No active signatures recorded.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIEM & Log Telemetry -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-bar-chart-steps text-success me-2"></i>SIEM Ingestion & Log Sources</span>
+              <a href="{{ url_for('siem.index') }}" class="btn btn-outline-success btn-xs">SIEM Dashboard <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6 d-flex flex-column justify-content-center">
+                  <div class="chart-box-sm">
+                    <canvas id="chartSiemSources"></canvas>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted small mb-2 fw-semibold">Top Log Ingestion Sources:</div>
+                  <ul class="list-group list-group-flush small" id="siemSourcesList">
+                    <li class="list-group-item bg-transparent text-muted py-1 px-0">No log sources active.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 5: Threat Intelligence & Asset Classifications -->
+      <div class="row g-4 mb-4">
+        <!-- Threat Intelligence -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-globe2 text-primary me-2"></i>Threat Intelligence Coverage</span>
+              <a href="{{ url_for('threatintel.dashboard_page') }}" class="btn btn-outline-primary btn-xs">Threat Intel <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6 d-flex flex-column justify-content-center">
+                  <div class="chart-box-sm">
+                    <canvas id="chartIocTypes"></canvas>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="d-flex justify-content-between py-1 border-bottom border-secondary small">
+                    <span class="text-muted">Tracked Threat Actors:</span>
+                    <strong class="cell-mono text-light" id="tiActorsCount">0</strong>
+                  </div>
+                  <div class="d-flex justify-content-between py-1 border-bottom border-secondary small">
+                    <span class="text-muted">Active Campaigns:</span>
+                    <strong class="cell-mono text-warning" id="tiCampaignsCount">0</strong>
+                  </div>
+                  <div class="d-flex justify-content-between py-1 border-bottom border-secondary small">
+                    <span class="text-muted">Active Threat Feeds:</span>
+                    <strong class="cell-mono text-success" id="tiFeedsCount">0</strong>
+                  </div>
+                  <div class="text-muted small mt-3 mb-1 fw-semibold">IOC Threat Severity Breakdown:</div>
+                  <div id="tiSeverityBadges" class="d-flex flex-wrap gap-1">
+                    <span class="badge bg-secondary-subtle text-muted">No IOCs loaded</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Asset Classification & Risk Distribution -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span class="fw-semibold"><i class="bi bi-hdd-network text-primary me-2"></i>Asset Risk & Environment Profiles</span>
+              <a href="{{ url_for('assets.index') }}" class="btn btn-outline-primary btn-xs">Asset Inventory <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-sm-6 d-flex flex-column justify-content-center">
+                  <div class="chart-box-sm">
+                    <canvas id="chartAssetEnvironments"></canvas>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="text-muted small mb-2 fw-semibold">Asset Risk Score Distribution:</div>
+                  <div id="assetRiskTiersList" class="small">
+                    <div class="text-muted">No assets registered.</div>
+                  </div>
+                  <div class="text-muted small mt-3 mb-2 fw-semibold">Assets by Criticality:</div>
+                  <div id="assetCriticalityBadges" class="d-flex flex-wrap gap-1">
+                    <span class="badge bg-secondary-subtle text-muted">None</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 6: Cross-Module Correlation Insights -->
+      <div class="row g-4 mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="h6 fw-semibold mb-0"><i class="bi bi-bezier2 text-primary me-2"></i>Cross-Module Security Correlation Insights</h2>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <!-- Correlation 1 -->
+                <div class="col-md-4">
+                  <div class="correlation-card h-100">
+                    <div class="text-muted small mb-1"><i class="bi bi-shield-slash text-danger me-1"></i>Dual-Risk Assets</div>
+                    <div class="cor-val text-danger" id="corDualRiskCount">0</div>
+                    <div class="text-muted small mt-1">Assets with BOTH active alerts & open vulnerabilities</div>
+                  </div>
+                </div>
+                <!-- Correlation 2 -->
+                <div class="col-md-4">
+                  <div class="correlation-card h-100">
+                    <div class="text-muted small mb-1"><i class="bi bi-cpu text-warning me-1"></i>Detection-To-Incident Escalations</div>
+                    <div class="cor-val text-warning" id="corDetectionsToIncidents">0</div>
+                    <div class="text-muted small mt-1">Incidents originating directly from detection engine events</div>
+                  </div>
+                </div>
+                <!-- Correlation 3 -->
+                <div class="col-md-4">
+                  <div class="correlation-card h-100">
+                    <div class="text-muted small mb-1"><i class="bi bi-arrow-left-right text-info me-1"></i>SIEM-Correlated Detections</div>
+                    <div class="cor-val text-info" id="corSiemDetections">0</div>
+                    <div class="text-muted small mt-1">SIEM log events matching detection correlation rules</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 7: Top Risk Assets Operational Table -->
+      <section class="card mb-4" aria-label="Top risk assets directory">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shield-exclamation text-danger"></i>
+            <h2 class="h6 fw-semibold mb-0">High Priority Monitored Assets</h2>
+          </div>
+          <a href="{{ url_for('assets.index') }}" class="btn btn-outline-primary btn-xs">View Full Inventory <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead>
+              <tr>
+                <th>Asset Name</th>
+                <th>IP Address</th>
+                <th>Type</th>
+                <th>Environment</th>
+                <th>Criticality</th>
+                <th>Risk Score</th>
+                <th>Open Vulns</th>
+                <th>Active Alerts</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="topRiskAssetsBody">
+              <tr>
+                <td colspan="10" class="text-center text-muted py-4">Loading top risk assets...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+window.XDR_ACTIVE = "analytics";
+</script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/analytics.js') }}"></script>
+</body>
+</html>
