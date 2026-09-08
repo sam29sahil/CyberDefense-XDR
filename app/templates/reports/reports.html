@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Reports — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+.cell-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+.report-type-card {
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-card-bg);
+}
+.report-type-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--bs-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.report-type-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+.format-badge-pdf { background-color: rgba(220, 53, 69, 0.15); color: #ea868f; border: 1px solid rgba(220, 53, 69, 0.3); }
+.format-badge-csv { background-color: rgba(25, 135, 84, 0.15); color: #75b798; border: 1px solid rgba(25, 135, 84, 0.3); }
+</style>
+</head>
+<body data-page="reports" data-title="Security Reports">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Security Reports</span>
+      </nav>
+
+      <!-- Section Title Row -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 class="h3 fw-bold mb-1"><i class="bi bi-file-earmark-text text-primary me-2"></i>Security Reports</h1>
+          <p class="text-muted mb-0 small">Generate, review, and export comprehensive enterprise security reports across all telemetry domains.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button class="btn btn-outline-secondary btn-sm" id="btnRefreshHistory">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#generateReportModal">
+            <i class="bi bi-plus-lg me-1"></i>Generate Report
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="card h-100 p-3">
+            <div class="text-muted small mb-1">Total Reports</div>
+            <div class="h3 fw-bold mb-0 cell-mono" id="kpiTotalReports">—</div>
+            <div class="text-muted small mt-1">All time generated</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card h-100 p-3">
+            <div class="text-muted small mb-1">Reports (Last 30d)</div>
+            <div class="h3 fw-bold mb-0 text-primary cell-mono" id="kpiRecentReports">—</div>
+            <div class="text-muted small mt-1">Recent activity</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card h-100 p-3">
+            <div class="text-muted small mb-1">PDF Reports</div>
+            <div class="h3 fw-bold mb-0 text-danger cell-mono" id="kpiPdfReports">—</div>
+            <div class="text-muted small mt-1">Vector documents</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card h-100 p-3">
+            <div class="text-muted small mb-1">CSV Exports</div>
+            <div class="h3 fw-bold mb-0 text-success cell-mono" id="kpiCsvReports">—</div>
+            <div class="text-muted small mt-1">Tabular telemetry</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Types Quick Selector -->
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="h6 fw-semibold mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Available Report Types</h2>
+          <span class="badge bg-secondary-subtle text-muted">8 Canonical Types</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('executive_summary')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-primary-subtle text-primary"><i class="bi bi-speedometer2"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Executive Summary</div>
+                    <div class="text-muted small">Executive</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">High-level enterprise security posture, risk score, critical incidents & vulns.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('soc_operations')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-info-subtle text-info"><i class="bi bi-activity"></i></div>
+                  <div>
+                    <div class="fw-semibold small">SOC Operations</div>
+                    <div class="text-muted small">Operations</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Operational throughput, alert triage rates, SIEM ingestion & response metrics.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('vulnerability_assessment')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-danger-subtle text-danger"><i class="bi bi-bug"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Vulnerability Assessment</div>
+                    <div class="text-muted small">Vulnerability</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Scanned target exposures, CVE/CWE breakdown, CVSS distributions & fixes.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('incident_response')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-warning-subtle text-warning"><i class="bi bi-exclamation-octagon"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Incident Response</div>
+                    <div class="text-muted small">Incident</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Incident lifecycle tracking, severity profiles, containment & postmortems.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('alert_detection')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-warning-subtle text-warning"><i class="bi bi-bell"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Alert & Detection</div>
+                    <div class="text-muted small">Detection</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Security alerts, top firing detection rules & MITRE ATT&CK coverage.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('network_ids')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-primary-subtle text-primary"><i class="bi bi-ethernet"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Network IDS</div>
+                    <div class="text-muted small">Network</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Suricata intrusion detections, signatures, protocol flows (excluding noise).</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('asset_risk')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-success-subtle text-success"><i class="bi bi-hdd-network"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Asset Risk</div>
+                    <div class="text-muted small">Asset</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Enterprise inventory, environment profiling, critical host risk distribution.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+              <div class="p-3 rounded report-type-card h-100" onclick="openGenerateModal('threat_intel')">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                  <div class="report-type-icon bg-info-subtle text-info"><i class="bi bi-shield-shaded"></i></div>
+                  <div>
+                    <div class="fw-semibold small">Threat Intelligence</div>
+                    <div class="text-muted small">Threat Intel</div>
+                  </div>
+                </div>
+                <p class="text-muted small mb-0">Active IOCs, threat actors, campaigns, feed health & indicator types.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report History Table -->
+      <section class="card" aria-label="Report history">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <h2 class="h6 fw-semibold mb-0"><i class="bi bi-clock-history me-2"></i>Report History</h2>
+          
+          <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+            <div class="search-input-wrap">
+              <i class="bi bi-search"></i>
+              <input type="text" class="form-control form-control-sm search-input" id="historySearch" placeholder="Search reports...">
+            </div>
+            <select class="form-select form-select-sm w-auto" id="filterType">
+              <option value="all">All Types</option>
+              <option value="executive_summary">Executive Summary</option>
+              <option value="soc_operations">SOC Operations</option>
+              <option value="vulnerability_assessment">Vulnerability Assessment</option>
+              <option value="incident_response">Incident Response</option>
+              <option value="alert_detection">Alert & Detection</option>
+              <option value="network_ids">Network IDS</option>
+              <option value="asset_risk">Asset Risk</option>
+              <option value="threat_intel">Threat Intel</option>
+            </select>
+            <select class="form-select form-select-sm w-auto" id="filterFormat">
+              <option value="all">All Formats</option>
+              <option value="pdf">PDF</option>
+              <option value="csv">CSV</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="reportsTable">
+            <thead class="table-light small text-muted">
+              <tr>
+                <th>Report ID</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Format</th>
+                <th>Scope</th>
+                <th>Generated By</th>
+                <th>Created At</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+              <tr>
+                <td colspan="9" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Loading report history...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between align-items-center py-2">
+          <div class="text-muted small" id="paginationInfo">Showing 0 to 0 of 0 reports</div>
+          <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- GENERATE REPORT MODAL -->
+<div class="modal fade" id="generateReportModal" tabindex="-1" aria-labelledby="generateReportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="generateReportModalLabel">
+          <i class="bi bi-file-earmark-plus text-primary me-2"></i>Generate Security Report
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="reportGenerateForm">
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold">Report Type</label>
+              <select class="form-select" id="genReportType" required>
+                <option value="executive_summary">Executive Security Summary</option>
+                <option value="soc_operations">SOC Operations Report</option>
+                <option value="vulnerability_assessment">Vulnerability Assessment Report</option>
+                <option value="incident_response">Incident Response Report</option>
+                <option value="alert_detection">Alert & Detection Report</option>
+                <option value="network_ids">Network IDS Report</option>
+                <option value="asset_risk">Asset Risk Report</option>
+                <option value="threat_intel">Threat Intelligence Report</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Export Format</label>
+              <select class="form-select" id="genFormat" required>
+                <option value="pdf">PDF Document (Vector)</option>
+                <option value="csv">CSV Spreadsheet (Data)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Report Title <span class="text-muted">(Optional)</span></label>
+            <input type="text" class="form-control" id="genTitle" placeholder="Leave blank for default title with current date">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Description / Notes <span class="text-muted">(Optional)</span></label>
+            <textarea class="form-control" id="genDescription" rows="2" placeholder="Add any operational context or notes..."></textarea>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Date Range Scope</label>
+              <select class="form-select" id="genDatePreset">
+                <option value="7d" selected>Last 7 Days</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="all">All Time</option>
+                <option value="custom">Custom Date Range</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Severity Filter</label>
+              <select class="form-select" id="genFilterSeverity">
+                <option value="all" selected>All Severities</option>
+                <option value="critical">Critical Only</option>
+                <option value="high">High & Above</option>
+                <option value="medium">Medium & Above</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Custom Date Range Row (Hidden by default) -->
+          <div class="row g-3 mb-3 d-none" id="customDateRow">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">From Date</label>
+              <input type="date" class="form-control" id="genDateFrom">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">To Date</label>
+              <input type="date" class="form-control" id="genDateTo">
+            </div>
+          </div>
+
+          <div class="alert alert-info small d-flex align-items-center gap-2 mb-0">
+            <i class="bi bi-info-circle-fill fs-5"></i>
+            <div>Report will be compiled synchronously from live PostgreSQL telemetry and saved to the Reports catalog.</div>
+          </div>
+        </form>
+
+        <div id="generateProgress" class="d-none text-center py-4">
+          <div class="spinner-border text-primary mb-2" role="status"></div>
+          <div class="fw-semibold">Querying telemetry and rendering report...</div>
+          <div class="text-muted small">Please wait a moment.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnSubmitGenerate">
+          <i class="bi bi-play-fill me-1"></i>Generate Now
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+window.XDR_ACTIVE = "reports";
+</script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/reports.js') }}"></script>
+</body>
+</html>
