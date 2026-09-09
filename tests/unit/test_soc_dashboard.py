@@ -233,19 +233,22 @@ class SOCDashboardTestCase(unittest.TestCase):
         """Suricata SID 2200074 checksum noise is excluded from security alert KPIs."""
         with self.app.app_context():
             now = datetime.utcnow()
-            # 1. Genuine security alert
-            sec_event = NetworkIDSEvent(
-                event_uuid="soc-ids-sec-1",
-                timestamp=now,
-                sensor_name="suricata-primary",
-                event_type="alert",
-                signature="ET SCAN Potential SSH Scan",
-                signature_id=2001219,
-                severity="high",
-                category="Attempted Information Leak",
-                src_ip="10.0.0.99",
-                dest_ip="10.0.0.1",
-            )
+            # 1. Genuine security alerts (batch of 100 to guarantee appearance in top signatures)
+            sec_events = [
+                NetworkIDSEvent(
+                    event_uuid=f"soc-ids-sec-{i}",
+                    timestamp=now,
+                    sensor_name="suricata-primary",
+                    event_type="alert",
+                    signature="ET SCAN Potential SSH Scan",
+                    signature_id=2001219,
+                    severity="high",
+                    category="Attempted Information Leak",
+                    src_ip="10.0.0.99",
+                    dest_ip="10.0.0.1",
+                )
+                for i in range(100)
+            ]
             # 2. Known diagnostic checksum noise (SID 2200074)
             diag_event = NetworkIDSEvent(
                 event_uuid="soc-ids-diag-1",
@@ -259,7 +262,8 @@ class SOCDashboardTestCase(unittest.TestCase):
                 src_ip="10.0.0.99",
                 dest_ip="10.0.0.1",
             )
-            db.session.add(sec_event)
+            for ev in sec_events:
+                db.session.add(ev)
             db.session.add(diag_event)
             db.session.commit()
 
@@ -274,7 +278,8 @@ class SOCDashboardTestCase(unittest.TestCase):
                 self.assertIn("ET SCAN Potential SSH Scan", top_sigs)
                 self.assertNotIn("SURICATA TCPv4 invalid checksum", top_sigs)
             finally:
-                db.session.delete(sec_event)
+                for ev in sec_events:
+                    db.session.delete(ev)
                 db.session.delete(diag_event)
                 db.session.commit()
 

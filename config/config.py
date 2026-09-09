@@ -59,6 +59,13 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 
     # ======================================================
+    # Network IDS Log Rotation & Retention
+    # ======================================================
+    IDS_LOG_ROTATION_SIZE_MB = int(os.getenv("IDS_LOG_ROTATION_SIZE_MB", "100"))
+    IDS_LOG_RETENTION_FILES = int(os.getenv("IDS_LOG_RETENTION_FILES", "7"))
+    IDS_LOG_ROTATION_INTERVAL_SECONDS = int(os.getenv("IDS_LOG_ROTATION_INTERVAL_SECONDS", "60"))
+
+    # ======================================================
     # Application
     # ======================================================
     APP_NAME = "CyberDefense XDR"

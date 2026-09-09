@@ -22,6 +22,12 @@ from sqlalchemy import desc, func, or_, and_, not_
 
 from app.extensions import db
 from app.ids.models import NetworkIDSEvent, IDSSensor
+from app.ids.log_rotator import (
+    start_rotation_thread,
+    stop_rotation_thread,
+    get_ids_log_metrics,
+    rotate_ids_logs,
+)
 
 
 logger = logging.getLogger("cyberdefense.ids")
@@ -244,6 +250,7 @@ def get_sensor_status():
         "eveLogPath": sensor.eve_log_path,
         "startedAt": sensor.started_at.isoformat() if sensor.started_at else None,
         "rulesCount": get_suricata_rules_count(),
+        "logMetrics": get_ids_log_metrics(),
     }
 
 
@@ -348,6 +355,9 @@ def start_sensor(interface=DEFAULT_INTERFACE, app=None):
             # Start background EVE JSON ingestion thread
             start_ingestion_thread(app)
 
+            # Start background safe log rotation thread
+            start_rotation_thread(app)
+
             logger.info(f"Network IDS sensor started successfully on {clean_if} (PID {_sensor_proc.pid}).")
             return True, f"Network IDS sensor started successfully on {clean_if} (PID {_sensor_proc.pid})."
 
@@ -365,6 +375,7 @@ def stop_sensor():
 
     with _state_lock:
         _stop_event.set()
+        stop_rotation_thread()
 
         sensor = IDSSensor.query.filter_by(sensor_id=DEFAULT_SENSOR_ID).first()
         target_pids = []
@@ -758,8 +769,6 @@ def _dispatch_siem(event):
                 "app_protocol": event.app_protocol,
             },
         })
-    except Exception as e:
-        logger.warning(f"Failed to dispatch IDS event to SIEM: {e}")
     except Exception as e:
         logger.warning(f"Failed to dispatch IDS event to SIEM: {e}")
 

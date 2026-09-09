@@ -292,3 +292,57 @@ def api_event_create_incident(event_id):
             "success": False,
             "message": f"Failed to escalate event: {str(e)}",
         }), 500
+
+
+@ids.route("/api/logs/status", methods=["GET"])
+def api_logs_status():
+    """Returns real filesystem metrics for Network IDS log files and archives."""
+    try:
+        metrics = services.get_ids_log_metrics()
+        return jsonify({
+            "success": True,
+            "data": metrics,
+            **metrics,
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"Failed to retrieve IDS log status: {str(e)}",
+        }), 500
+
+
+@ids.route("/api/logs/rotate", methods=["POST"])
+def api_logs_rotate():
+    """Triggers manual rotation of Network IDS log files exceeding threshold (or force)."""
+    try:
+        body = request.get_json(silent=True) or {}
+        force = bool(body.get("force", False))
+        result = services.rotate_ids_logs(force=force)
+        metrics = services.get_ids_log_metrics()
+
+        record_audit_event(
+            action="IDS_LOG_ROTATE",
+            category="Network IDS",
+            resource_type="logs",
+            resource_id="ids_logs",
+            severity="medium" if result.get("rotated") else "low",
+            details={
+                "rotated_files": result.get("rotated", []),
+                "skipped": result.get("skipped", []),
+                "force": force,
+            },
+            result="success" if not result.get("errors") else "partial",
+        )
+
+        return jsonify({
+            "success": True,
+            "message": f"IDS log rotation executed successfully. Rotated: {len(result.get('rotated', []))} file(s).",
+            "result": result,
+            "metrics": metrics,
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": f"Manual log rotation failed: {str(e)}",
+        }), 500
+
