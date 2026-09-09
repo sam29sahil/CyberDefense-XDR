@@ -221,6 +221,36 @@ def create_incident(
     db.session.add(incident)
     db.session.commit()
 
+    try:
+        from app.notifications.services import dispatch_notification
+        if incident.assigned_to:
+            dispatch_notification(
+                title=f"Incident Assigned: {incident.title}",
+                message=f"Incident {incident.incident_id} ({incident.severity.upper()}) was assigned to you.",
+                category="INCIDENT",
+                severity=incident.severity,
+                recipient_user_id=incident.assigned_to,
+                source="Incident Response",
+                resource_type="incident",
+                resource_id=incident.incident_id,
+                action_url=f"/incidents/details/{incident.incident_id}",
+            )
+        elif incident.severity in ("high", "critical"):
+            dispatch_notification(
+                title=f"Critical Incident: {incident.title}",
+                message=f"Incident {incident.incident_id} ({incident.severity.upper()}) requires attention.",
+                category="INCIDENT",
+                severity=incident.severity,
+                recipient_permission="incidents.view",
+                source="Incident Response",
+                resource_type="incident",
+                resource_id=incident.incident_id,
+                action_url=f"/incidents/details/{incident.incident_id}",
+            )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).debug(f"Notification dispatch on create_incident skipped: {e}")
+
     return incident
 
 
@@ -390,6 +420,23 @@ def assign_incident(
     incident.assigned_to = user_id
 
     db.session.commit()
+
+    try:
+        from app.notifications.services import dispatch_notification
+        dispatch_notification(
+            title=f"Incident Assigned: {incident.title}",
+            message=f"Incident {incident.incident_id} ({incident.severity.upper()}) was assigned to you.",
+            category="INCIDENT",
+            severity=incident.severity,
+            recipient_user_id=int(user_id),
+            source="Incident Response",
+            resource_type="incident_assignment",
+            resource_id=incident.incident_id,
+            action_url=f"/incidents/details/{incident.incident_id}",
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).debug(f"Notification dispatch on assign_incident skipped: {e}")
 
     return incident
 

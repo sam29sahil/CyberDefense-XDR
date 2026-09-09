@@ -13,6 +13,7 @@ from flask_login import current_user
 
 from app.scanner import scanner
 from app.scanner import services
+from app.audit_logs.services import record_audit_event
 
 
 # ============================================================
@@ -179,6 +180,24 @@ def api_create_scan():
             app=app_obj,
         )
 
+        try:
+            record_audit_event(
+                action="SCAN_LAUNCH",
+                category="Vulnerability Scanner",
+                resource_type="scan",
+                resource_id=scan.scan_id,
+                severity="low",
+                details={
+                    "name": scan.name,
+                    "targets": getattr(scan, "targets", None) or getattr(scan, "targets_json", None),
+                    "tool": getattr(scan, "scan_type", "Scan"),
+                },
+                result="success",
+                sync_to_siem=True,
+            )
+        except Exception as audit_err:
+            current_app.logger.warning(f"Failed to record scan audit event: {audit_err}")
+
         return jsonify({
             "success": True,
             "message": f"Scan '{scan.name}' ({scan.scan_id}) initiated successfully.",
@@ -234,6 +253,16 @@ def api_delete_scan(scan_id):
                 "success": False,
                 "message": f"Scan '{scan_id}' not found.",
             }), 404
+
+        record_audit_event(
+            action="SCAN_DELETE",
+            category="Vulnerability Scanner",
+            resource_type="scan",
+            resource_id=scan_id,
+            severity="low",
+            details={},
+            result="success",
+        )
 
         return jsonify({
             "success": True,
@@ -468,6 +497,15 @@ def api_create_target():
             user_name = getattr(current_user, "username", "Analyst")
 
         target = services.create_target(payload, owner=user_name)
+        record_audit_event(
+            action="TARGET_CREATE",
+            category="Vulnerability Scanner",
+            resource_type="target",
+            resource_id=str(target.id),
+            severity="low",
+            details={"name": target.name, "target": target.target, "target_type": target.target_type},
+            result="success",
+        )
         return jsonify({
             "success": True,
             "message": f"Target '{target.name}' added successfully.",
@@ -498,6 +536,16 @@ def api_delete_target(target_id):
                 "success": False,
                 "message": f"Target '{target_id}' not found.",
             }), 404
+
+        record_audit_event(
+            action="TARGET_DELETE",
+            category="Vulnerability Scanner",
+            resource_type="target",
+            resource_id=str(target_id),
+            severity="low",
+            details={},
+            result="success",
+        )
 
         return jsonify({
             "success": True,

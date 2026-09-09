@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Record {{ audit.audit_id }} — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+  .detail-card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+  .detail-card .header-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #9ca3af; }
+  .data-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 2px; }
+  .data-val { font-size: 0.95rem; color: #f3f4f6; font-weight: 500; }
+  .code-block { background: #0b0f19; border: 1px solid #1f2937; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #e2e8f0; padding: 14px; max-height: 480px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .badge-success-soft { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .badge-danger-soft { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .badge-warning-soft { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .badge-info-soft { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); }
+</style>
+</head>
+<body data-page="audit-logs" data-title="Audit Record Details" class="audit-details-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb mb-3" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('audit_logs.index') }}">Audit Logs</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">{{ audit.audit_id }}</span>
+      </nav>
+
+      <!-- Record Title & Quick Actions -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="h3 fw-bold mb-0 text-light">{{ audit.action }}</h1>
+            {% if audit.result == 'success' %}
+            <span class="badge badge-success-soft px-2 py-1"><i class="bi bi-check-circle me-1"></i>SUCCESS</span>
+            {% elif audit.result == 'denied' %}
+            <span class="badge badge-warning-soft px-2 py-1"><i class="bi bi-shield-x me-1"></i>DENIED</span>
+            {% else %}
+            <span class="badge badge-danger-soft px-2 py-1"><i class="bi bi-x-circle me-1"></i>{{ audit.result|upper }}</span>
+            {% endif %}
+
+            {% if audit.severity == 'critical' %}
+            <span class="badge bg-danger text-light px-2 py-1">CRITICAL</span>
+            {% elif audit.severity == 'high' %}
+            <span class="badge bg-danger-subtle text-danger px-2 py-1">HIGH</span>
+            {% elif audit.severity == 'medium' %}
+            <span class="badge bg-warning-subtle text-warning px-2 py-1">MEDIUM</span>
+            {% else %}
+            <span class="badge bg-secondary-subtle text-light px-2 py-1">LOW</span>
+            {% endif %}
+          </div>
+          <p class="text-muted mb-0 small">
+            Identifier: <span class="font-monospace text-light">{{ audit.audit_id }}</span> &bull;
+            Recorded: <span class="text-light">{{ audit.timestamp }} UTC</span>
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a href="{{ url_for('audit_logs.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Audit Logs
+          </a>
+          <button class="btn btn-outline-primary btn-sm" id="btnCopyJson">
+            <i class="bi bi-clipboard me-1"></i>Copy JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Inspection Grid -->
+      <div class="row g-3 mb-4">
+        <!-- Left Column: Identity & Resource Scope -->
+        <div class="col-lg-6">
+          <!-- Identity Card -->
+          <div class="card detail-card p-3 mb-3">
+            <div class="header-title mb-3 d-flex align-items-center gap-2">
+              <i class="bi bi-person-badge text-primary"></i>Actor & Execution Context
+            </div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="data-label">Actor Username</div>
+                <div class="data-val">{{ audit.actor or 'System / Anonymous' }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="data-label">Actor ID / Primary Key</div>
+                <div class="data-val font-monospace">{{ audit.actor_id or 'N/A' }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="data-label">Actor Role</div>
+                <div class="data-val">
+                  <span class="badge bg-secondary">{{ audit.actor_role or 'Unknown' }}</span>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="data-label">Source IP Address</div>
+                <div class="data-val font-monospace">{{ audit.source_ip or '127.0.0.1' }}</div>
+              </div>
+              <div class="col-12">
+                <div class="data-label">Client User Agent</div>
+                <div class="data-val text-muted small text-break">{{ audit.user_agent or 'Unknown Client' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Resource Card -->
+          <div class="card detail-card p-3 mb-3">
+            <div class="header-title mb-3 d-flex align-items-center gap-2">
+              <i class="bi bi-crosshair text-info"></i>Target Resource & Subsystem
+            </div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="data-label">Security Category</div>
+                <div class="data-val"><span class="badge badge-info-soft">{{ audit.category }}</span></div>
+              </div>
+              <div class="col-sm-6">
+                <div class="data-label">Resource Type</div>
+                <div class="data-val font-monospace">{{ audit.resource_type or 'system' }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="data-label">Target Resource Identifier</div>
+                <div class="data-val font-monospace">{{ audit.resource_id or 'N/A' }}</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="data-label">SIEM Synchronization</div>
+                <div class="data-val">
+                  {% if audit.ingested_to_siem %}
+                  <span class="text-success"><i class="bi bi-check2-all me-1"></i>Ingested to SIEM Event Log</span>
+                  {% else %}
+                  <span class="text-muted"><i class="bi bi-dash-circle me-1"></i>Local Ledger Only</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Forensic Compliance Card -->
+          <div class="card detail-card p-3">
+            <div class="header-title mb-2 d-flex align-items-center gap-2">
+              <i class="bi bi-shield-check text-success"></i>Forensic Chain of Custody
+            </div>
+            <p class="text-muted small mb-2">
+              This record is stored in an append-only, tamper-evident relational audit log table with zero modification rights granted to standard operator sessions.
+            </p>
+            <div class="d-flex align-items-center gap-2 text-success small">
+              <i class="bi bi-patch-check-fill"></i>
+              <span>Validated: Immutable Record #{{ audit.id }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Raw JSON Payload / Parameters -->
+        <div class="col-lg-6">
+          <div class="card detail-card p-3 h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="header-title d-flex align-items-center gap-2">
+                <i class="bi bi-code-slash text-warning"></i>Event Details & Metadata
+              </div>
+              <span class="badge bg-dark border border-secondary text-secondary small">Sanitized Payload</span>
+            </div>
+
+            <p class="text-muted small mb-2">
+              Sanitized event attributes, state snapshots, and context parameters recorded during transaction execution.
+            </p>
+
+            <div class="flex-grow-1">
+              <pre class="code-block" id="auditJsonPayload"><code>{{ audit.details | tojson(indent=2) }}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/audit-details.js') }}"></script>
+</body>
+</html>
+

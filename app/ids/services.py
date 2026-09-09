@@ -650,8 +650,24 @@ def ingest_eve_event(event_dict, sensor_name=None, interface=None):
     # Dispatch genuine alerts to Alert Center & SIEM
     # Known NIC offload / checksum diagnostic events are excluded from Alert Center
     if event.event_type == "alert":
-        if not event.is_diagnostic:
+        if not event.is_diagnostic and getattr(event, "classification", "") != "diagnostic":
             _dispatch_alert_center(event)
+            if event.severity in ("high", "critical"):
+                try:
+                    from app.notifications.services import dispatch_notification
+                    dispatch_notification(
+                        title=f"[Network IDS] {event.signature or 'Security Alert'}",
+                        message=f"Suricata detected {event.signature} (SID: {event.signature_id or 'N/A'}) to {event.dest_ip or 'segment'}.",
+                        category="IDS",
+                        severity=event.severity,
+                        recipient_permission="ids.view",
+                        source="Suricata IDS",
+                        resource_type="ids_event",
+                        resource_id=str(event.id),
+                        action_url="/network-ids/",
+                    )
+                except Exception as e:
+                    logger.debug(f"IDS notification dispatch skipped: {e}")
         _dispatch_siem(event)
     
     return event

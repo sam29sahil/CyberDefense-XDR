@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Center — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+  .stat-card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+  .stat-card .eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: #9ca3af; }
+  .notif-wrap { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+  .notif-item { border-bottom: 1px solid #1f2937; transition: background 0.15s ease; }
+  .notif-item:hover { background: rgba(255, 255, 255, 0.02); }
+  .notif-item.unread { border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.03); }
+  .notif-item.unread.sev-critical { border-left-color: #ef4444; }
+  .notif-item.unread.sev-high { border-left-color: #f97316; }
+  .notif-item.unread.sev-medium { border-left-color: #f59e0b; }
+  .badge-critical-soft { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .badge-high-soft { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
+  .badge-medium-soft { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .badge-low-soft { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); }
+  .badge-info-soft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+  .code-font { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .cursor-pointer { cursor: pointer; }
+</style>
+</head>
+<body data-page="notifications" data-title="Notifications" class="notifications-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb mb-3" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Notification Center</span>
+      </nav>
+
+      <!-- Section Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 class="h3 fw-bold mb-1"><i class="bi bi-bell text-primary me-2"></i>Notification Center</h1>
+          <p class="text-muted mb-0 small">Real-time alerts, operational updates, and automated escalations across platform subsystems.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button class="btn btn-outline-secondary btn-sm" id="btnRefreshNotifs">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+          <button class="btn btn-outline-primary btn-sm" id="btnMarkAllRead">
+            <i class="bi bi-check2-all me-1"></i>Mark All Read
+          </button>
+          <button class="btn btn-outline-info btn-sm" id="btnOpenPreferences" data-bs-toggle="modal" data-bs-target="#preferencesModal">
+            <i class="bi bi-sliders me-1"></i>Preferences
+          </button>
+        </div>
+      </div>
+
+      <!-- Telemetry Statistics Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card h-100 p-3">
+            <div class="eyebrow mb-1">Unread Alerts</div>
+            <div class="h3 fw-bold text-info mb-0" id="statUnread">{{ stats.unread_count or 0 }}</div>
+            <div class="text-muted small mt-1"><i class="bi bi-envelope me-1"></i>Needs Attention</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card h-100 p-3">
+            <div class="eyebrow mb-1">Total Active</div>
+            <div class="h3 fw-bold text-light mb-0" id="statTotal">{{ stats.total_active or 0 }}</div>
+            <div class="text-muted small mt-1"><i class="bi bi-bell me-1"></i>Personal Inbox</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card h-100 p-3">
+            <div class="eyebrow mb-1">High & Critical</div>
+            <div class="h3 fw-bold text-danger mb-0" id="statCritical">{{ stats.critical_high_count or 0 }}</div>
+            <div class="text-muted small mt-1"><i class="bi bi-shield-exclamation me-1"></i>Priority Events</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card h-100 p-3">
+            <div class="eyebrow mb-1">System & Scans</div>
+            <div class="h3 fw-bold text-warning mb-0" id="statSystem">{{ stats.system_count or 0 }}</div>
+            <div class="text-muted small mt-1"><i class="bi bi-cpu me-1"></i>Engine & Security</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Controls Toolbar -->
+      <div class="card notif-wrap mb-4 p-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-md-4">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-transparent border-secondary text-muted"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control border-secondary" id="notifSearch" placeholder="Search title, message, ID...">
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <select class="form-select form-select-sm border-secondary" id="filterCategory">
+              <option value="">All Categories</option>
+              <option value="ALERT">Alert Center</option>
+              <option value="INCIDENT">Incident Response</option>
+              <option value="IDS">Network IDS</option>
+              <option value="SCANNER">Scanner</option>
+              <option value="SOAR">SOAR Automation</option>
+              <option value="SYSTEM">System</option>
+              <option value="SECURITY">Security</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <select class="form-select form-select-sm border-secondary" id="filterSeverity">
+              <option value="">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+              <option value="info">Info</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <select class="form-select form-select-sm border-secondary" id="filterReadStatus">
+              <option value="">All Statuses</option>
+              <option value="false">Unread Only</option>
+              <option value="true">Read Only</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2 text-end">
+            <button class="btn btn-outline-secondary btn-sm w-100" id="btnResetFilters">
+              <i class="bi bi-x-circle me-1"></i>Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications List Container -->
+      <div class="card notif-wrap mb-4">
+        <div class="card-header bg-transparent border-secondary d-flex justify-content-between align-items-center py-2 px-3">
+          <span class="small fw-semibold text-muted text-uppercase tracking-wider">
+            <i class="bi bi-inbox me-1"></i>Inbox Stream
+          </span>
+          <span class="small text-muted" id="notifResultCounter">Showing 0 records</span>
+        </div>
+
+        <div id="notifListContainer" class="p-0">
+          <div class="text-center text-muted py-5">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+            <div>Loading notifications...</div>
+          </div>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="card-footer bg-transparent border-secondary d-flex justify-content-between align-items-center py-2 px-3" id="notifPaginationFooter">
+          <div class="small text-muted" id="notifPageIndicator">Page 1 of 1</div>
+          <ul class="pagination pagination-sm mb-0" id="notifPaginationNav"></ul>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Preferences Modal -->
+<div class="modal fade" id="preferencesModal" tabindex="-1" aria-labelledby="preferencesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title h6 fw-bold" id="preferencesModalLabel">
+          <i class="bi bi-sliders text-info me-2"></i>Notification Preferences
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="preferencesForm">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted">Delivery Channels</label>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="prefEmail" checked>
+              <label class="form-check-label" for="prefEmail">Email Notifications</label>
+            </div>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="prefWebhook">
+              <label class="form-check-label" for="prefWebhook">Webhook Integration (External SIEM/Slack)</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="prefMinSeverity" class="form-label small fw-semibold text-muted">Minimum Severity Threshold (External Channels)</label>
+            <select class="form-select form-select-sm border-secondary bg-dark text-light" id="prefMinSeverity">
+              <option value="info">Info (All Notifications)</option>
+              <option value="low">Low & Above</option>
+              <option value="medium" selected>Medium & Above</option>
+              <option value="high">High & Above</option>
+              <option value="critical">Critical Only</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted">Quiet Hours</label>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="prefQuietEnabled">
+              <label class="form-check-label" for="prefQuietEnabled">Enable Quiet Hours</label>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label for="prefQuietFrom" class="form-label small text-muted">From (UTC)</label>
+                <input type="time" class="form-control form-control-sm border-secondary bg-dark text-light" id="prefQuietFrom" value="20:00">
+              </div>
+              <div class="col-6">
+                <label for="prefQuietTo" class="form-label small text-muted">To (UTC)</label>
+                <input type="time" class="form-control form-control-sm border-secondary bg-dark text-light" id="prefQuietTo" value="07:00">
+              </div>
+            </div>
+            <div class="form-text text-muted small">External notifications will be paused during quiet hours (Critical alerts always bypass).</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnSavePreferences">
+          <i class="bi bi-check-lg me-1"></i>Save Preferences
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/notifications.js') }}"></script>
+</body>
+</html>
+

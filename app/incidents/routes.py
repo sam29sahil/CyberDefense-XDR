@@ -34,6 +34,7 @@ from app.incidents.services import (
 from app.detection.models import DetectionEvent
 
 from app.users.models import User
+from app.audit_logs.services import record_audit_event
 
 
 # ============================================================
@@ -159,6 +160,17 @@ def create_incident_page():
             created_by=current_user,
         )
 
+        record_audit_event(
+            action="INCIDENT_CREATE",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=incident.incident_id,
+            severity="medium",
+            details={"title": incident.title, "severity": incident.severity},
+            result="success",
+            sync_to_siem=True,
+        )
+
         return jsonify({
             "success": True,
             "message": (
@@ -253,6 +265,16 @@ def update_incident_route(incident_id):
             data,
         )
 
+        record_audit_event(
+            action="INCIDENT_UPDATE",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=incident.incident_id,
+            severity="low",
+            details={"status": incident.status, "severity": incident.severity},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": (
@@ -326,6 +348,16 @@ def assign_incident_route(incident_id):
             user.id,
         )
 
+        record_audit_event(
+            action="INCIDENT_ASSIGN",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=incident.incident_id,
+            severity="low",
+            details={"assigned_to": user.id, "assigned_username": user.username},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": (
@@ -390,6 +422,16 @@ def change_incident_status(incident_id):
             status,
         )
 
+        record_audit_event(
+            action="INCIDENT_STATUS_UPDATE",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=incident.incident_id,
+            severity="low",
+            details={"new_status": status},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": (
@@ -445,6 +487,16 @@ def resolve_incident_route(incident_id):
             ),
         )
 
+        record_audit_event(
+            action="INCIDENT_RESOLVE",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=incident.incident_id,
+            severity="low",
+            details={"resolution_notes": data.get("resolutionNotes")},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": (
@@ -486,6 +538,16 @@ def close_incident_route(incident_id):
             incident
         )
 
+        record_audit_event(
+            action="INCIDENT_CLOSE",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=incident.incident_id,
+            severity="low",
+            details={},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": (
@@ -521,10 +583,24 @@ def delete_incident_route(incident_id):
         incident_id=incident_id
     ).first_or_404()
 
+    title_snapshot = incident.title
+    inc_id = incident.incident_id
+
     try:
 
         delete_incident(
             incident
+        )
+
+        record_audit_event(
+            action="INCIDENT_DELETE",
+            category="Incident Response",
+            resource_type="incident",
+            resource_id=inc_id,
+            severity="medium",
+            details={"title": title_snapshot},
+            result="success",
+            sync_to_siem=True,
         )
 
         return jsonify({

@@ -32,6 +32,8 @@ from app.alerts.services import (
     create_incident_from_alert,
 )
 from app.users.models import User
+from app.user_management.decorators import permission_required
+from app.audit_logs.services import record_audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +172,7 @@ def alert_data_single(alert_id):
 
 @alerts.route("/create", methods=["POST"])
 @login_required
+@permission_required("alerts.modify")
 def create_alert_route():
     """
     Create a new manual alert.
@@ -177,6 +180,16 @@ def create_alert_route():
     data = request.get_json(silent=True) or {}
     try:
         alert = create_alert(data, user=current_user)
+        record_audit_event(
+            action="ALERT_CREATE",
+            category="Alert Center",
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            severity="low",
+            details={"title": alert.title, "severity": alert.severity, "source": alert.source},
+            result="success",
+            sync_to_siem=True,
+        )
         return jsonify({
             "success": True,
             "message": f"Alert {alert.alert_id} created successfully.",
@@ -198,6 +211,7 @@ def create_alert_route():
 
 @alerts.route("/<string:alert_id>/acknowledge", methods=["POST"])
 @login_required
+@permission_required("alerts.modify")
 def acknowledge_alert_route(alert_id):
     """
     Acknowledge an alert.
@@ -211,6 +225,15 @@ def acknowledge_alert_route(alert_id):
 
     try:
         alert = acknowledge_alert(alert, user=current_user)
+        record_audit_event(
+            action="ALERT_ACKNOWLEDGE",
+            category="Alert Center",
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            severity="low",
+            details={"status": alert.status},
+            result="success",
+        )
         return jsonify({
             "success": True,
             "message": f"Alert {alert.alert_id} acknowledged.",
@@ -232,6 +255,7 @@ def acknowledge_alert_route(alert_id):
 
 @alerts.route("/<string:alert_id>/resolve", methods=["POST"])
 @login_required
+@permission_required("alerts.modify")
 def resolve_alert_route(alert_id):
     """
     Resolve an alert with closing notes.
@@ -248,6 +272,15 @@ def resolve_alert_route(alert_id):
 
     try:
         alert = resolve_alert(alert, resolution_notes, user=current_user)
+        record_audit_event(
+            action="ALERT_RESOLVE",
+            category="Alert Center",
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            severity="low",
+            details={"status": alert.status, "resolution_notes": resolution_notes},
+            result="success",
+        )
         return jsonify({
             "success": True,
             "message": f"Alert {alert.alert_id} resolved.",
@@ -269,6 +302,7 @@ def resolve_alert_route(alert_id):
 
 @alerts.route("/<string:alert_id>/assign", methods=["POST"])
 @login_required
+@permission_required("alerts.modify")
 def assign_alert_route(alert_id):
     """
     Assign an alert to an analyst.
@@ -286,6 +320,15 @@ def assign_alert_route(alert_id):
 
     try:
         alert = assign_alert(alert, user_id=user_id, notes=notes, current_user=current_user)
+        record_audit_event(
+            action="ALERT_ASSIGN",
+            category="Alert Center",
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            severity="low",
+            details={"assigned_to": user_id, "notes": notes},
+            result="success",
+        )
         return jsonify({
             "success": True,
             "message": f"Alert {alert.alert_id} assignment updated.",
@@ -307,6 +350,7 @@ def assign_alert_route(alert_id):
 
 @alerts.route("/<string:alert_id>/status", methods=["POST"])
 @login_required
+@permission_required("alerts.modify")
 def change_status_route(alert_id):
     """
     Change alert status respecting the lifecycle state machine.
@@ -330,6 +374,15 @@ def change_status_route(alert_id):
 
     try:
         alert = change_alert_status(alert, new_status, notes=notes, user=current_user)
+        record_audit_event(
+            action="ALERT_STATUS_UPDATE",
+            category="Alert Center",
+            resource_type="alert",
+            resource_id=alert.alert_id,
+            severity="low",
+            details={"new_status": new_status, "notes": notes},
+            result="success",
+        )
         return jsonify({
             "success": True,
             "message": f"Alert {alert.alert_id} status updated to {alert.status}.",
@@ -351,6 +404,7 @@ def change_status_route(alert_id):
 
 @alerts.route("/<string:alert_id>/link-incident", methods=["POST"])
 @login_required
+@permission_required("alerts.modify")
 def link_incident_route(alert_id):
     """
     Link an existing incident or create a new incident from the alert.

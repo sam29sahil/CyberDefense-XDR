@@ -47,6 +47,7 @@
       { section: "Administration", items: [
         { key: "user-management", label: "User Management", icon: "bi-people", href: "/user-management/" },
         { key: "audit-logs", label: "Audit Logs", icon: "bi-journal-text", href: "/audit-logs/" },
+        { key: "notifications", label: "Notifications", icon: "bi-bell", href: "/notifications/" },
         { key: "settings", label: "Settings", icon: "bi-gear", href: "/settings/profile" },
       ]},
     ];
@@ -170,8 +171,39 @@
           window.showToast({ type: "info", title: "Theme preference saved", msg: "Interface will use this on next load." });
         }
       });
+
+      // Notification badge poller and navigation
+      const notifBtn = document.getElementById("notifBtn");
+      if (notifBtn) {
+        notifBtn.addEventListener("click", () => {
+          window.location.href = "/notifications/";
+        });
+
+        const updateUnreadBadge = async () => {
+          try {
+            const res = await fetch("/notifications/api/count", { headers: { "Accept": "application/json" } });
+            if (res.ok) {
+              const data = await res.json();
+              const count = data.unread_count || 0;
+              const dot = notifBtn.querySelector(".badge-dot");
+              if (dot) {
+                if (count > 0) {
+                  dot.style.display = "block";
+                  dot.setAttribute("title", `${count} unread notification${count > 1 ? "s" : ""}`);
+                } else {
+                  dot.style.display = "none";
+                }
+              }
+            }
+          } catch (err) {
+            // Silently ignore network failures in background poller
+          }
+        };
+
+        updateUnreadBadge();
+        setInterval(updateUnreadBadge, 30000);
+      }
     }
   
     document.addEventListener("DOMContentLoaded", init);
   })();
-  

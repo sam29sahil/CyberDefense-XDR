@@ -7,6 +7,7 @@ CRUD operations, dynamic risk evaluations, and cross-module correlations.
 
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from app.user_management.decorators import permission_required
 
 from app.assets import assets
 from app.assets.services import (
@@ -93,6 +94,7 @@ def api_list_assets():
 
 @assets.route("/api", methods=["POST"])
 @login_required
+@permission_required("assets.create")
 def api_create_asset():
     """Creates a new asset with server-side validation."""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -125,6 +127,7 @@ def api_get_asset(asset_id):
 
 @assets.route("/api/<asset_id>", methods=["PUT", "PATCH"])
 @login_required
+@permission_required("assets.modify")
 def api_update_asset(asset_id):
     """Updates permitted asset attributes."""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -146,6 +149,7 @@ def api_update_asset(asset_id):
 
 @assets.route("/api/<asset_id>", methods=["DELETE"])
 @login_required
+@permission_required("assets.delete")
 def api_delete_asset(asset_id):
     """Deletes or decommissions an asset."""
     soft = request.args.get("soft", "false").lower() in ("true", "1")
@@ -236,6 +240,7 @@ def api_asset_network(asset_id):
 
 @assets.route("/api/<asset_id>/scan", methods=["POST"])
 @login_required
+@permission_required("assets.scan")
 def api_asset_scan(asset_id):
     """Triggers an authorized scan via the existing Vulnerability Scanner."""
     data = request.get_json(silent=True) or {}
@@ -258,6 +263,7 @@ def api_asset_scan(asset_id):
 
 @assets.route("/api/rescan", methods=["POST"])
 @login_required
+@permission_required("assets.scan")
 def api_rescan_inventory():
     """Triggers inventory discovery/refresh based on authorized targets."""
     try:

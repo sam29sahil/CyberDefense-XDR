@@ -60,6 +60,22 @@ def trigger_playbook_execution(playbook_id, target_entity_type, target_entity_id
         execution.completed_at = datetime.now(timezone.utc)
         db.session.commit()
         raise
+    finally:
+        try:
+            from app.audit_logs.services import record_audit_event
+            record_audit_event(
+                action="SOAR_PLAYBOOK_EXECUTE",
+                category="SOAR",
+                message=f"Playbook '{catalog_entry['name']}' ({playbook_id}) executed on {execution.target_entity_type} {execution.target_entity_id}",
+                actor_id=user_id,
+                resource_type="Playbook",
+                resource_id=playbook_id,
+                result="SUCCESS" if execution.status != "failed" else "FAILURE",
+                severity="medium",
+                details={"execution_id": execution.execution_id, "status": execution.status},
+            )
+        except Exception:
+            pass
 
     return execution
 
@@ -86,6 +102,25 @@ def approve_staged_action(approval_id, user_id=None, notes=None):
     """Executes the staged state change after explicit analyst sign-off."""
     approval = SoarApproval.query.filter_by(approval_id=approval_id).first_or_404()
     return execute_approved_action(approval, decided_by_user_id=user_id, notes=notes)
+    result = execute_approved_action(approval, decided_by_user_id=user_id, notes=notes)
+
+    try:
+        from app.audit_logs.services import record_audit_event
+        record_audit_event(
+            action="SOAR_ACTION_APPROVE",
+            category="SOAR",
+            message=f"SOAR staged action '{approval.action_type}' ({approval.approval_id}) approved",
+            actor_id=user_id,
+            resource_type="SOARApproval",
+            resource_id=approval.approval_id,
+            result="SUCCESS",
+            severity="medium",
+            details={"notes": notes, "action_type": approval.action_type},
+        )
+    except Exception:
+        pass
+
+    return result
 
 
 def reject_staged_action(approval_id, user_id=None, notes=None):
@@ -99,5 +134,22 @@ def reject_staged_action(approval_id, user_id=None, notes=None):
     approval.decision_notes = notes or "Action rejected by analyst."
     approval.decided_at = datetime.now(timezone.utc)
     db.session.commit()
+
+    try:
+        from app.audit_logs.services import record_audit_event
+        record_audit_event(
+            action="SOAR_ACTION_REJECT",
+            category="SOAR",
+            message=f"SOAR staged action '{approval.action_type}' ({approval.approval_id}) rejected",
+            actor_id=user_id,
+            resource_type="SOARApproval",
+            resource_id=approval.approval_id,
+            result="SUCCESS",
+            severity="medium",
+            details={"notes": notes, "action_type": approval.action_type},
+        )
+    except Exception:
+        pass
+
     return approval
 

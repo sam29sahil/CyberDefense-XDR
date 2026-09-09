@@ -1515,12 +1515,49 @@ def execute_scan(scan_id):
         scan.service_observations_count = len(scan.service_observations or [])
 
         db.session.commit()
+
+        # Dispatch notification if critical/high findings were discovered
+        if (scan.critical_count or 0) > 0 or (scan.high_count or 0) > 0:
+            try:
+                from app.notifications.services import dispatch_notification
+                dispatch_notification(
+                    title=f"Scan Findings: {scan.target_name}",
+                    message=f"Scan {scan.scan_id} identified {scan.critical_count} critical and {scan.high_count} high severity vulnerabilities.",
+                    category="SCANNER",
+                    severity="critical" if (scan.critical_count or 0) > 0 else "high",
+                    recipient_permission="scanner.view",
+                    source="Vulnerability Scanner",
+                    resource_type="scan",
+                    resource_id=scan.scan_id,
+                    action_url=f"/vuln-scanner/scans/{scan.scan_id}",
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).debug(f"Scanner notification dispatch skipped: {e}")
+
         return True, "Scan completed successfully."
 
     except Exception as e:
         scan.status = "failed"
         scan.error_message = f"Unexpected scanner failure: {str(e)}"
         db.session.commit()
+
+        try:
+            from app.notifications.services import dispatch_notification
+            dispatch_notification(
+                title=f"Scan Failed: {scan.target_name}",
+                message=f"Vulnerability scan {scan.scan_id} encountered an unexpected error: {str(e)[:150]}",
+                category="SCANNER",
+                severity="high",
+                recipient_permission="scanner.view",
+                source="Vulnerability Scanner",
+                resource_type="scan",
+                resource_id=scan.scan_id,
+                action_url=f"/vuln-scanner/scans/{scan.scan_id}",
+            )
+        except Exception:
+            pass
+
         return False, scan.error_message
 
 

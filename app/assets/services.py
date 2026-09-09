@@ -790,6 +790,7 @@ def rescan_inventory():
 
 def _dispatch_siem_audit(action, message):
     """Dispatches a lightweight audit log into SIEM."""
+    """Dispatches an audit log into AuditLog table and SIEM."""
     try:
         from app.siem.services import ingest_event as siem_ingest
         siem_ingest({
@@ -800,5 +801,18 @@ def _dispatch_siem_audit(action, message):
             "message": f"[Asset Management] {action}: {message}",
             "fields": {"action": action},
         })
+        from app.audit_logs.services import record_audit_event
+        norm_action = f"ASSET_{action.upper().replace(' ', '_')}"
+        record_audit_event(
+            action=norm_action,
+            category="Asset Management",
+            message=message,
+            resource_type="Asset",
+            result="SUCCESS",
+            severity="info",
+            details={"action": action},
+            sync_to_siem=True,
+        )
     except Exception as e:
         logger.warning(f"Failed to log SIEM audit: {e}")
+        logger.warning(f"Failed to record asset audit log: {e}")

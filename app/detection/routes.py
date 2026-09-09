@@ -27,6 +27,7 @@ from app.detection.services import (
     duplicate_rule,
     create_detection_event,
 )
+from app.audit_logs.services import record_audit_event
 
 
 # ============================================================
@@ -114,6 +115,17 @@ def create_rule_page():
             author=author,
         )
 
+        record_audit_event(
+            action="DETECTION_RULE_CREATE",
+            category="Detection Engine",
+            resource_type="rule",
+            resource_id=rule.rule_id,
+            severity="medium",
+            details={"name": rule.name, "severity": rule.severity, "rule_type": rule.rule_type},
+            result="success",
+            sync_to_siem=True,
+        )
+
         return jsonify({
             "success": True,
             "message": "Detection rule created successfully.",
@@ -196,6 +208,16 @@ def update_rule_route(rule_id):
             data,
         )
 
+        record_audit_event(
+            action="DETECTION_RULE_UPDATE",
+            category="Detection Engine",
+            resource_type="rule",
+            resource_id=rule.rule_id,
+            severity="low",
+            details={"name": rule.name, "severity": rule.severity},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": "Detection rule updated successfully.",
@@ -245,6 +267,16 @@ def toggle_rule(rule_id):
 
     db.session.commit()
 
+    record_audit_event(
+        action="DETECTION_RULE_STATUS_CHANGE",
+        category="Detection Engine",
+        resource_type="rule",
+        resource_id=rule.rule_id,
+        severity="low",
+        details={"new_status": rule.status},
+        result="success",
+    )
+
     return jsonify({
         "success": True,
         "status": rule.status,
@@ -291,7 +323,21 @@ def delete_rule_route(rule_id):
         rule_id=rule_id
     ).first_or_404()
 
+    rule_id_snapshot = rule.rule_id
+    rule_name_snapshot = rule.name
+
     delete_rule(rule)
+
+    record_audit_event(
+        action="DETECTION_RULE_DELETE",
+        category="Detection Engine",
+        resource_type="rule",
+        resource_id=rule_id_snapshot,
+        severity="medium",
+        details={"name": rule_name_snapshot},
+        result="success",
+        sync_to_siem=True,
+    )
 
     return jsonify({
         "success": True,

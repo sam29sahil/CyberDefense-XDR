@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ user.full_name }} — User Details — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/pages/users.css') }}" rel="stylesheet">
+<style>
+  .badge-purple { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+  .badge-info { background-color: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); }
+  .badge-primary { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+  .badge-warning { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+  .badge-secondary { background-color: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); }
+  .detail-card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+  .perm-item { background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; }
+  .perm-item.active { border-left: 3px solid #10b981; }
+  .perm-item.inactive { opacity: 0.5; }
+</style>
+</head>
+<body data-page="user-management" data-title="User Details" class="user-management-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('user_management.users_view') }}">User Management</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">{{ user.full_name }}</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="user-avatar user-avatar-lg bg-primary-subtle text-primary fw-bold fs-4">
+            {{ user.first_name[0] }}{{ user.last_name[0] }}
+          </div>
+          <div>
+            <h1 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
+              {{ user.full_name }}
+              <span class="badge {{ user.role_badge }} fs-6">{{ user.role_name }}</span>
+              {% if user.status == 'active' %}
+                <span class="badge bg-success-subtle text-success fs-6 border border-success-subtle">Active</span>
+              {% elif user.status == 'locked' %}
+                <span class="badge bg-warning-subtle text-warning fs-6 border border-warning-subtle">Locked</span>
+              {% else %}
+                <span class="badge bg-danger-subtle text-danger fs-6 border border-danger-subtle">{{ user.status | title }}</span>
+              {% endif %}
+            </h1>
+            <p class="text-muted mb-0 small">
+              <span class="me-3"><i class="bi bi-person me-1"></i>@{{ user.username }}</span>
+              <span class="me-3"><i class="bi bi-envelope me-1"></i>{{ user.email }}</span>
+              {% if user.company %}<span><i class="bi bi-building me-1"></i>{{ user.company }}</span>{% endif %}
+            </p>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('user_management.users_view') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Directory
+          </a>
+          <button class="btn btn-info btn-sm" id="btnEditUserModalOpen">
+            <i class="bi bi-pencil me-1"></i>Edit Identity
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Operational Metrics -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card detail-card p-3 h-100">
+            <div class="small text-muted text-uppercase fw-semibold"><i class="bi bi-shield-exclamation me-1"></i>Assigned Incidents</div>
+            <div class="fs-3 fw-bold text-light cell-mono mt-1">{{ user.metrics.assigned_incidents }}</div>
+            <div class="small text-muted">Active or resolved incident files</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card detail-card p-3 h-100">
+            <div class="small text-muted text-uppercase fw-semibold"><i class="bi bi-bell me-1"></i>Assigned Alerts</div>
+            <div class="fs-3 fw-bold text-info cell-mono mt-1">{{ user.metrics.assigned_alerts }}</div>
+            <div class="small text-muted">Triaged alert queue items</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card detail-card p-3 h-100">
+            <div class="small text-muted text-uppercase fw-semibold"><i class="bi bi-clock-history me-1"></i>Last Authentication</div>
+            <div class="fs-6 fw-bold text-light cell-mono mt-2">{{ user.last_login or 'Never' }}</div>
+            <div class="small text-muted">Last successful portal sign-in</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card detail-card p-3 h-100">
+            <div class="small text-muted text-uppercase fw-semibold"><i class="bi bi-calendar3 me-1"></i>Provisioned Date</div>
+            <div class="fs-6 fw-bold text-light cell-mono mt-2">{{ user.created_at or 'N/A' }}</div>
+            <div class="small text-muted">Account initial registration</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permissions Breakdown & Capabilities -->
+      <div class="card detail-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Effective Role Permissions</h5>
+            <p class="text-muted small mb-0">Permissions granted based on role assignment: <strong class="text-light">{{ user.role_name }}</strong>.</p>
+          </div>
+          <span class="badge bg-dark text-light border border-secondary">{{ user.permissions | length }} Granted Rights</span>
+        </div>
+
+        <div class="row g-2">
+          {% for perm_key, perm_desc in all_permissions.items() %}
+            {% set has_perm = (perm_key in user.permissions or '*' in user.permissions) %}
+            <div class="col-md-6 col-lg-4">
+              <div class="perm-item d-flex align-items-center justify-content-between {{ 'active' if has_perm else 'inactive' }}">
+                <div>
+                  <div class="small fw-semibold text-light cell-mono">{{ perm_key }}</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">{{ perm_desc }}</div>
+                </div>
+                <div>
+                  {% if has_perm %}
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                  {% else %}
+                    <i class="bi bi-dash-circle text-secondary fs-5"></i>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/toast.js') }}"></script>
+</body>
+</html>
+

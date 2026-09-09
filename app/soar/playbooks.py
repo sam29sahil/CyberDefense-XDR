@@ -188,6 +188,24 @@ def execute_playbook_logic(execution, playbook_id, target_type, target_id, param
         db.session.add(approval)
         db.session.commit()
 
+        # Dispatch high-priority notification to users authorized to approve SOAR actions
+        try:
+            from app.notifications.services import dispatch_notification
+            dispatch_notification(
+                title=f"SOAR Approval Required: {approval.action_name}",
+                message=f"A staged security action requires authorization: {approval.expected_impact}",
+                category="SOAR",
+                severity="high",
+                recipient_permission="soar.approve",
+                source="SOAR Automation",
+                resource_type="soar_approval",
+                resource_id=approval.approval_id,
+                action_url="/soar/",
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).debug(f"SOAR approval notification dispatch skipped: {e}")
+
         add_step("Stage Escalation Approval", "pending_approval", {
             "approval_id": approval_id,
             "action": "escalate_to_incident",

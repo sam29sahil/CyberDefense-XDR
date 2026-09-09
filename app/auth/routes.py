@@ -96,6 +96,20 @@ def login():
     ip = request.remote_addr or "127.0.0.1"
     rate_key = f"{ip}:{email}"
     if is_login_locked(rate_key):
+        try:
+            from app.audit_logs.services import record_audit_event
+            record_audit_event(
+                action="AUTH_LOCKOUT",
+                category="Authentication",
+                message=f"Rate limit exceeded: Account/IP temporarily locked ({email})",
+                actor=email or "Anonymous",
+                result="DENIED",
+                severity="high",
+                details={"rate_key": rate_key, "email": email},
+            )
+        except Exception:
+            pass
+
         return (
             jsonify(
                 {
@@ -109,11 +123,100 @@ def login():
     user = authenticate_user(email=email, password=password)
 
     if user is None:
+        # Increment failed login count on the database user if account exists
+        db_user = get_user_by_email(email)
+        if db_user:
+            from datetime import datetime, timedelta
+            db_user.failed_login_count = (db_user.failed_login_count or 0) + 1
+            if db_user.failed_login_count >= 5:
+                db_user.account_locked_until = datetime.utcnow() + timedelta(minutes=15)
+                db_user.status = "locked"
+            db.session.commit()
+
         record_failed_login(rate_key)
+
+        try:
+            from app.audit_logs.services import record_audit_event
+            record_audit_event(
+                action="LOGIN_FAILED",
+                category="Authentication",
+                message=f"Failed authentication attempt for email '{email}'",
+                actor=email or "Anonymous",
+                result="FAILURE",
+                severity="medium",
+                details={"email": email},
+            )
+        except Exception:
+            pass
+
         return jsonify({"success": False, "message": "Invalid email or password."}), 401
+
+    if user.is_locked:
+        try:
+            from app.audit_logs.services import record_audit_event
+            record_audit_event(
+                action="LOGIN_LOCKED",
+                category="Authentication",
+                message=f"Authentication blocked: Account '{user.username}' is locked",
+                actor=user.username,
+                actor_id=user.id,
+                result="DENIED",
+                severity="medium",
+                details={"email": user.email, "user_id": user.id},
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": False,
+            "message": "Account is temporarily locked. Please contact an administrator or try again later."
+        }), 423
+
+    if user.status in ("disabled", "inactive") or not user.is_active:
+        try:
+            from app.audit_logs.services import record_audit_event
+            record_audit_event(
+                action="LOGIN_DEACTIVATED",
+                category="Authentication",
+                message=f"Authentication blocked: Account '{user.username}' is deactivated or inactive",
+                actor=user.username,
+                actor_id=user.id,
+                result="DENIED",
+                severity="medium",
+                details={"email": user.email, "user_id": user.id},
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": False,
+            "message": "Account has been deactivated. Please contact an administrator."
+        }), 403
+
+    from datetime import datetime
+    user.last_login = datetime.utcnow()
+    user.failed_login_count = 0
+    if user.status == "locked":
+        user.status = "active"
+    db.session.commit()
 
     clear_failed_logins(rate_key)
     login_user(user, remember=remember)
+
+    try:
+        from app.audit_logs.services import record_audit_event
+        record_audit_event(
+            action="LOGIN_SUCCESS",
+            category="Authentication",
+            message=f"User '{user.username}' authenticated successfully",
+            actor=user.username,
+            actor_id=user.id,
+            result="SUCCESS",
+            severity="info",
+            details={"email": user.email, "role": user.role},
+        )
+    except Exception:
+        pass
 
     return (
         jsonify(
@@ -411,6 +514,22 @@ def reset_password(token):
 @login_required
 def logout():
 
+    actor_name = getattr(current_user, "username", "User")
+    actor_id = getattr(current_user, "id", None)
     logout_user()
+
+    try:
+        from app.audit_logs.services import record_audit_event
+        record_audit_event(
+            action="LOGOUT",
+            category="Authentication",
+            message=f"User '{actor_name}' logged out successfully",
+            actor=actor_name,
+            actor_id=actor_id,
+            result="SUCCESS",
+            severity="info",
+        )
+    except Exception:
+        pass
 
     return redirect(url_for("auth.login"))

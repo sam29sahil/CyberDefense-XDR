@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification {{ notification.notification_id }} — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<style>
+  .detail-card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+  .code-font { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .badge-critical-soft { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .badge-high-soft { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
+  .badge-medium-soft { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .badge-low-soft { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); }
+  .badge-info-soft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+</style>
+</head>
+<body data-page="notifications" data-title="Notification Details" class="notifications-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb mb-3" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('notifications.index') }}">Notification Center</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">{{ notification.notification_id }}</span>
+      </nav>
+
+      <!-- Section Title & Actions -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge {% if notification.severity == 'critical' %}badge-critical-soft{% elif notification.severity == 'high' %}badge-high-soft{% elif notification.severity == 'medium' %}badge-medium-soft{% else %}badge-info-soft{% endif %} text-uppercase px-2 py-1">
+              {{ notification.severity }}
+            </span>
+            <span class="badge bg-secondary-subtle text-secondary border border-secondary px-2 py-1">
+              {{ notification.category }}
+            </span>
+            {% if notification.occurrence_count > 1 %}
+              <span class="badge bg-info-subtle text-info border border-info px-2 py-1">
+                {{ notification.occurrence_count }} occurrences
+              </span>
+            {% endif %}
+          </div>
+          <h1 class="h4 fw-bold mb-0 text-light">{{ notification.title }}</h1>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a href="{{ url_for('notifications.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Inbox
+          </a>
+          <button class="btn btn-outline-danger btn-sm" id="btnDismissNotif" data-id="{{ notification.notification_id }}">
+            <i class="bi bi-trash3 me-1"></i>Dismiss
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <!-- Main Message & Actions Card -->
+        <div class="col-12 col-lg-8">
+          <div class="card detail-card mb-4 p-4">
+            <h6 class="text-muted text-uppercase small fw-semibold mb-3">Notification Content</h6>
+            <div class="text-light fs-6 mb-4" style="line-height: 1.6; white-space: pre-wrap;">{{ notification.message }}</div>
+
+            {% if notification.action_url %}
+              <div class="p-3 rounded bg-black bg-opacity-25 border border-secondary d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold text-light small"><i class="bi bi-link-45deg me-1"></i>Linked Resource</div>
+                  <div class="text-muted small code-font">{{ notification.action_url }}</div>
+                </div>
+                <a href="{{ notification.action_url }}" class="btn btn-primary btn-sm px-3">
+                  Open Resource <i class="bi bi-box-arrow-up-right ms-1"></i>
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Technical Metadata Card -->
+          <div class="card detail-card p-4">
+            <h6 class="text-muted text-uppercase small fw-semibold mb-3">Context & Telemetry Metadata</h6>
+            <pre class="code-font p-3 rounded bg-black bg-opacity-50 text-light mb-0" style="max-height: 300px; overflow: auto;">{{ notification.metadata_json }}</pre>
+          </div>
+        </div>
+
+        <!-- Sidebar Attributes Card -->
+        <div class="col-12 col-lg-4">
+          <div class="card detail-card p-3">
+            <h6 class="text-muted text-uppercase small fw-semibold mb-3">Notification Attributes</h6>
+            <dl class="row g-2 mb-0 small">
+              <dt class="col-5 text-muted">ID:</dt>
+              <dd class="col-7 code-font text-light">{{ notification.notification_id }}</dd>
+
+              <dt class="col-5 text-muted">Source:</dt>
+              <dd class="col-7 text-light">{{ notification.source }}</dd>
+
+              <dt class="col-5 text-muted">Created:</dt>
+              <dd class="col-7 text-light">{{ notification.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') if notification.created_at else 'N/A' }}</dd>
+
+              <dt class="col-5 text-muted">Last Updated:</dt>
+              <dd class="col-7 text-light">{{ notification.updated_at.strftime('%Y-%m-%d %H:%M:%S UTC') if notification.updated_at else 'N/A' }}</dd>
+
+              <dt class="col-5 text-muted">Read Status:</dt>
+              <dd class="col-7">
+                {% if notification.is_read %}
+                  <span class="text-success"><i class="bi bi-check-circle me-1"></i>Read</span>
+                {% else %}
+                  <span class="text-warning"><i class="bi bi-circle me-1"></i>Unread</span>
+                {% endif %}
+              </dd>
+
+              {% if notification.resource_type %}
+                <dt class="col-5 text-muted">Resource Type:</dt>
+                <dd class="col-7 text-light">{{ notification.resource_type }}</dd>
+              {% endif %}
+
+              {% if notification.resource_id %}
+                <dt class="col-5 text-muted">Resource ID:</dt>
+                <dd class="col-7 code-font text-light">{{ notification.resource_id }}</dd>
+              {% endif %}
+            </dl>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/notification-details.js') }}"></script>
+</body>
+</html>
+

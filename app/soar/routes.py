@@ -6,6 +6,7 @@ SOAR Automation Routes
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 from app.soar import soar
+from app.user_management.decorators import permission_required
 from app.soar.services import (
     get_available_playbooks,
     trigger_playbook_execution,
@@ -37,6 +38,7 @@ def api_playbooks():
 
 @soar.route("/api/playbooks/<playbook_id>/execute", methods=["POST"])
 @login_required
+@permission_required("soar.execute")
 def api_execute_playbook(playbook_id):
     payload = request.get_json() or {}
     target_id = (payload.get("target_id") or "").strip()
@@ -102,6 +104,7 @@ def api_approvals():
 
 @soar.route("/api/approvals/<approval_id>/approve", methods=["POST"])
 @login_required
+@permission_required("soar.approve")
 def api_approve(approval_id):
     payload = request.get_json() or {}
     notes = payload.get("notes")
@@ -122,6 +125,7 @@ def api_approve(approval_id):
 
 @soar.route("/api/approvals/<approval_id>/reject", methods=["POST"])
 @login_required
+@permission_required("soar.approve")
 def api_reject(approval_id):
     payload = request.get_json() or {}
     notes = payload.get("notes")

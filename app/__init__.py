@@ -35,6 +35,9 @@ from app.threat_hunting import threat_hunting
 from app.correlation import correlation
 from app.ai_assistant import ai_assistant
 from app.soar import soar
+from app.user_management import user_management
+from app.audit_logs import audit_logs
+from app.notifications import notifications
 
 from app.utils.logger import configure_logger
 
@@ -113,6 +116,8 @@ def create_app():
     from app.threat_hunting.models import ThreatHuntQuery  # noqa: F401
     from app.ai_assistant.models import AIConversation, AIMessage  # noqa: F401
     from app.soar.models import SoarPlaybookExecution, SoarApproval  # noqa: F401
+    from app.audit_logs.models import AuditLog  # noqa: F401
+    from app.notifications.models import Notification  # noqa: F401
     # ==========================================================
     # Register Blueprints
     # ==========================================================
@@ -143,6 +148,9 @@ def create_app():
     app.register_blueprint(correlation)
     app.register_blueprint(ai_assistant)
     app.register_blueprint(soar)
+    app.register_blueprint(user_management)
+    app.register_blueprint(audit_logs)
+    app.register_blueprint(notifications)
 
     # ==========================================================
     # Security Response Headers (OWASP Hardening)

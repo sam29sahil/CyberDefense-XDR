@@ -24,6 +24,7 @@ from app.reports.services import (
     get_safe_report_path,
     list_reports,
 )
+from app.audit_logs.services import record_audit_event
 
 
 # ============================================================
@@ -135,6 +136,17 @@ def generate():
             filters=filters,
             generated_by=generated_by,
         )
+
+        record_audit_event(
+            action="REPORT_GENERATE",
+            category="Reports",
+            resource_type="report",
+            resource_id=report.report_id,
+            severity="low",
+            details={"report_type": report_type, "format": file_format, "title": title},
+            result="success",
+        )
+
         return jsonify({
             "success": True,
             "message": f"Report '{report.report_id}' generated successfully.",
@@ -194,6 +206,16 @@ def remove_report(report_id: str):
     success = delete_report(report_id)
     if not success:
         return jsonify({"success": False, "error": f"Report '{report_id}' not found."}), 404
+
+    record_audit_event(
+        action="REPORT_DELETE",
+        category="Reports",
+        resource_type="report",
+        resource_id=report_id,
+        severity="low",
+        details={},
+        result="success",
+    )
 
     return jsonify({
         "success": True,

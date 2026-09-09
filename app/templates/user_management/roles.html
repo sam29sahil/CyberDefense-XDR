@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBAC Roles & Permissions — CyberDefense XDR</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/pages/users.css') }}" rel="stylesheet">
+<style>
+  .badge-purple { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+  .badge-info { background-color: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); }
+  .badge-primary { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+  .badge-warning { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+  .badge-secondary { background-color: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); }
+  .role-card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+  .perm-table-wrap { background: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+</style>
+</head>
+<body data-page="user-management" data-title="Roles & Permissions" class="user-management-page" data-bs-theme="dark">
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+  <div class="main-content">
+    <div id="navbar-root"></div>
+
+    <main class="page-wrap fade-in">
+      <!-- Breadcrumb -->
+      <nav class="xdr-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dashboard.index') }}">Home</a><i class="bi bi-chevron-right sep"></i>
+        <a href="{{ url_for('user_management.users_view') }}">User Management</a><i class="bi bi-chevron-right sep"></i>
+        <span class="current">Roles & Permissions</span>
+      </nav>
+
+      <!-- Section Title & Actions -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 class="h3 fw-bold mb-1"><i class="bi bi-shield-check text-primary me-2"></i>RBAC Roles & Permissions Matrix</h1>
+          <p class="text-muted mb-0 small">Overview of standard security roles and granular operational rights across the platform.</p>
+        </div>
+        <div>
+          <a href="{{ url_for('user_management.users_view') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to User Directory
+          </a>
+        </div>
+      </div>
+
+      <!-- Role Cards Summary -->
+      <div class="row g-3 mb-4">
+        {% for r in roles %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card role-card h-100 p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge {{ r.badge_class }} fs-6">{{ r.name }}</span>
+                <span class="badge bg-dark text-muted border border-secondary">{{ r.user_count }} Users</span>
+              </div>
+              <p class="text-muted small mb-3 flex-grow-1">{{ r.description }}</p>
+              <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary small">
+                <span class="text-muted">Total Capabilities</span>
+                <span class="text-light fw-bold cell-mono">{{ r.permission_count }} Rights</span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Permissions Matrix Table -->
+      <div class="perm-table-wrap p-3 mb-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill text-info me-2"></i>Role Capability Matrix</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr class="text-secondary small border-secondary">
+                <th scope="col" style="min-width: 250px;">Permission</th>
+                <th scope="col" style="min-width: 280px;">Scope & Description</th>
+                {% for r in roles %}
+                  <th scope="col" class="text-center" style="width: 120px;">{{ r.name }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for perm_key, perm_desc in all_permissions.items() %}
+                <tr>
+                  <td class="cell-mono small text-light fw-semibold">{{ perm_key }}</td>
+                  <td class="small text-muted">{{ perm_desc }}</td>
+                  {% for r in roles %}
+                    <td class="text-center">
+                      {% if perm_key in r.permissions or '*' in r.permissions %}
+                        <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                      {% else %}
+                        <i class="bi bi-dash-circle text-secondary fs-6"></i>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/core/shell.js') }}"></script>
+</body>
+</html>
+

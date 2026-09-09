@@ -13,6 +13,7 @@ from flask_login import current_user
 
 from app.ids import ids
 from app.ids import services
+from app.audit_logs.services import record_audit_event
 
 
 # ============================================================
@@ -146,6 +147,17 @@ def api_sensor_start():
         status_code = 200 if success else 400
         sensor_status = services.get_sensor_status()
 
+        record_audit_event(
+            action="IDS_SENSOR_START",
+            category="Network IDS",
+            resource_type="sensor",
+            resource_id=interface,
+            severity="medium",
+            details={"interface": interface, "message": message},
+            result="success" if success else "failure",
+            sync_to_siem=True,
+        )
+
         return jsonify({
             "success": success,
             "message": message,
@@ -164,6 +176,17 @@ def api_sensor_stop():
     try:
         success, message = services.stop_sensor()
         sensor_status = services.get_sensor_status()
+
+        record_audit_event(
+            action="IDS_SENSOR_STOP",
+            category="Network IDS",
+            resource_type="sensor",
+            resource_id="suricata",
+            severity="medium",
+            details={"message": message},
+            result="success" if success else "failure",
+            sync_to_siem=True,
+        )
 
         return jsonify({
             "success": success,
@@ -192,6 +215,17 @@ def api_sensor_restart():
         status_code = 200 if success else 400
         sensor_status = services.get_sensor_status()
 
+        record_audit_event(
+            action="IDS_SENSOR_RESTART",
+            category="Network IDS",
+            resource_type="sensor",
+            resource_id=interface,
+            severity="medium",
+            details={"interface": interface, "message": message},
+            result="success" if success else "failure",
+            sync_to_siem=True,
+        )
+
         return jsonify({
             "success": success,
             "message": message,
@@ -210,6 +244,17 @@ def api_rules_update():
     try:
         result = services.update_suricata_rules()
         status_code = 200 if result.get("success") else 500
+
+        record_audit_event(
+            action="IDS_RULES_UPDATE",
+            category="Network IDS",
+            resource_type="rules",
+            resource_id="suricata-rules",
+            severity="low",
+            details={"result": result},
+            result="success" if result.get("success") else "failure",
+        )
+
         return jsonify(result), status_code
     except Exception as e:
         return jsonify({

@@ -299,6 +299,37 @@ def create_alert(data, user=None):
 
     db.session.add(alert)
     db.session.commit()
+
+    # Dispatch notification for assigned or high/critical alerts
+    try:
+        from app.notifications.services import dispatch_notification
+        if alert.assigned_to:
+            dispatch_notification(
+                title=f"Alert Assigned: {alert.title}",
+                message=f"Alert {alert.alert_id} ({alert.severity.upper()}) was assigned to you.",
+                category="ALERT",
+                severity=alert.severity,
+                recipient_user_id=alert.assigned_to,
+                source="Alert Center",
+                resource_type="alert",
+                resource_id=alert.alert_id,
+                action_url=f"/alert-center/alerts/{alert.alert_id}",
+            )
+        elif alert.severity in ("high", "critical"):
+            dispatch_notification(
+                title=f"Security Alert: {alert.title}",
+                message=f"New {alert.severity.upper()} severity alert detected: {alert.title}",
+                category="ALERT",
+                severity=alert.severity,
+                recipient_permission="alerts.view",
+                source="Alert Center",
+                resource_type="alert",
+                resource_id=alert.alert_id,
+                action_url=f"/alert-center/alerts/{alert.alert_id}",
+            )
+    except Exception as e:
+        logger.debug(f"Notification dispatch on create_alert skipped: {e}")
+
     return alert
 
 
@@ -430,6 +461,24 @@ def assign_alert(alert, user_id=None, notes=None, current_user=None):
         )
 
     db.session.commit()
+
+    if alert.assigned_to:
+        try:
+            from app.notifications.services import dispatch_notification
+            dispatch_notification(
+                title=f"Alert Assigned: {alert.title}",
+                message=f"Alert {alert.alert_id} ({alert.severity.upper()}) was assigned to you.",
+                category="ALERT",
+                severity=alert.severity,
+                recipient_user_id=alert.assigned_to,
+                source="Alert Center",
+                resource_type="alert_assignment",
+                resource_id=alert.alert_id,
+                action_url=f"/alert-center/alerts/{alert.alert_id}",
+            )
+        except Exception as e:
+            logger.debug(f"Notification dispatch on assign_alert skipped: {e}")
+
     return alert
 
 
