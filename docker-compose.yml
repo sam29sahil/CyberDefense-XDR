@@ -1,0 +1,117 @@
+# =============================================================================
+# CyberDefense XDR — Production Docker Compose Configuration
+# =============================================================================
+# Services:
+#   - db:  PostgreSQL 15 relational database (internal network only)
+#   - app: CyberDefense XDR Flask application served via Gunicorn
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database Service
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: xdr-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cyberdefense_xdr}
+      POSTGRES_USER: ${DB_USER:-cyberadmin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD environment variable must be set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - xdr-network
+    # PostgreSQL port is kept strictly internal to the Docker network for security
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cyberadmin} -d ${DB_NAME:-cyberdefense_xdr}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # CyberDefense XDR Web Application Service
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xdr-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      # Flask & Server
+      FLASK_APP: run.py
+      FLASK_ENV: production
+      DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY environment variable must be set in .env}
+      APP_PORT: "5000"
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+
+      # Database Connection (inter-container DNS)
+      DATABASE_URL: postgresql://${DB_USER:-cyberadmin}:${DB_PASSWORD}@db:5432/${DB_NAME:-cyberdefense_xdr}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-cyberdefense_xdr}
+      DB_USER: ${DB_USER:-cyberadmin}
+
+      # Central AI Assistant (Gemini 3.6 Flash)
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_API_BASE: ${AI_API_BASE:-https://generativelanguage.googleapis.com/v1beta/openai/}
+      AI_MODEL: ${AI_MODEL:-gemini-3.6-flash}
+      AI_TIMEOUT: ${AI_TIMEOUT:-60}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-1200}
+
+      # Packet Analysis
+      MAX_PCAP_UPLOAD_MB: ${MAX_PCAP_UPLOAD_MB:-50}
+      TSHARK_TIMEOUT_SECONDS: ${TSHARK_TIMEOUT_SECONDS:-120}
+
+      # Mail Configuration (Optional)
+      MAIL_SERVER: ${MAIL_SERVER:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USE_TLS: ${MAIL_USE_TLS:-True}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_DEFAULT_SENDER: ${MAIL_DEFAULT_SENDER:-}
+
+      # Session Security
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-False}
+      REMEMBER_COOKIE_SECURE: ${REMEMBER_COOKIE_SECURE:-False}
+    volumes:
+      - app_instance:/app/instance
+      - app_logs:/app/logs
+    networks:
+      - xdr-network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/auth/login || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# -----------------------------------------------------------------------------
+# Networks & Volumes
+# -----------------------------------------------------------------------------
+networks:
+  xdr-network:
+    name: xdr-network
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: xdr_pgdata
+  app_instance:
+    name: xdr_app_instance
+  app_logs:
+    name: xdr_app_logs
+

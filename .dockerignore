@@ -1,0 +1,52 @@
+# =============================================================================
+# CyberDefense XDR — Docker Ignore
+# =============================================================================
+
+# Version Control
+.git
+.gitignore
+
+# Virtual Environment
+venv/
+.venv/
+
+# Environment Files (secrets)
+.env
+.env.*
+!.env.example
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Instance Data (runtime generated)
+instance/
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation Build
+docs/
+brain.md
+
+# Frontend Legacy (not used by Flask app)
+frontend/
+
+# Testing (not needed in production image)
+tests/
+
+# Misc
+*.md
+!requirements.txt
+

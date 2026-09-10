@@ -107,6 +107,98 @@
    .navbar-profile .profile-meta{ display:flex; flex-direction:column; line-height:1.2; }
    .navbar-profile .profile-name{ font-size: var(--fs-sm); font-weight:600; }
    .navbar-profile .profile-role{ font-size: 10px; color: var(--text-muted); }
+
+/* ---------- Real-Time Global Clock ---------- */
+.xdr-realtime-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 4px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  user-select: none;
+}
+
+.clock-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+}
+
+.live-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  animation: xdrClockPulse 2s infinite ease-in-out;
+}
+
+@keyframes xdrClockPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+.live-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--success);
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.clock-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.clock-time {
+  font-family: var(--font-mono);
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.clock-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.clock-date {
+  white-space: nowrap;
+}
+
+.clock-tz {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--info);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.clock-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 4px;
+}
    
    /* ---------- Main content ---------- */
    .main-content{
@@ -118,7 +210,11 @@
    body.sidebar-collapsed .main-content{ margin-left: var(--sidebar-collapsed); }
    body.sidebar-collapsed .xdr-navbar{ left: var(--sidebar-collapsed); }
    
-   /* ---------- Mobile ---------- */
+   /* ---------- Mobile & Responsive ---------- */
+   @media (max-width: 1100px){
+     .clock-date{ display: none; }
+   }
+
    @media (max-width: 992px){
      .xdr-sidebar{ transform: translateX(-100%); width: var(--sidebar-width); box-shadow: var(--shadow-lg); }
      .xdr-sidebar.mobile-open{ transform: translateX(0); }
@@ -132,4 +228,14 @@
      }
      .sidebar-scrim.show{ display:block; }
    }
-   
+
+   @media (max-width: 768px){
+     .xdr-realtime-clock{ padding: 3px 6px; gap: 6px; }
+     .clock-meta{ display: none; }
+     .clock-time{ font-size: 0.75rem; }
+   }
+
+   @media (max-width: 480px){
+     .live-label{ display: none; }
+     .clock-divider{ display: none; }
+   }

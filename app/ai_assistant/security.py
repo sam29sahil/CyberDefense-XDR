@@ -12,6 +12,7 @@ SECRET_PATTERNS = [
     (re.compile(r"(?i)(password|passwd|pwd|secret|token|api[_-]?key)\s*[:=]\s*['\"]?([^\s'\";]{4,})['\"]?"), r"\1=********"),
     (re.compile(r"(?i)bearer\s+[a-zA-Z0-9_\-\.]{15,}"), "Bearer ********"),
     (re.compile(r"AKIA[0-9A-Z]{16}"), "AKIA****************"),
+    (re.compile(r"(?<![0-9A-Za-z\-_])AIza[0-9A-Za-z\-_]{35}(?![0-9A-Za-z\-_])"), "AIza***********************************"),
     (re.compile(r"-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(?:RSA\s+)?PRIVATE\s+KEY-----"), "[REDACTED_PRIVATE_KEY]"),
     (re.compile(r"postgres(?:ql)?:\/\/[^:]+:[^@]+@"), "postgresql://[REDACTED_USER]:[REDACTED_PWD]@"),
 ]

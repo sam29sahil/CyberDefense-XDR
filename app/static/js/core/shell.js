@@ -93,6 +93,20 @@
             <span class="kbd-hint"><span class="kbd">⌘K</span></span>
           </div>
           <div class="navbar-actions">
+            <div class="xdr-realtime-clock" id="xdrRealtimeClock" role="timer" aria-live="off" aria-label="System Real-Time Clock">
+              <div class="clock-live-indicator" aria-label="System status: Live" title="Real-time synchronized">
+                <span class="live-pulse" aria-hidden="true"></span>
+                <span class="live-label">LIVE</span>
+              </div>
+              <div class="clock-display">
+                <span class="clock-time" id="xdrClockTime">--:--:--</span>
+                <span class="clock-meta">
+                  <span class="clock-date" id="xdrClockDate">--- --, ----</span>
+                  <span class="clock-tz" id="xdrClockTz">UTC</span>
+                </span>
+              </div>
+            </div>
+            <div class="clock-divider" aria-hidden="true"></div>
             <button class="navbar-icon-btn" id="themeToggle" aria-label="Toggle theme">
               <i class="bi bi-moon-stars"></i>
             </button>
@@ -125,6 +139,42 @@
       const navbarRoot = document.getElementById("navbar-root");
       if (sidebarRoot) sidebarRoot.outerHTML = renderSidebar(active);
       if (navbarRoot) navbarRoot.outerHTML = renderNavbar(title);
+
+      // Global Real-Time Clock
+      const initRealtimeClock = () => {
+        const timeEl = document.getElementById("xdrClockTime");
+        const dateEl = document.getElementById("xdrClockDate");
+        const tzEl = document.getElementById("xdrClockTz");
+        if (!timeEl || !dateEl || !tzEl) return;
+
+        const updateClock = () => {
+          const now = new Date();
+          timeEl.textContent = now.toLocaleTimeString(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+          });
+          dateEl.textContent = now.toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+          });
+          try {
+            const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(now);
+            const tzPart = parts.find(p => p.type === "timeZoneName");
+            tzEl.textContent = tzPart && tzPart.value ? tzPart.value : (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+          } catch (e) {
+            tzEl.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+          }
+        };
+
+        updateClock();
+        setInterval(updateClock, 1000);
+      };
+
+      initRealtimeClock();
   
       // Sidebar collapse (desktop) / drawer (mobile)
       const sidebar = document.getElementById("xdrSidebar");
