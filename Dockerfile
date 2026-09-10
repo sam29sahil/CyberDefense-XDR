@@ -42,6 +42,7 @@ RUN echo "wireshark-common wireshark-common/install-setuid boolean true" | debco
     # Utility tools
     curl \
     unzip \
+    && ln -s /usr/bin/testssl /usr/local/bin/testssl.sh \
     && apt-get purge -y --auto-remove gcc \
     && rm -rf /var/lib/apt/lists/*
 

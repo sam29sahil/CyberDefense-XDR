@@ -7,6 +7,11 @@
 
 set -e
 
+# If arguments were passed to the container, execute them directly
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 echo "============================================"
 echo "  CyberDefense XDR — Starting Application"
 echo "============================================"
