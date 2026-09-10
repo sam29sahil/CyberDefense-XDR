@@ -43,6 +43,12 @@ class IDSLogRotationTestCase(unittest.TestCase):
         cls.app.config["TESTING"] = True
         cls.app.config["WTF_CSRF_ENABLED"] = False
 
+        @cls.app.before_request
+        def _clear_cached_login():
+            from flask import g
+            if hasattr(g, "_login_user"):
+                delattr(g, "_login_user")
+
         with cls.app.app_context():
             user = User.query.filter_by(username="ids_rotator_admin").first()
             if not user:
@@ -52,10 +58,16 @@ class IDSLogRotationTestCase(unittest.TestCase):
                     first_name="Rotator",
                     last_name="Admin",
                     role="ADMIN",
+                    status="active",
                     is_active=True,
                 )
                 user.set_password("AdminSecurePassword123!")
                 db.session.add(user)
+                db.session.commit()
+            elif user.role != "ADMIN" or not user.is_active:
+                user.role = "ADMIN"
+                user.status = "active"
+                user.is_active = True
                 db.session.commit()
             cls.test_user_id = user.id
 
@@ -63,7 +75,7 @@ class IDSLogRotationTestCase(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp(prefix="ids_test_logs_")
         self.client = self.app.test_client()
         with self.client.session_transaction() as sess:
-            sess["user_id"] = self.test_user_id
+            sess["_user_id"] = str(self.test_user_id)
             sess["_fresh"] = True
 
     def tearDown(self):

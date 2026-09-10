@@ -34,12 +34,30 @@ class AIProvider(ABC):
 
 
 class OpenAICompatibleProvider(AIProvider):
-    """Integrates with OpenAI, Azure OpenAI, Ollama, or vLLM endpoints."""
+    """Integrates with OpenAI-compatible endpoints including Google Gemini OpenAI endpoint."""
 
-    def __init__(self, api_key: str, api_base: str = None, model: str = None):
+    def __init__(
+        self,
+        api_key: str,
+        api_base: str = None,
+        model: str = None,
+        timeout: int = 30,
+        max_tokens: int = 1200,
+        display_name: str = None,
+    ):
         self.api_key = api_key
-        self.api_base = api_base or "https://api.openai.com/v1"
-        self.model = model or "gpt-4o-mini"
+        raw_base = (api_base or "https://generativelanguage.googleapis.com/v1beta/openai/").strip()
+        self.api_base = raw_base.rstrip("/")
+        self.model = (model or "gemini-2.5-flash").strip()
+        try:
+            self.timeout = int(timeout) if timeout is not None else 30
+        except (ValueError, TypeError):
+            self.timeout = 30
+        try:
+            self.max_tokens = int(max_tokens) if max_tokens is not None else 1200
+        except (ValueError, TypeError):
+            self.max_tokens = 1200
+        self.display_name = display_name or ("Gemini" if "generativelanguage.googleapis.com" in self.api_base else "OpenAI-Compatible")
 
     def generate_response(self, user_prompt: str, context_str: str, history: list = None) -> dict:
         import requests
@@ -60,11 +78,11 @@ class OpenAICompatibleProvider(AIProvider):
             "model": self.model,
             "messages": messages,
             "temperature": 0.2,
-            "max_tokens": 1200,
+            "max_tokens": self.max_tokens,
         }
 
         try:
-            resp = requests.post(f"{self.api_base}/chat/completions", headers=headers, json=payload, timeout=30)
+            resp = requests.post(f"{self.api_base}/chat/completions", headers=headers, json=payload, timeout=self.timeout)
             resp.raise_for_status()
             data = resp.json()
             choice = data["choices"][0]["message"]["content"]
@@ -77,10 +95,10 @@ class OpenAICompatibleProvider(AIProvider):
                 "analysis": parsed["analysis"],
                 "recommendations": parsed["recommendations"],
                 "tokens_used": tokens,
-                "provider": f"OpenAI-Compatible ({self.model})",
+                "provider": f"{self.display_name} ({self.model})",
             }
         except Exception as e:
-            logger.error(f"OpenAI provider failed, falling back to Local Analyzer: {e}")
+            logger.error(f"{self.display_name} provider failed, falling back to Local Analyzer: {e}")
             fallback = LocalDeterministicProvider()
             return fallback.generate_response(user_prompt, context_str, history)
 
@@ -197,23 +215,122 @@ def _parse_ai_output(content: str) -> dict:
     }
 
 
-def get_ai_provider() -> AIProvider:
-    """Factory returning configured external LLM provider or local SOC fallback."""
-    provider_name = os.environ.get("AI_PROVIDER", "mock").lower()
-    api_key = os.environ.get("AI_API_KEY", "").strip()
+def get_ai_config() -> dict:
+    """Retrieves central AI settings from environment variables or Flask current_app.config."""
+    provider = os.environ.get("AI_PROVIDER")
+    api_key = os.environ.get("AI_API_KEY")
+    api_base = os.environ.get("AI_API_BASE")
+    model = os.environ.get("AI_MODEL")
+    timeout = os.environ.get("AI_TIMEOUT")
+    max_tokens = os.environ.get("AI_MAX_TOKENS")
 
-    # Flask config check if inside app context
     try:
         if current_app:
-            provider_name = current_app.config.get("AI_PROVIDER", provider_name).lower()
-            api_key = current_app.config.get("AI_API_KEY", api_key)
+            if provider is None:
+                provider = current_app.config.get("AI_PROVIDER", "mock")
+            if api_key is None:
+                api_key = current_app.config.get("AI_API_KEY", "")
+            if api_base is None:
+                api_base = current_app.config.get("AI_API_BASE", "https://generativelanguage.googleapis.com/v1beta/openai/")
+            if model is None:
+                model = current_app.config.get("AI_MODEL", "gemini-2.5-flash")
+            if timeout is None:
+                timeout = current_app.config.get("AI_TIMEOUT", 30)
+            if max_tokens is None:
+                max_tokens = current_app.config.get("AI_MAX_TOKENS", 1200)
     except Exception:
         pass
 
-    if provider_name in ("openai", "azure", "ollama", "vllm") and api_key:
-        api_base = os.environ.get("AI_API_BASE")
-        model = os.environ.get("AI_MODEL")
-        return OpenAICompatibleProvider(api_key=api_key, api_base=api_base, model=model)
+    try:
+        timeout_int = int(timeout) if timeout is not None else 30
+    except (ValueError, TypeError):
+        timeout_int = 30
 
+    try:
+        max_tokens_int = int(max_tokens) if max_tokens is not None else 1200
+    except (ValueError, TypeError):
+        max_tokens_int = 1200
+
+    return {
+        "provider": (provider or "mock").strip().lower(),
+        "api_key": (api_key or "").strip(),
+        "api_base": (api_base or "https://generativelanguage.googleapis.com/v1beta/openai/").strip(),
+        "model": (model or "gemini-2.5-flash").strip(),
+        "timeout": timeout_int,
+        "max_tokens": max_tokens_int,
+    }
+
+
+def get_ai_provider() -> AIProvider:
+    """Factory returning configured central external LLM provider or local SOC fallback."""
+    cfg = get_ai_config()
+    provider_name = cfg["provider"]
+    api_key = cfg["api_key"]
+    api_base = cfg["api_base"]
+    model = cfg["model"]
+    timeout = cfg["timeout"]
+    max_tokens = cfg["max_tokens"]
+
+    # Local / mock mode or missing API key explicitly falls back
+    if provider_name in ("mock", "local", "") or not api_key:
+        return LocalDeterministicProvider()
+
+    # Gemini provider
+    if provider_name in ("gemini", "google_gemini", "google-gemini"):
+        return OpenAICompatibleProvider(
+            api_key=api_key,
+            api_base=api_base or "https://generativelanguage.googleapis.com/v1beta/openai/",
+            model=model or "gemini-2.5-flash",
+            timeout=timeout,
+            max_tokens=max_tokens,
+            display_name="Gemini",
+        )
+
+    # General OpenAI / OpenAI-compatible providers
+    if provider_name in ("openai", "azure", "ollama", "vllm"):
+        display = "OpenAI" if provider_name == "openai" else provider_name.capitalize()
+        return OpenAICompatibleProvider(
+            api_key=api_key,
+            api_base=api_base or "https://api.openai.com/v1",
+            model=model or "gpt-4o-mini",
+            timeout=timeout,
+            max_tokens=max_tokens,
+            display_name=display,
+        )
+
+    # Any unknown or unsupported provider falls back safely
+    logger.warning(f"Unknown AI provider '{provider_name}', falling back to LocalDeterministicProvider.")
     return LocalDeterministicProvider()
+
+
+def get_ai_status() -> dict:
+    """Returns safe provider identification and status without exposing credentials."""
+    cfg = get_ai_config()
+    provider_name = cfg["provider"]
+    api_key = cfg["api_key"]
+    model = cfg["model"]
+
+    is_configured = bool(api_key and provider_name not in ("mock", "local", ""))
+
+    if is_configured:
+        if provider_name in ("gemini", "google_gemini", "google-gemini"):
+            display_provider = "Gemini"
+        elif provider_name == "openai":
+            display_provider = "OpenAI"
+        else:
+            display_provider = provider_name.capitalize()
+        display_model = model
+    else:
+        display_provider = "Local SOC Intelligence Engine"
+        display_model = "Deterministic SOC Heuristics"
+
+    return {
+        "status": "success",
+        "provider": display_provider,
+        "model": display_model,
+        "mode": "ADVISORY_ONLY",
+        "configured": is_configured,
+        "fallback_available": True,
+        "description": "Advisory security intelligence assistant. State-changing actions require SOAR approval.",
+    }
 

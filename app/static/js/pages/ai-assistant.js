@@ -19,7 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success' && aiProviderBadge) {
-          aiProviderBadge.textContent = `${data.provider} [${data.mode}]`;
+          if (data.configured) {
+            let modelLabel = data.model || '';
+            if (modelLabel.toLowerCase() === 'gemini-2.5-flash') {
+              modelLabel = '2.5 Flash';
+            }
+            aiProviderBadge.textContent = `${data.provider} ${modelLabel} • ${data.mode || 'ADVISORY ONLY'}`.trim();
+          } else {
+            aiProviderBadge.textContent = `${data.provider} [FALLBACK / ${data.mode || 'ADVISORY ONLY'}]`;
+          }
         }
       })
       .catch(err => console.error('Failed to load AI status:', err));

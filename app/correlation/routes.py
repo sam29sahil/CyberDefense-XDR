@@ -5,18 +5,21 @@ Correlation Engine Routes
 
 from flask import render_template, request, jsonify
 from flask_login import login_required
+from app.user_management.decorators import permission_required
 from app.correlation import correlation
 from app.correlation.services import correlate_entity, find_campaigns
 
 
 @correlation.route("/")
 @login_required
+@permission_required("correlation.view")
 def dashboard():
     return render_template("correlation/dashboard.html")
 
 
 @correlation.route("/api/entity/<entity_type>/<path:entity_id>", methods=["GET"])
 @login_required
+@permission_required("correlation.view")
 def api_correlate_entity(entity_type, entity_id):
     """
     Returns full correlation data, risk scoring, and graph for a given entity.
@@ -36,11 +39,12 @@ def api_correlate_entity(entity_type, entity_id):
 
 @correlation.route("/api/search", methods=["POST"])
 @login_required
+@permission_required("correlation.search")
 def api_search_correlation():
     """
     Searches for relationships matching an input query entity.
     """
-    payload = request.get_json() or {}
+    payload = request.get_json(silent=True) or {}
     query = (payload.get("query") or "").strip()
     entity_type = (payload.get("entity_type") or "auto").strip()
 
@@ -70,6 +74,7 @@ def api_search_correlation():
 
 @correlation.route("/api/graph/<entity_type>/<path:entity_id>", methods=["GET"])
 @login_required
+@permission_required("correlation.view")
 def api_graph_data(entity_type, entity_id):
     """
     Returns nodes and links graph visualization payload.
@@ -89,6 +94,7 @@ def api_graph_data(entity_type, entity_id):
 
 @correlation.route("/api/campaigns", methods=["GET"])
 @login_required
+@permission_required("correlation.view")
 def api_campaigns():
     """
     Returns active cross-asset and multi-vector attack campaigns.

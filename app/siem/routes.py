@@ -10,10 +10,12 @@ from flask import (
     redirect,
     url_for,
 )
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 from app.siem import siem
 from app.siem import services
+from app.siem.models import SiemSavedSearch
+from app.user_management.decorators import permission_required
 
 
 # ============================================================
@@ -22,6 +24,8 @@ from app.siem import services
 
 @siem.route("/")
 @siem.route("/dashboard")
+@login_required
+@permission_required("siem.view")
 def index():
     """Renders the main SIEM Dashboard."""
     # Ensure initial data exists if starting with fresh database
@@ -34,6 +38,8 @@ def index():
 
 
 @siem.route("/log-explorer")
+@login_required
+@permission_required("siem.view")
 def log_explorer():
     """Renders the Log Explorer page."""
     try:
@@ -46,6 +52,8 @@ def log_explorer():
 
 @siem.route("/log-details")
 @siem.route("/log-details/<event_id>")
+@login_required
+@permission_required("siem.view")
 def log_details(event_id=None):
     """Renders the Log Details page."""
     try:
@@ -58,6 +66,8 @@ def log_details(event_id=None):
 
 
 @siem.route("/saved-searches")
+@login_required
+@permission_required("siem.view")
 def saved_searches():
     """Renders the Saved Searches library."""
     try:
@@ -73,6 +83,8 @@ def saved_searches():
 # ============================================================
 
 @siem.route("/api/dashboard", methods=["GET"])
+@login_required
+@permission_required("siem.view")
 def api_dashboard():
     """Returns aggregated SIEM Dashboard metrics, charts, and stream."""
     try:
@@ -90,6 +102,8 @@ def api_dashboard():
 
 
 @siem.route("/api/logs", methods=["GET"])
+@login_required
+@permission_required("siem.view")
 def api_logs():
     """Returns paginated, searchable, and filtered log events."""
     try:
@@ -136,6 +150,8 @@ def api_logs():
 
 
 @siem.route("/api/logs/filter-options", methods=["GET"])
+@login_required
+@permission_required("siem.view")
 def api_filter_options():
     """Returns unique sources, hosts, categories, and tags for filter dropdowns."""
     try:
@@ -153,6 +169,8 @@ def api_filter_options():
 
 
 @siem.route("/api/logs/<event_id>", methods=["GET"])
+@login_required
+@permission_required("siem.view")
 def api_log_detail(event_id):
     """Returns detailed event information and related events for an event_id."""
     try:
@@ -176,6 +194,8 @@ def api_log_detail(event_id):
 
 
 @siem.route("/api/events", methods=["POST"])
+@login_required
+@permission_required("siem.view")
 def api_ingest_event():
     """
     Ingests one or more log events into the SIEM pipeline.
@@ -216,6 +236,8 @@ def api_ingest_event():
 
 
 @siem.route("/api/saved-searches", methods=["GET"])
+@login_required
+@permission_required("siem.view")
 def api_get_saved_searches():
     """Returns saved searches list with optional filtering."""
     try:
@@ -237,6 +259,8 @@ def api_get_saved_searches():
 
 
 @siem.route("/api/saved-searches", methods=["POST"])
+@login_required
+@permission_required("siem.view")
 def api_create_saved_search():
     """Creates a new saved search."""
     data = request.get_json(silent=True)
@@ -247,9 +271,7 @@ def api_create_saved_search():
         }), 400
 
     try:
-        owner_name = "Analyst"
-        if hasattr(current_user, "is_authenticated") and current_user.is_authenticated:
-            owner_name = getattr(current_user, "username", "Analyst")
+        owner_name = getattr(current_user, "username", "Analyst")
 
         saved = services.create_saved_search(data, owner=owner_name)
         return jsonify({
@@ -270,16 +292,28 @@ def api_create_saved_search():
 
 
 @siem.route("/api/saved-searches/<search_id>/pin", methods=["POST"])
+@login_required
+@permission_required("siem.view")
 def api_toggle_pin(search_id):
     """Toggles pinned status for a saved search."""
     try:
-        updated = services.toggle_pin_saved_search(search_id)
-        if not updated:
+        search = SiemSavedSearch.query.filter_by(search_id=search_id).first()
+        if not search:
             return jsonify({
                 "success": False,
                 "message": f"Saved search '{search_id}' not found.",
             }), 404
 
+        is_admin = getattr(current_user, "is_admin", False)
+        is_owner = (search.owner == getattr(current_user, "username", None))
+        if not (is_admin or is_owner):
+            return jsonify({
+                "success": False,
+                "error": "Forbidden",
+                "message": "You are not authorized to modify another user's saved search.",
+            }), 403
+
+        updated = services.toggle_pin_saved_search(search_id)
         return jsonify({
             "success": True,
             "message": f"Search '{updated.name}' {'pinned to' if updated.pinned else 'unpinned from'} SIEM dashboard.",
@@ -293,16 +327,28 @@ def api_toggle_pin(search_id):
 
 
 @siem.route("/api/saved-searches/<search_id>", methods=["DELETE"])
+@login_required
+@permission_required("siem.view")
 def api_delete_saved_search(search_id):
     """Deletes a saved search."""
     try:
-        deleted = services.delete_saved_search(search_id)
-        if not deleted:
+        search = SiemSavedSearch.query.filter_by(search_id=search_id).first()
+        if not search:
             return jsonify({
                 "success": False,
                 "message": f"Saved search '{search_id}' not found.",
             }), 404
 
+        is_admin = getattr(current_user, "is_admin", False)
+        is_owner = (search.owner == getattr(current_user, "username", None))
+        if not (is_admin or is_owner):
+            return jsonify({
+                "success": False,
+                "error": "Forbidden",
+                "message": "You are not authorized to delete another user's saved search.",
+            }), 403
+
+        deleted = services.delete_saved_search(search_id)
         return jsonify({
             "success": True,
             "message": f"Saved search '{search_id}' deleted successfully.",

@@ -12,7 +12,7 @@ from app.ai_assistant import ai_assistant
 from app.ai_assistant.models import AIConversation, AIMessage
 from app.ai_assistant.security import sanitize_user_input
 from app.ai_assistant.context import gather_security_context
-from app.ai_assistant.provider import get_ai_provider
+from app.ai_assistant.provider import get_ai_provider, get_ai_status
 
 
 @ai_assistant.route("/")
@@ -24,13 +24,7 @@ def chat_page():
 @ai_assistant.route("/api/status", methods=["GET"])
 @login_required
 def api_status():
-    provider = get_ai_provider()
-    return jsonify({
-        "status": "success",
-        "provider": provider.__class__.__name__,
-        "mode": "ADVISORY_ONLY",
-        "description": "Advisory security intelligence assistant. State-changing actions require SOAR approval.",
-    })
+    return jsonify(get_ai_status())
 
 
 @ai_assistant.route("/api/chat", methods=["POST"])

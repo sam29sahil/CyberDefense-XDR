@@ -128,8 +128,9 @@ def gather_security_context(user_query: str) -> dict:
             Alert.status != "resolved"
         ).order_by(desc(Alert.created_at)).limit(3).all()
         for a in top_alerts:
-            evidence["alerts"].append({"id": a.id, "title": a.title, "severity": a.severity})
-            context_lines.append(f"Active System Alert [{a.severity}]: {a.title} (Src: {a.source_ip}, Dst: {a.dest_ip})")
+            src_val = getattr(a, "source_ip", None) or getattr(a, "source", "-")
+            dst_val = getattr(a, "dest_ip", None) or getattr(a, "affected_host", None) or getattr(a, "affected_asset", "-")
+            context_lines.append(f"Active System Alert [{a.severity}]: {a.title} (Src: {src_val}, Dst: {dst_val})")
 
     formatted_raw = "\n".join(context_lines) if context_lines else "No specific database security telemetry found matching the query."
     wrapped_prompt = wrap_untrusted_data(formatted_raw, label="xdr_telemetry_context")

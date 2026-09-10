@@ -15,23 +15,19 @@ class Config:
     # ======================================================
     # Flask
     # ======================================================
-    SECRET_KEY = os.getenv(
-        "SECRET_KEY",
-        "change-this-secret-key"
-    )
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        raise RuntimeError("SECRET_KEY must be set")
 
-    DEBUG = os.getenv(
-        "DEBUG",
-        "True"
-    ).lower() == "true"
+    DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
 
     # ======================================================
     # Database
     # ======================================================
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/cyberdefense_xdr"
-    )
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    if not SQLALCHEMY_DATABASE_URI:
+        raise RuntimeError("DATABASE_URL must be set")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -64,6 +60,16 @@ class Config:
     IDS_LOG_ROTATION_SIZE_MB = int(os.getenv("IDS_LOG_ROTATION_SIZE_MB", "100"))
     IDS_LOG_RETENTION_FILES = int(os.getenv("IDS_LOG_RETENTION_FILES", "7"))
     IDS_LOG_ROTATION_INTERVAL_SECONDS = int(os.getenv("IDS_LOG_ROTATION_INTERVAL_SECONDS", "60"))
+
+    # ======================================================
+    # Central AI Assistant Configuration
+    # ======================================================
+    AI_PROVIDER = os.getenv("AI_PROVIDER", "mock")
+    AI_API_KEY = os.getenv("AI_API_KEY", "")
+    AI_API_BASE = os.getenv("AI_API_BASE", "https://generativelanguage.googleapis.com/v1beta/openai/")
+    AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash")
+    AI_TIMEOUT = int(os.getenv("AI_TIMEOUT", "30"))
+    AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "1200"))
 
     # ======================================================
     # Application

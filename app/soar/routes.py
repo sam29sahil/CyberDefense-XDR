@@ -20,6 +20,7 @@ from app.soar.services import (
 
 @soar.route("/")
 @login_required
+@permission_required("soar.view")
 def dashboard():
     return render_template("soar/dashboard.html")
 
@@ -27,6 +28,7 @@ def dashboard():
 @soar.route("/playbooks")
 @soar.route("/api/playbooks", methods=["GET"])
 @login_required
+@permission_required("soar.view")
 def api_playbooks():
     playbooks = get_available_playbooks()
     return jsonify({
@@ -72,6 +74,7 @@ def api_execute_playbook(playbook_id):
 
 @soar.route("/api/executions", methods=["GET"])
 @login_required
+@permission_required("soar.view")
 def api_executions():
     executions = get_executions(limit=50)
     return jsonify({
@@ -82,6 +85,7 @@ def api_executions():
 
 @soar.route("/api/executions/<execution_id>", methods=["GET"])
 @login_required
+@permission_required("soar.view")
 def api_get_execution(execution_id):
     execution = get_execution_by_id(execution_id)
     return jsonify({
@@ -92,6 +96,7 @@ def api_get_execution(execution_id):
 
 @soar.route("/api/approvals", methods=["GET"])
 @login_required
+@permission_required("soar.view")
 def api_approvals():
     status_filter = request.args.get("status")
     approvals = get_approvals(status=status_filter)

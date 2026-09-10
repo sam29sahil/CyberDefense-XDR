@@ -287,17 +287,21 @@ class SOCDashboardTestCase(unittest.TestCase):
         """SIEM telemetry reflects actual SiemEvent records."""
         with self.app.app_context():
             now = datetime.utcnow()
-            evt = SiemEvent(
-                event_id="soc-siem-test-1",
-                timestamp=now,
-                source="Firewall-Edge",
-                severity="critical",
-                category="Network",
-                host="FW-01",
-                message="Inbound SYN flood dropped from 203.0.113.5",
-                raw_log="Inbound SYN flood dropped from 203.0.113.5",
-            )
-            db.session.add(evt)
+            evts = [
+                SiemEvent(
+                    event_id=f"soc-siem-test-{i}",
+                    timestamp=now,
+                    source="Firewall-Edge",
+                    severity="critical",
+                    category="Network",
+                    host="FW-01",
+                    message="Inbound SYN flood dropped from 203.0.113.5",
+                    raw_log="Inbound SYN flood dropped from 203.0.113.5",
+                )
+                for i in range(5)
+            ]
+            for e in evts:
+                db.session.add(e)
             db.session.commit()
 
             try:
@@ -310,7 +314,8 @@ class SOCDashboardTestCase(unittest.TestCase):
                 recent_sources = [s["source"] for s in siem_ov["recentEvents"]]
                 self.assertIn("Firewall-Edge", recent_sources)
             finally:
-                db.session.delete(evt)
+                for e in evts:
+                    db.session.delete(e)
                 db.session.commit()
 
     def test_11_detection_metrics_real_data(self):

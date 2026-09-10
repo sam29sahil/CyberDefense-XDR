@@ -705,7 +705,7 @@ def collect_asset_risk(date_from: Optional[datetime], date_to: Optional[datetime
     med_risk_assets = asset_q.filter(and_(Asset.risk_score >= 40, Asset.risk_score < 70)).count()
     low_risk_assets = asset_q.filter(Asset.risk_score < 40).count()
 
-    total_open_vulns = sum(a.open_vulnerabilities for a in asset_q.all())
+    total_open_vulns = sum((getattr(a, "open_vulnerabilities_count", 0) or getattr(a, "open_vulnerabilities", 0)) for a in asset_q.all())
 
     kpi_metrics = [
         {"label": "Total Assets", "value": str(total_assets), "subtitle": "Tracked IT/OT Nodes", "tone": "primary"},
@@ -726,7 +726,7 @@ def collect_asset_risk(date_from: Optional[datetime], date_to: Optional[datetime
 
     top_assets = asset_q.order_by(desc(Asset.risk_score)).limit(15).all()
     asset_rows = [
-        [a.asset_id, a.name[:35], a.ip_address or "N/A", a.asset_type, a.environment, a.criticality, f"{a.risk_score:.0f}", str(a.open_vulnerabilities)]
+        [a.asset_id, a.name[:35], a.ip_address or "N/A", a.asset_type, a.environment, a.criticality, f"{a.risk_score:.0f}", str(getattr(a, "open_vulnerabilities_count", 0) or getattr(a, "open_vulnerabilities", 0))]
         for a in top_assets
     ]
 

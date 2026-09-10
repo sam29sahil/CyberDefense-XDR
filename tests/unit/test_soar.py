@@ -38,6 +38,40 @@ class SoarAutomationTestCase(unittest.TestCase):
                 db.session.commit()
             cls.test_user_id = user.id
 
+            # Create unprivileged test user (lacks soar.view, soar.execute, soar.approve)
+            unprivileged = User.query.filter_by(username="test_soar_unprivileged").first()
+            if not unprivileged:
+                unprivileged = User(
+                    username="test_soar_unprivileged",
+                    email="soar_unprivileged@cyberdefense.local",
+                    first_name="SOAR",
+                    last_name="Unprivileged",
+                    role="GUEST",
+                    status="active",
+                    is_active=True,
+                )
+                unprivileged.set_password("UnprivPass123!")
+                db.session.add(unprivileged)
+                db.session.commit()
+            cls.test_unprivileged_id = unprivileged.id
+
+            # Create test security analyst user (has soar.view and soar.execute, but lacks soar.approve)
+            sec_analyst = User.query.filter_by(username="test_soar_sec_analyst").first()
+            if not sec_analyst:
+                sec_analyst = User(
+                    username="test_soar_sec_analyst",
+                    email="soar_sec_analyst@cyberdefense.local",
+                    first_name="SOAR",
+                    last_name="SecAnalyst",
+                    role="SECURITY_ANALYST",
+                    status="active",
+                    is_active=True,
+                )
+                sec_analyst.set_password("SecAnalystPass123!")
+                db.session.add(sec_analyst)
+                db.session.commit()
+            cls.test_sec_analyst_id = sec_analyst.id
+
             # Create test alert for playbooks
             alert = Alert.query.filter_by(title="SOAR Test Alert").first()
             if not alert:
@@ -56,11 +90,13 @@ class SoarAutomationTestCase(unittest.TestCase):
     def setUp(self):
         self.client = self.app.test_client()
 
-    def get_auth_client(self):
-        with self.client.session_transaction() as sess:
-            sess["_user_id"] = str(self.test_user_id)
+    def get_auth_client(self, user_id=None):
+        uid = user_id or self.test_user_id
+        client = self.app.test_client()
+        with client.session_transaction() as sess:
+            sess["_user_id"] = str(uid)
             sess["_fresh"] = True
-        return self.client
+        return client
 
     # 1. Auth & Routes
     def test_unauthenticated_redirects(self):
@@ -142,6 +178,101 @@ class SoarAutomationTestCase(unittest.TestCase):
         with self.app.app_context():
             app_record = SoarApproval.query.filter_by(approval_id=app_id).first()
             self.assertEqual(app_record.status, "approved")
+
+    # 5. RBAC Permission Boundaries (soar.view, soar.execute, soar.approve)
+    def test_soar_view_permission_authorized(self):
+        """User with soar.view can access all SOAR read endpoints."""
+        client = self.get_auth_client(self.test_user_id)
+
+        res = client.get("/soar/")
+        self.assertEqual(res.status_code, 200)
+
+        res = client.get("/soar/playbooks")
+        self.assertEqual(res.status_code, 200)
+
+        res = client.get("/soar/api/playbooks")
+        self.assertEqual(res.status_code, 200)
+
+        res = client.get("/soar/api/executions")
+        self.assertEqual(res.status_code, 200)
+
+        res = client.get("/soar/api/approvals")
+        self.assertEqual(res.status_code, 200)
+
+    def test_soar_view_permission_forbidden(self):
+        """User without soar.view receives 403 Forbidden across all SOAR read endpoints."""
+        client = self.get_auth_client(self.test_unprivileged_id)
+
+        # HTML page view
+        res = client.get("/soar/")
+        self.assertEqual(res.status_code, 403)
+
+        # HTML / JSON playbooks endpoints
+        res = client.get("/soar/playbooks")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/soar/api/playbooks")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/soar/api/executions")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/soar/api/executions/fake-id")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/soar/api/approvals")
+        self.assertEqual(res.status_code, 403)
+
+    def test_soar_execute_permission_boundaries(self):
+        """soar.execute remains required to execute playbooks."""
+        # Unprivileged (lacks soar.execute) -> 403
+        unpriv_client = self.get_auth_client(self.test_unprivileged_id)
+        res = unpriv_client.post("/soar/api/playbooks/alert_investigation/execute", json={
+            "target_id": str(self.test_alert_id),
+            "target_type": "alert"
+        })
+        self.assertEqual(res.status_code, 403)
+
+        # Sec Analyst (has soar.execute) -> 200
+        analyst_client = self.get_auth_client(self.test_sec_analyst_id)
+        res = analyst_client.post("/soar/api/playbooks/alert_investigation/execute", json={
+            "target_id": str(self.test_alert_id),
+            "target_type": "alert"
+        })
+        self.assertEqual(res.status_code, 200)
+
+    def test_soar_approve_permission_boundaries(self):
+        """soar.approve remains required to approve or reject staged actions."""
+        # Security Analyst (has soar.view and soar.execute, but lacks soar.approve) -> 403
+        sec_client = self.get_auth_client(self.test_sec_analyst_id)
+        res_approve = sec_client.post("/soar/api/approvals/fake-approval-id/approve", json={
+            "notes": "Attempt without permission"
+        })
+        self.assertEqual(res_approve.status_code, 403)
+
+        res_reject = sec_client.post("/soar/api/approvals/fake-approval-id/reject", json={
+            "notes": "Attempt without permission"
+        })
+        self.assertEqual(res_reject.status_code, 403)
+
+    def test_unauthenticated_all_endpoints_rejected(self):
+        """Unauthenticated requests are rejected across all SOAR endpoints."""
+        endpoints = [
+            ("GET", "/soar/"),
+            ("GET", "/soar/playbooks"),
+            ("GET", "/soar/api/playbooks"),
+            ("GET", "/soar/api/executions"),
+            ("GET", "/soar/api/approvals"),
+            ("POST", "/soar/api/playbooks/alert_investigation/execute"),
+            ("POST", "/soar/api/approvals/test-id/approve"),
+            ("POST", "/soar/api/approvals/test-id/reject"),
+        ]
+        for method, url in endpoints:
+            if method == "GET":
+                res = self.client.get(url)
+            else:
+                res = self.client.post(url, json={})
+            self.assertIn(res.status_code, [302, 401], f"Endpoint {method} {url} allowed unauthenticated access")
 
 
 if __name__ == "__main__":

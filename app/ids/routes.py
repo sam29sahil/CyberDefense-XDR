@@ -9,11 +9,12 @@ from flask import (
     jsonify,
     current_app,
 )
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 from app.ids import ids
 from app.ids import services
 from app.audit_logs.services import record_audit_event
+from app.user_management.decorators import permission_required
 
 
 # ============================================================
@@ -23,18 +24,24 @@ from app.audit_logs.services import record_audit_event
 @ids.route("")
 @ids.route("/")
 @ids.route("/dashboard")
+@login_required
+@permission_required("ids.view")
 def dashboard():
     """Renders the Network IDS Dashboard."""
     return render_template("ids/dashboard.html")
 
 
 @ids.route("/events")
+@login_required
+@permission_required("ids.view")
 def events():
     """Renders the Network IDS Events Explorer."""
     return render_template("ids/events.html")
 
 
 @ids.route("/events/<event_id>")
+@login_required
+@permission_required("ids.view")
 def event_details(event_id):
     """Renders the Network IDS Event Detail view."""
     event = services.get_ids_event_by_id(event_id)
@@ -48,6 +55,8 @@ def event_details(event_id):
 # ============================================================
 
 @ids.route("/api/dashboard", methods=["GET"])
+@login_required
+@permission_required("ids.view")
 def api_dashboard():
     """Returns aggregated Network IDS dashboard KPIs, charts, and top lists."""
     try:
@@ -65,6 +74,8 @@ def api_dashboard():
 
 
 @ids.route("/api/events", methods=["GET"])
+@login_required
+@permission_required("ids.view")
 def api_events():
     """Returns paginated and filtered Network IDS events."""
     try:
@@ -96,6 +107,8 @@ def api_events():
 
 
 @ids.route("/api/events/<event_id>", methods=["GET"])
+@login_required
+@permission_required("ids.view")
 def api_event_detail(event_id):
     """Returns detailed information for a single Network IDS event."""
     try:
@@ -117,6 +130,8 @@ def api_event_detail(event_id):
 
 
 @ids.route("/api/sensor", methods=["GET"])
+@login_required
+@permission_required("ids.view")
 def api_sensor_status():
     """Returns the verified live operational status of the Network IDS Sensor."""
     try:
@@ -133,6 +148,8 @@ def api_sensor_status():
 
 
 @ids.route("/api/sensor/start", methods=["POST"])
+@login_required
+@permission_required("ids.control")
 def api_sensor_start():
     """Starts the Suricata Network IDS sensor on the specified interface."""
     try:
@@ -171,6 +188,8 @@ def api_sensor_start():
 
 
 @ids.route("/api/sensor/stop", methods=["POST"])
+@login_required
+@permission_required("ids.control")
 def api_sensor_stop():
     """Stops the Suricata Network IDS sensor."""
     try:
@@ -201,6 +220,8 @@ def api_sensor_stop():
 
 
 @ids.route("/api/sensor/restart", methods=["POST"])
+@login_required
+@permission_required("ids.control")
 def api_sensor_restart():
     """Restarts the Suricata Network IDS sensor."""
     try:
@@ -239,6 +260,8 @@ def api_sensor_restart():
 
 
 @ids.route("/api/rules/update", methods=["POST"])
+@login_required
+@permission_required("ids.rules.modify")
 def api_rules_update():
     """Triggers suricata-update to fetch and compile latest threat rules."""
     try:
@@ -264,6 +287,9 @@ def api_rules_update():
 
 
 @ids.route("/api/events/<event_id>/create-incident", methods=["POST"])
+@login_required
+@permission_required("ids.view")
+@permission_required("incidents.create")
 def api_event_create_incident(event_id):
     """Allows an analyst to escalate an IDS alert into an Incident."""
     try:
@@ -295,6 +321,8 @@ def api_event_create_incident(event_id):
 
 
 @ids.route("/api/logs/status", methods=["GET"])
+@login_required
+@permission_required("ids.view")
 def api_logs_status():
     """Returns real filesystem metrics for Network IDS log files and archives."""
     try:
@@ -312,6 +340,8 @@ def api_logs_status():
 
 
 @ids.route("/api/logs/rotate", methods=["POST"])
+@login_required
+@permission_required("ids.control")
 def api_logs_rotate():
     """Triggers manual rotation of Network IDS log files exceeding threshold (or force)."""
     try:

@@ -35,27 +35,49 @@ class NetworkIDSTestCase(unittest.TestCase):
         cls.app.config["TESTING"] = True
         cls.app.config["WTF_CSRF_ENABLED"] = False
 
+        @cls.app.before_request
+        def _clear_cached_login():
+            from flask import g
+            if hasattr(g, "_login_user"):
+                delattr(g, "_login_user")
+
         with cls.app.app_context():
-            user = User.query.filter_by(username="ids_analyst").first()
-            if not user:
-                user = User(
-                    username="ids_analyst",
-                    email="ids_analyst@cyberdefense.local",
-                    first_name="IDS",
-                    last_name="Analyst",
-                    role="analyst",
-                    is_active=True,
-                )
-                user.set_password("SecurePassword123!")
-                db.session.add(user)
-                db.session.commit()
-            cls.test_user_id = user.id
+            users_to_create = [
+                ("ids_analyst", "ids_analyst@cyberdefense.local", "SOC_ANALYST"),
+                ("ids_viewer", "ids_viewer@cyberdefense.local", "VIEWER"),
+                ("ids_unprivileged", "ids_unprivileged@cyberdefense.local", "GUEST"),
+                ("ids_sec_analyst", "ids_sec_analyst@cyberdefense.local", "SECURITY_ANALYST"),
+            ]
+            for uname, email, role in users_to_create:
+                user = User.query.filter_by(username=uname).first()
+                if not user:
+                    user = User(
+                        username=uname,
+                        email=email,
+                        first_name="IDS",
+                        last_name=role.capitalize(),
+                        role=role,
+                        is_active=True,
+                    )
+                    user.set_password("SecurePassword123!")
+                    db.session.add(user)
+                    db.session.commit()
+                setattr(cls, f"{uname}_id", user.id)
+            cls.test_user_id = cls.ids_analyst_id
+
+    def get_auth_client(self, user_id=None):
+        uid = user_id or self.test_user_id
+        from flask import has_app_context, g
+        if has_app_context() and hasattr(g, "_login_user"):
+            delattr(g, "_login_user")
+        client = self.app.test_client()
+        with client.session_transaction() as sess:
+            sess["_user_id"] = str(uid)
+            sess["_fresh"] = True
+        return client
 
     def setUp(self):
-        self.client = self.app.test_client()
-        with self.client.session_transaction() as sess:
-            sess["user_id"] = self.test_user_id
-            sess["_fresh"] = True
+        self.client = self.get_auth_client(self.test_user_id)
 
     # -------------------------------------------------------------------------
     # 1. Interface Validation Tests
@@ -408,6 +430,208 @@ class NetworkIDSTestCase(unittest.TestCase):
         data = res.get_json()
         self.assertTrue(data.get("success"))
         self.assertIn("sensor", data)
+
+    # -------------------------------------------------------------------------
+    # 6. RBAC & Authorization Boundary Tests
+    # -------------------------------------------------------------------------
+    def test_ids_anonymous_access_rejected(self):
+        """Anonymous requests to all IDS page and API routes must be rejected."""
+        anon_client = self.app.test_client()
+
+        # HTML Pages redirect to login (302)
+        pages = [
+            "/network-ids/",
+            "/network-ids/dashboard",
+            "/network-ids/events",
+        ]
+        for route in pages:
+            res = anon_client.get(route)
+            self.assertIn(res.status_code, [302, 401], f"Expected 302 or 401 for anonymous GET {route}, got {res.status_code}")
+
+        # REST APIs return 401 or redirect 302
+        api_gets = [
+            "/network-ids/api/dashboard",
+            "/network-ids/api/events",
+            "/network-ids/api/sensor",
+            "/network-ids/api/logs/status",
+        ]
+        for route in api_gets:
+            res = anon_client.get(route)
+            self.assertIn(res.status_code, [302, 401], f"Expected 302 or 401 for anonymous GET {route}, got {res.status_code}")
+
+        # API Mutations return 401 or redirect 302
+        mutations = [
+            ("POST", "/network-ids/api/sensor/start"),
+            ("POST", "/network-ids/api/sensor/stop"),
+            ("POST", "/network-ids/api/sensor/restart"),
+            ("POST", "/network-ids/api/rules/update"),
+            ("POST", "/network-ids/api/logs/rotate"),
+            ("POST", "/network-ids/api/events/fake-event/create-incident"),
+        ]
+        for method, route in mutations:
+            res = anon_client.post(route, json={})
+            self.assertIn(res.status_code, [302, 401], f"Expected 302 or 401 for anonymous {method} {route}, got {res.status_code}")
+
+    def test_ids_view_authorized(self):
+        """User with ids.view (e.g. VIEWER) can access all IDS read pages and read APIs."""
+        client = self.get_auth_client(self.ids_viewer_id)
+
+        pages = [
+            "/network-ids/",
+            "/network-ids/dashboard",
+            "/network-ids/events",
+        ]
+        for route in pages:
+            res = client.get(route)
+            self.assertEqual(res.status_code, 200, f"Expected 200 for viewer GET {route}, got {res.status_code}")
+
+        api_gets = [
+            "/network-ids/api/dashboard",
+            "/network-ids/api/events",
+            "/network-ids/api/sensor",
+            "/network-ids/api/logs/status",
+        ]
+        for route in api_gets:
+            res = client.get(route)
+            self.assertEqual(res.status_code, 200, f"Expected 200 for viewer GET {route}, got {res.status_code}")
+
+    def test_ids_unprivileged_forbidden(self):
+        """User without ids.view (e.g. GUEST) receives 403 Forbidden across all IDS routes."""
+        client = self.get_auth_client(self.ids_unprivileged_id)
+
+        # Pages abort 403
+        res = client.get("/network-ids/")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/network-ids/dashboard")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/network-ids/events")
+        self.assertEqual(res.status_code, 403)
+
+        # APIs return 403
+        res = client.get("/network-ids/api/dashboard")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/network-ids/api/events")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/network-ids/api/sensor")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.get("/network-ids/api/logs/status")
+        self.assertEqual(res.status_code, 403)
+
+        res = client.post("/network-ids/api/sensor/start", json={})
+        self.assertEqual(res.status_code, 403)
+
+        res = client.post("/network-ids/api/rules/update", json={})
+        self.assertEqual(res.status_code, 403)
+
+        res = client.post("/network-ids/api/logs/rotate", json={})
+        self.assertEqual(res.status_code, 403)
+
+        res = client.post("/network-ids/api/events/fake-event/create-incident", json={})
+        self.assertEqual(res.status_code, 403)
+
+    def test_ids_control_permission_boundaries(self):
+        """ids.control is required for sensor start, stop, and restart."""
+        # Viewer lacks ids.control -> 403
+        viewer_client = self.get_auth_client(self.ids_viewer_id)
+        for ep in ["start", "stop", "restart"]:
+            res = viewer_client.post(f"/network-ids/api/sensor/{ep}", json={})
+            self.assertEqual(res.status_code, 403, f"Expected 403 for viewer POST /sensor/{ep}")
+
+        # SOC Analyst has ids.control -> 200 (mock service layer to avoid real sensor processes)
+        analyst_client = self.get_auth_client(self.ids_analyst_id)
+        from unittest.mock import patch
+
+        with patch("app.ids.services.start_sensor", return_value=(True, "Mock sensor started")):
+            res = analyst_client.post("/network-ids/api/sensor/start", json={"interface": "lo"})
+            self.assertEqual(res.status_code, 200)
+
+        with patch("app.ids.services.stop_sensor", return_value=(True, "Mock sensor stopped")):
+            res = analyst_client.post("/network-ids/api/sensor/stop", json={})
+            self.assertEqual(res.status_code, 200)
+
+        with patch("app.ids.services.restart_sensor", return_value=(True, "Mock sensor restarted")):
+            res = analyst_client.post("/network-ids/api/sensor/restart", json={"interface": "lo"})
+            self.assertEqual(res.status_code, 200)
+
+    def test_ids_rules_modify_boundaries(self):
+        """ids.rules.modify is required to trigger rule updates."""
+        # Viewer lacks ids.rules.modify -> 403
+        viewer_client = self.get_auth_client(self.ids_viewer_id)
+        res = viewer_client.post("/network-ids/api/rules/update", json={})
+        self.assertEqual(res.status_code, 403)
+
+        # Analyst has ids.rules.modify -> 200 (mock service to avoid network update)
+        analyst_client = self.get_auth_client(self.ids_analyst_id)
+        from unittest.mock import patch
+        with patch("app.ids.services.update_suricata_rules", return_value={"success": True, "message": "Mock rules updated"}):
+            res = analyst_client.post("/network-ids/api/rules/update", json={})
+            self.assertEqual(res.status_code, 200)
+
+    def test_ids_incident_escalation_boundaries(self):
+        """Incident creation requires both ids.view and incidents.create."""
+        # Viewer has ids.view but lacks incidents.create -> 403
+        viewer_client = self.get_auth_client(self.ids_viewer_id)
+        res = viewer_client.post("/network-ids/api/events/EVT-TEST/create-incident", json={})
+        self.assertEqual(res.status_code, 403)
+
+        # Sec Analyst has ids.view and incidents.create -> authorized
+        sec_client = self.get_auth_client(self.ids_sec_analyst_id)
+        # Create a real test IDS event
+        with self.app.app_context():
+            test_evt = NetworkIDSEvent(
+                event_uuid=str(uuid.uuid4()),
+                timestamp=datetime.utcnow(),
+                event_type="alert",
+                src_ip="10.0.0.1",
+                dest_ip="10.0.0.2",
+                severity=2,
+                signature="Test Escalation Alert",
+                category="Attempted Information Leak",
+            )
+            db.session.add(test_evt)
+            db.session.commit()
+            evt_id = test_evt.id
+
+        try:
+            res = sec_client.post(f"/network-ids/api/events/{evt_id}/create-incident", json={"notes": "RBAC test"})
+            self.assertEqual(res.status_code, 201)
+            inc_id = res.get_json()["incidentId"]
+            # Cleanup created incident
+            with self.app.app_context():
+                inc = Incident.query.filter_by(incident_id=inc_id).first()
+                if inc:
+                    db.session.delete(inc)
+                    db.session.commit()
+        finally:
+            with self.app.app_context():
+                ev = db.session.get(NetworkIDSEvent, evt_id)
+                if ev:
+                    db.session.delete(ev)
+                    db.session.commit()
+
+    def test_ids_logs_rotate_boundaries(self):
+        """ids.control is required for manual log rotation."""
+        # Viewer lacks ids.control -> 403
+        viewer_client = self.get_auth_client(self.ids_viewer_id)
+        res = viewer_client.post("/network-ids/api/logs/rotate", json={})
+        self.assertEqual(res.status_code, 403)
+
+        # Sec Analyst lacks ids.control -> 403
+        sec_client = self.get_auth_client(self.ids_sec_analyst_id)
+        res_sec = sec_client.post("/network-ids/api/logs/rotate", json={})
+        self.assertEqual(res_sec.status_code, 403)
+
+        # SOC Analyst has ids.control -> 200 (mock rotate_ids_logs to avoid file rotation in unit tests)
+        analyst_client = self.get_auth_client(self.ids_analyst_id)
+        from unittest.mock import patch
+        with patch("app.ids.services.rotate_ids_logs", return_value={"rotated": [], "skipped": ["fast.log"], "errors": []}):
+            res_analyst = analyst_client.post("/network-ids/api/logs/rotate", json={})
+            self.assertEqual(res_analyst.status_code, 200)
 
 
 if __name__ == "__main__":

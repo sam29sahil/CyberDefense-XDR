@@ -7,7 +7,7 @@ and generates graph payloads (nodes & links).
 """
 
 from datetime import datetime, timezone
-from sqlalchemy import or_, and_, desc
+from sqlalchemy import or_, and_, not_, desc, func
 from app.extensions import db
 from app.assets.models import Asset
 from app.alerts.models import Alert
@@ -84,7 +84,14 @@ def calculate_risk_score(asset=None, alerts=None, ids_events=None, vulns=None, i
         reasons.append(f"{len(high_vulns)} unmitigated HIGH CVE(s) present (+{points})")
 
     # 4. Threat Intel IOC Matches
-    active_iocs = [i for i in iocs if getattr(i, "is_active", True) is not False]
+    active_iocs = []
+    for i in iocs:
+        is_act = getattr(i, "is_active", None)
+        if is_act is None:
+            is_act = (str(getattr(i, "status", "active")).lower() == "active")
+        if is_act:
+            active_iocs.append(i)
+
     if active_iocs:
         crit_iocs = [i for i in active_iocs if str(getattr(i, "threat_level", "")).upper() in ("CRITICAL", "HIGH")]
         if crit_iocs:
@@ -174,7 +181,13 @@ def correlate_entity(entity_type, entity_id):
     # Resolve primary subject
     if entity_type == "asset":
         target_asset = Asset.query.filter(
-            or_(Asset.id == entity_id, Asset.name.ilike(entity_id), Asset.ip_address == entity_id)
+            or_(
+                Asset.id == int(entity_id) if str(entity_id).isdigit() else False,
+                Asset.asset_id == str(entity_id),
+                Asset.name.ilike(entity_id),
+                Asset.hostname.ilike(entity_id),
+                Asset.ip_address == entity_id,
+            )
         ).first()
         if target_asset:
             target_ip = target_asset.ip_address
@@ -188,31 +201,92 @@ def correlate_entity(entity_type, entity_id):
         alert = Alert.query.filter(
             or_(
                 Alert.id == int(entity_id) if str(entity_id).isdigit() else False,
-                Alert.alert_id == str(entity_id)
+                Alert.alert_id == str(entity_id),
             )
         ).first()
         if alert:
             related["alerts"].append(alert)
             target_ip = alert.affected_host or alert.affected_asset
             if target_ip:
-                target_asset = Asset.query.filter(or_(Asset.ip_address == target_ip, Asset.name == target_ip)).first()
+                target_asset = Asset.query.filter(
+                    or_(Asset.ip_address == target_ip, Asset.name == target_ip, Asset.hostname == target_ip)
+                ).first()
                 if target_asset:
                     related["asset"] = target_asset
+            if getattr(alert, "incident_id", None):
+                linked_inc = Incident.query.filter(
+                    or_(
+                        Incident.id == int(alert.incident_id) if str(alert.incident_id).isdigit() else False,
+                        Incident.incident_id == str(alert.incident_id),
+                    )
+                ).first()
+                if linked_inc and linked_inc not in related["incidents"]:
+                    related["incidents"].append(linked_inc)
     elif entity_type == "incident":
-        inc = Incident.query.get(entity_id)
+        inc = Incident.query.filter(
+            or_(
+                Incident.id == int(entity_id) if str(entity_id).isdigit() else False,
+                Incident.incident_id == str(entity_id),
+            )
+        ).first()
         if inc:
             related["incidents"].append(inc)
+            target_ip = inc.affected_host or inc.affected_asset
+            if target_ip:
+                target_asset = Asset.query.filter(
+                    or_(Asset.ip_address == target_ip, Asset.name == target_ip, Asset.hostname == target_ip)
+                ).first()
+                if target_asset:
+                    related["asset"] = target_asset
+            if getattr(inc, "incident_id", None):
+                linked_alerts = Alert.query.filter(Alert.incident_id == inc.incident_id).limit(25).all()
+                for la in linked_alerts:
+                    if la not in related["alerts"]:
+                        related["alerts"].append(la)
     elif entity_type == "cve":
-        v_list = VulnerabilityFinding.query.filter(VulnerabilityFinding.cve.ilike(entity_id)).all()
+        v_list = VulnerabilityFinding.query.filter(
+            or_(
+                VulnerabilityFinding.cve.ilike(entity_id),
+                VulnerabilityFinding.finding_id == str(entity_id),
+                VulnerabilityFinding.id == int(entity_id) if str(entity_id).isdigit() else False,
+            )
+        ).all()
         related["vulnerabilities"].extend(v_list)
         if v_list and v_list[0].host:
             target_ip = v_list[0].host
-            target_asset = Asset.query.filter(Asset.ip_address == target_ip).first()
-            related["asset"] = target_asset
+            target_asset = Asset.query.filter(
+                or_(Asset.ip_address == target_ip, Asset.name == target_ip, Asset.hostname == target_ip)
+            ).first()
+            if target_asset:
+                related["asset"] = target_asset
     elif entity_type in ("ioc", "hash", "domain"):
-        i_list = IOC.query.filter(IOC.value.ilike(entity_id)).all()
+        i_list = IOC.query.filter(
+            or_(
+                IOC.value == entity_id,
+                IOC.value.ilike(entity_id),
+                IOC.ioc_id == str(entity_id),
+                IOC.id == int(entity_id) if str(entity_id).isdigit() else False,
+            )
+        ).all()
         related["threat_intel"].extend(i_list)
         target_ip = entity_id
+    elif entity_type in ("ids", "ids_event"):
+        ev = IDSEvent.query.filter(
+            or_(
+                IDSEvent.id == int(entity_id) if str(entity_id).isdigit() else False,
+                IDSEvent.event_uuid == str(entity_id),
+            )
+        ).first()
+        if ev:
+            if not is_diagnostic_event(ev.signature_id, ev.signature):
+                related["ids_events"].append(ev)
+            target_ip = ev.dest_ip or ev.src_ip
+            if target_ip:
+                target_asset = Asset.query.filter(
+                    or_(Asset.ip_address == target_ip, Asset.name == target_ip, Asset.hostname == target_ip)
+                ).first()
+                if target_asset:
+                    related["asset"] = target_asset
 
     # If we have a target IP, aggregate all related models
     if target_ip:
@@ -229,19 +303,28 @@ def correlate_entity(entity_type, entity_id):
             if a not in related["alerts"]:
                 related["alerts"].append(a)
 
-        # IDS Events (filter diagnostic)
+        # IDS Events (filter diagnostic in SQL and Python)
         ids_raw = IDSEvent.query.filter(
-            or_(IDSEvent.src_ip == target_ip, IDSEvent.dest_ip == target_ip)
+            or_(IDSEvent.src_ip == target_ip, IDSEvent.dest_ip == target_ip),
+            IDSEvent.signature_id != 2200074,
+            not_(IDSEvent.signature.ilike("%invalid checksum%")),
         ).order_by(desc(IDSEvent.timestamp)).limit(50).all()
         for ev in ids_raw:
             if not is_diagnostic_event(ev.signature_id, ev.signature):
-                related["ids_events"].append(ev)
+                if ev not in related["ids_events"]:
+                    related["ids_events"].append(ev)
 
         # SIEM Logs
         siem_logs = SiemLog.query.filter(
-            or_(SiemLog.host.ilike(f"%{target_ip}%"), SiemLog.message.ilike(f"%{target_ip}%"), SiemLog.fields_json.ilike(f"%{target_ip}%"))
+            or_(
+                SiemLog.host.ilike(f"%{target_ip}%"),
+                SiemLog.message.ilike(f"%{target_ip}%"),
+                SiemLog.fields_json.ilike(f"%{target_ip}%"),
+            )
         ).order_by(desc(SiemLog.timestamp)).limit(50).all()
-        related["siem_logs"].extend(siem_logs)
+        for s in siem_logs:
+            if s not in related["siem_logs"]:
+                related["siem_logs"].append(s)
 
         # Vulnerabilities
         vulns = VulnerabilityFinding.query.filter(
@@ -252,10 +335,36 @@ def correlate_entity(entity_type, entity_id):
                 related["vulnerabilities"].append(v)
 
         # Threat Intel
-        iocs = IOC.query.filter(IOC.value == target_ip).all()
+        iocs = IOC.query.filter(
+            or_(IOC.value == target_ip, IOC.value.ilike(f"%{target_ip}%"))
+        ).all()
         for i in iocs:
             if i not in related["threat_intel"]:
                 related["threat_intel"].append(i)
+
+        # Incidents
+        incs = Incident.query.filter(
+            or_(
+                Incident.affected_host == target_ip,
+                Incident.affected_asset == target_ip,
+                Incident.affected_host.ilike(f"%{target_ip}%"),
+            )
+        ).order_by(desc(Incident.created_at)).limit(50).all()
+        for inc in incs:
+            if inc not in related["incidents"]:
+                related["incidents"].append(inc)
+
+        # Connect any incident IDs referenced by correlated alerts
+        for a in list(related["alerts"]):
+            if getattr(a, "incident_id", None):
+                linked_inc = Incident.query.filter(
+                    or_(
+                        Incident.id == int(a.incident_id) if str(a.incident_id).isdigit() else False,
+                        Incident.incident_id == str(a.incident_id),
+                    )
+                ).first()
+                if linked_inc and linked_inc not in related["incidents"]:
+                    related["incidents"].append(linked_inc)
 
     # If we have an asset with an ID, check direct relationships
     if target_asset:
@@ -279,6 +388,17 @@ def correlate_entity(entity_type, entity_id):
         for a in asset_alerts:
             if a not in related["alerts"]:
                 related["alerts"].append(a)
+
+        asset_incs = Incident.query.filter(
+            or_(
+                Incident.affected_host == target_asset.name,
+                Incident.affected_asset == target_asset.name,
+                Incident.affected_host == target_asset.ip_address,
+            )
+        ).all()
+        for inc in asset_incs:
+            if inc not in related["incidents"]:
+                related["incidents"].append(inc)
 
     # Compute deterministic risk score
     risk = calculate_risk_score(
@@ -337,6 +457,7 @@ def build_correlation_graph(primary_entity, asset=None, alerts=None, ids_events=
     nodes = []
     links = []
     node_ids = set()
+    link_keys = set()
 
     def add_node(n_id, label, n_type, severity="INFO", meta=None):
         if n_id not in node_ids:
@@ -351,15 +472,18 @@ def build_correlation_graph(primary_entity, asset=None, alerts=None, ids_events=
 
     def add_link(source_id, target_id, rel, weight=1):
         if source_id in node_ids and target_id in node_ids and source_id != target_id:
-            links.append({
-                "source": str(source_id),
-                "target": str(target_id),
-                "relationship": rel,
-                "weight": weight,
-            })
+            key = (str(source_id), str(target_id), str(rel))
+            if key not in link_keys:
+                links.append({
+                    "source": str(source_id),
+                    "target": str(target_id),
+                    "relationship": rel,
+                    "weight": weight,
+                })
+                link_keys.add(key)
 
     # Root Node
-    root_id = f"entity:{primary_entity.get('type')}:{primary_entity.get('id')}"
+    root_id = f"entity:{primary_entity.get('type') or 'target'}:{primary_entity.get('id') or 'unknown'}"
     add_node(
         root_id,
         primary_entity.get("id") or "Target",
@@ -384,12 +508,14 @@ def build_correlation_graph(primary_entity, asset=None, alerts=None, ids_events=
     # Connect Alerts
     for a in (alerts or [])[:15]:
         a_id = f"alert:{a.id}"
-        add_node(a_id, a.title[:30] + "...", "alert", severity=a.severity, meta={"id": a.id})
+        add_node(a_id, (a.title or f"Alert-{a.id}")[:30] + "...", "alert", severity=a.severity, meta={"id": a.id})
         target = asset_id_node if asset_id_node else root_id
         add_link(a_id, target, "detected_on", weight=2)
 
-    # Connect IDS Events
+    # Connect IDS Events (strictly skip diagnostic events)
     for e in (ids_events or [])[:10]:
+        if is_diagnostic_event(e.signature_id, e.signature):
+            continue
         e_id = f"ids:{e.id}"
         sig = e.signature or f"SID-{e.signature_id}"
         add_node(e_id, sig[:30], "ids", severity=e.severity or "HIGH", meta={"sid": e.signature_id})
@@ -415,9 +541,12 @@ def build_correlation_graph(primary_entity, asset=None, alerts=None, ids_events=
     # Connect Incidents
     for inc in (incidents or [])[:5]:
         inc_id = f"incident:{inc.id}"
-        add_node(inc_id, inc.title[:25], "incident", severity=inc.severity, meta={"id": inc.id, "status": inc.status})
+        add_node(inc_id, (inc.title or f"INC-{inc.id}")[:25], "incident", severity=inc.severity, meta={"id": inc.id, "status": inc.status})
         target = asset_id_node if asset_id_node else root_id
         add_link(inc_id, target, "escalated_to", weight=4)
+        for a in (alerts or []):
+            if getattr(a, "incident_id", None) and getattr(a, "incident_id", None) == getattr(inc, "incident_id", None):
+                add_link(f"alert:{a.id}", inc_id, "part_of", weight=3)
 
     return {
         "nodes": nodes,
@@ -430,24 +559,31 @@ def find_campaigns():
     Identifies multi-target and multi-vector campaigns across existing telemetry:
     1. Attacker IPs targeting 2+ distinct internal assets
     2. Assets attacked by 2+ distinct attack types (IDS + Alert + Vuln)
+    Diagnostic IDS events (SID 2200074) are strictly excluded from campaign formation.
     """
     campaigns = []
 
     # 1. Multi-target attacker detection
-    # Group IDS events by src_ip attacking distinct dest_ips
+    # Group IDS events by src_ip attacking distinct dest_ips (excluding diagnostic events)
     src_query = db.session.query(
         IDSEvent.src_ip,
         db.func.count(db.func.distinct(IDSEvent.dest_ip)).label("targets_count"),
         db.func.count(IDSEvent.id).label("total_events")
     ).filter(
         IDSEvent.src_ip.isnot(None),
-        IDSEvent.dest_ip.isnot(None)
+        IDSEvent.dest_ip.isnot(None),
+        IDSEvent.signature_id != 2200074,
+        not_(IDSEvent.signature.ilike("%invalid checksum%")),
     ).group_by(IDSEvent.src_ip).having(db.func.count(db.func.distinct(IDSEvent.dest_ip)) >= 2).all()
 
     for row in src_query:
         attacker_ip = row[0]
         # Ignore diagnostic noise
-        evs = IDSEvent.query.filter(IDSEvent.src_ip == attacker_ip).limit(10).all()
+        evs = IDSEvent.query.filter(
+            IDSEvent.src_ip == attacker_ip,
+            IDSEvent.signature_id != 2200074,
+            not_(IDSEvent.signature.ilike("%invalid checksum%")),
+        ).limit(10).all()
         sec_evs = [e for e in evs if not is_diagnostic_event(e.signature_id, e.signature)]
         if sec_evs:
             campaigns.append({
@@ -473,10 +609,13 @@ def find_campaigns():
                 Alert.affected_asset == a.name,
                 Alert.affected_host == a.name,
             ),
-            Alert.status != "resolved",
+            db.func.lower(Alert.status).notin_(["resolved", "closed"]),
         ).count()
         vulns_count = VulnerabilityFinding.query.filter(
-            or_(VulnerabilityFinding.target_ip == a.ip_address, VulnerabilityFinding.asset_id == a.id),
+            or_(
+                VulnerabilityFinding.host == a.ip_address,
+                VulnerabilityFinding.host == a.name,
+            ),
             VulnerabilityFinding.severity.in_(["CRITICAL", "HIGH"])
         ).count()
 
@@ -500,10 +639,11 @@ def find_campaigns():
 def _serialize_asset(a):
     return {
         "id": a.id,
+        "asset_id": getattr(a, "asset_id", f"AST-{a.id}"),
         "name": a.name or a.hostname,
         "ip_address": a.ip_address,
         "mac_address": a.mac_address,
-        "os_type": a.os_type,
+        "os_type": getattr(a, "os_type", None) or getattr(a, "operating_system", "-"),
         "criticality": a.criticality,
         "status": a.status,
     }
@@ -518,6 +658,7 @@ def _serialize_alert(a):
         "status": a.status,
         "source_ip": getattr(a, "source", "-"),
         "dest_ip": getattr(a, "affected_host", "-") or getattr(a, "affected_asset", "-"),
+        "incident_id": getattr(a, "incident_id", None),
         "created_at": a.created_at.isoformat() if getattr(a, "created_at", None) else None,
     }
 
@@ -535,12 +676,13 @@ def _serialize_ids(e):
 
 
 def _serialize_siem(s):
+    fields = getattr(s, "fields", {}) or {}
     return {
         "id": s.id,
         "source_type": getattr(s, "source", "SYSLOG"),
         "host": getattr(s, "host", "-"),
-        "src_ip": getattr(s, "src_ip", "-"),
-        "dest_ip": getattr(s, "dest_ip", "-"),
+        "src_ip": fields.get("src_ip") or fields.get("source_ip") or getattr(s, "src_ip", "-"),
+        "dest_ip": fields.get("dest_ip") or fields.get("destination_ip") or getattr(s, "dest_ip", "-"),
         "message": getattr(s, "message", ""),
         "timestamp": s.timestamp.isoformat() if getattr(s, "timestamp", None) else None,
     }
@@ -549,10 +691,13 @@ def _serialize_siem(s):
 def _serialize_incident(i):
     return {
         "id": i.id,
+        "incident_id": getattr(i, "incident_id", str(i.id)),
         "title": i.title,
         "severity": i.severity,
         "status": i.status,
-        "assigned_to": i.assigned_to,
+        "assigned_to": getattr(i, "assigned_to", None),
+        "affected_host": getattr(i, "affected_host", "-"),
+        "affected_asset": getattr(i, "affected_asset", "-"),
         "created_at": i.created_at.isoformat() if i.created_at else None,
     }
 
@@ -569,11 +714,15 @@ def _serialize_vuln(v):
 
 
 def _serialize_ioc(i):
+    is_act = getattr(i, "is_active", None)
+    if is_act is None:
+        is_act = (str(getattr(i, "status", "active")).lower() == "active")
     return {
         "id": i.id,
+        "ioc_id": getattr(i, "ioc_id", str(i.id)),
         "ioc_type": getattr(i, "type", None) or getattr(i, "ioc_type", "IOC"),
         "ioc_value": getattr(i, "value", None) or getattr(i, "ioc_value", ""),
         "threat_level": getattr(i, "threat_level", "medium"),
         "threat_actor": getattr(i, "source", None) or getattr(i, "threat_actor", "Threat Intel Feed"),
-        "is_active": getattr(i, "is_active", True),
+        "is_active": is_act,
     }
