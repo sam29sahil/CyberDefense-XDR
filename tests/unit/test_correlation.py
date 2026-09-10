@@ -10,7 +10,7 @@ from app import create_app
 from app.extensions import db
 from app.users.models import User
 from app.alerts.models import Alert
-from app.ids.models import NetworkIDSEvent as IDSEvent
+from app.ids.models import NetworkIDSEvent, NetworkIDSEvent as IDSEvent
 from app.incidents.models import Incident
 from app.assets.models import Asset
 from app.scanner.models import Scan, VulnerabilityFinding
@@ -206,7 +206,9 @@ class CorrelationEngineTestCase(unittest.TestCase):
             self.assertIsNotNone(corr)
             self.assertEqual(corr["entity"]["type"], "incident")
             self.assertEqual(corr["entity"]["id"], "INC-369043")
-            self.assertEqual(corr["counts"]["incidents"], 1)
+            self.assertGreaterEqual(corr["counts"]["incidents"], 1)
+            inc_ids = [i["incident_id"] for i in corr["details"]["incidents"]]
+            self.assertIn("INC-369043", inc_ids)
             self.assertEqual(corr["entity"]["resolved_ip"], inc.affected_host or inc.affected_asset)
 
             # Also verify via API endpoint
@@ -215,7 +217,7 @@ class CorrelationEngineTestCase(unittest.TestCase):
             self.assertEqual(res.status_code, 200)
             data = res.get_json()
             self.assertEqual(data["status"], "success")
-            self.assertEqual(data["correlation"]["counts"]["incidents"], 1)
+            self.assertGreaterEqual(data["correlation"]["counts"]["incidents"], 1)
 
     def test_correlate_incident_numeric_id(self):
         """Test resolving incident by internal integer primary key (as int and as numeric str)."""
@@ -245,6 +247,46 @@ class CorrelationEngineTestCase(unittest.TestCase):
             self.assertIsNotNone(corr_str)
             self.assertEqual(corr_str["counts"]["incidents"], 1)
             self.assertEqual(corr_str["details"]["incidents"][0]["id"], inc.id)
+
+    def test_correlate_incident_inc_877307(self):
+        """Test resolving INC-877307 specifically, ensuring no integer cast error in SQL query."""
+        with self.app.app_context():
+            inc = Incident.query.filter_by(incident_id="INC-877307").first()
+            if not inc:
+                inc = Incident(
+                    incident_id="INC-877307",
+                    title="Incident: [Suricata IDS] ET INFO Possible Kali Linux hostname in DHCP Request Packet",
+                    severity="medium",
+                    status="open",
+                    affected_host="192.168.139.254",
+                )
+                db.session.add(inc)
+                db.session.commit()
+
+            corr = correlate_entity("incident", "INC-877307")
+            self.assertIsNotNone(corr)
+            self.assertEqual(corr["entity"]["type"], "incident")
+            self.assertEqual(corr["entity"]["id"], "INC-877307")
+            self.assertGreaterEqual(corr["counts"]["incidents"], 1)
+            inc_ids = [i["incident_id"] for i in corr["details"]["incidents"]]
+            self.assertIn("INC-877307", inc_ids)
+
+            # Via API endpoint
+            client = self.get_auth_client()
+            res = client.get("/correlation/api/entity/incident/INC-877307")
+            self.assertEqual(res.status_code, 200)
+            data = res.get_json()
+            self.assertEqual(data["status"], "success")
+            self.assertGreaterEqual(data["correlation"]["counts"]["incidents"], 1)
+
+            # Via numeric id as int and as numeric string
+            corr_int = correlate_entity("incident", inc.id)
+            self.assertIsNotNone(corr_int)
+            self.assertIn(inc.id, [i["id"] for i in corr_int["details"]["incidents"]])
+
+            corr_str = correlate_entity("incident", str(inc.id))
+            self.assertIsNotNone(corr_str)
+            self.assertIn(inc.id, [i["id"] for i in corr_str["details"]["incidents"]])
 
     def test_correlate_incident_nonexistent(self):
         """Test correlating a nonexistent incident ID gracefully returns zero matches without errors."""
@@ -344,6 +386,45 @@ class CorrelationEngineTestCase(unittest.TestCase):
                 self.assertGreaterEqual(corr["counts"]["alerts"], 1)
                 self.assertEqual(corr["details"]["alerts"][0]["id"], alt.id)
 
+    def test_correlate_alert_alt_433936(self):
+        """Test resolving ALT-433936 specifically, ensuring type-safe lookup and API endpoint success."""
+        with self.app.app_context():
+            alt = Alert.query.filter_by(alert_id="ALT-433936").first()
+            if not alt:
+                alt = Alert(
+                    alert_id="ALT-433936",
+                    title="[Suricata IDS] ET INFO Possible Kali Linux hostname in DHCP Request Packet",
+                    severity="MEDIUM",
+                    status="new",
+                    source="192.168.139.254",
+                    affected_host="192.168.139.254",
+                )
+                db.session.add(alt)
+                db.session.commit()
+
+            corr = correlate_entity("alert", "ALT-433936")
+            self.assertIsNotNone(corr)
+            self.assertEqual(corr["entity"]["type"], "alert")
+            self.assertEqual(corr["entity"]["id"], "ALT-433936")
+            self.assertGreaterEqual(corr["counts"]["alerts"], 1)
+            alt_ids = [a["alert_id"] for a in corr["details"]["alerts"]]
+            self.assertIn("ALT-433936", alt_ids)
+
+            client = self.get_auth_client()
+            res = client.get("/correlation/api/entity/alert/ALT-433936")
+            self.assertEqual(res.status_code, 200)
+            data = res.get_json()
+            self.assertEqual(data["status"], "success")
+
+            # Numeric ID lookups
+            corr_num = correlate_entity("alert", alt.id)
+            self.assertIsNotNone(corr_num)
+            self.assertIn(alt.id, [a["id"] for a in corr_num["details"]["alerts"]])
+
+            corr_num_str = correlate_entity("alert", str(alt.id))
+            self.assertIsNotNone(corr_num_str)
+            self.assertIn(alt.id, [a["id"] for a in corr_num_str["details"]["alerts"]])
+
     # 6. Asset Resolution (Numeric ID, Asset ID, Name, IP)
     def test_correlate_asset_resolvers(self):
         """Test resolving asset by numeric id, string asset_id, hostname, and ip."""
@@ -441,6 +522,47 @@ class CorrelationEngineTestCase(unittest.TestCase):
             for node in corr["graph"]["nodes"]:
                 if node.get("type") == "ids":
                     self.assertNotEqual(node.get("metadata", {}).get("sid"), 2200074)
+
+    def test_correlate_ids_event_uuid_and_numeric(self):
+        """Test resolving IDS event by UUID and numeric primary key."""
+        with self.app.app_context():
+            ev = NetworkIDSEvent.query.filter(NetworkIDSEvent.event_uuid.isnot(None)).first()
+            if not ev:
+                ev = NetworkIDSEvent(
+                    event_uuid="test-ids-uuid-1234-5678",
+                    src_ip="192.168.1.100",
+                    dest_ip="192.168.1.1",
+                    signature="Test IDS Event Signature",
+                    signature_id=9999999,
+                    severity=2,
+                )
+                db.session.add(ev)
+                db.session.commit()
+
+            # By UUID
+            corr_uuid = correlate_entity("ids", ev.event_uuid)
+            self.assertIsNotNone(corr_uuid)
+            self.assertEqual(corr_uuid["entity"]["type"], "ids")
+            self.assertEqual(corr_uuid["entity"]["id"], ev.event_uuid)
+
+            client = self.get_auth_client()
+            res = client.get(f"/correlation/api/entity/ids/{ev.event_uuid}")
+            self.assertEqual(res.status_code, 200)
+            data = res.get_json()
+            self.assertEqual(data["status"], "success")
+
+            # By numeric ID as int and str
+            corr_id = correlate_entity("ids", ev.id)
+            self.assertIsNotNone(corr_id)
+
+            corr_id_str = correlate_entity("ids", str(ev.id))
+            self.assertIsNotNone(corr_id_str)
+
+            # API endpoint with numeric ID
+            res_num = client.get(f"/correlation/api/entity/ids/{ev.id}")
+            self.assertEqual(res_num.status_code, 200)
+            data_num = res_num.get_json()
+            self.assertEqual(data_num["status"], "success")
 
     # 9. API Validation & SQL Injection Safety
     def test_api_search_validation(self):

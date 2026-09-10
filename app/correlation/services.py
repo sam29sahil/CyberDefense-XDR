@@ -11,7 +11,7 @@ from sqlalchemy import or_, and_, not_, desc, func
 from app.extensions import db
 from app.assets.models import Asset
 from app.alerts.models import Alert
-from app.ids.models import NetworkIDSEvent as IDSEvent
+from app.ids.models import NetworkIDSEvent
 from app.siem.models import SiemEvent as SiemLog
 from app.incidents.models import Incident
 from app.scanner.models import VulnerabilityFinding
@@ -177,33 +177,53 @@ def correlate_entity(entity_type, entity_id):
 
     target_ip = None
     target_asset = None
+    is_numeric = entity_id.isdigit()
 
     # Resolve primary subject
     if entity_type == "asset":
-        target_asset = Asset.query.filter(
-            or_(
-                Asset.id == int(entity_id) if str(entity_id).isdigit() else False,
-                Asset.asset_id == str(entity_id),
-                Asset.name.ilike(entity_id),
-                Asset.hostname.ilike(entity_id),
-                Asset.ip_address == entity_id,
-            )
-        ).first()
+        if is_numeric:
+            target_asset = Asset.query.filter(
+                or_(
+                    Asset.id == int(entity_id),
+                    Asset.asset_id == entity_id,
+                    Asset.name.ilike(entity_id),
+                    Asset.hostname.ilike(entity_id),
+                    Asset.ip_address == entity_id,
+                )
+            ).first()
+        else:
+            target_asset = Asset.query.filter(
+                or_(
+                    Asset.asset_id == entity_id,
+                    Asset.name.ilike(entity_id),
+                    Asset.hostname.ilike(entity_id),
+                    Asset.ip_address == entity_id,
+                )
+            ).first()
+
         if target_asset:
             target_ip = target_asset.ip_address
             related["asset"] = target_asset
+
     elif entity_type in ("ip", "ip_address"):
         target_ip = entity_id
         target_asset = Asset.query.filter(Asset.ip_address == target_ip).first()
         if target_asset:
             related["asset"] = target_asset
+
     elif entity_type == "alert":
-        alert = Alert.query.filter(
-            or_(
-                Alert.id == int(entity_id) if str(entity_id).isdigit() else False,
-                Alert.alert_id == str(entity_id),
-            )
-        ).first()
+        if is_numeric:
+            alert = Alert.query.filter(
+                or_(
+                    Alert.id == int(entity_id),
+                    Alert.alert_id == entity_id,
+                )
+            ).first()
+        else:
+            alert = Alert.query.filter(
+                Alert.alert_id == entity_id
+            ).first()
+
         if alert:
             related["alerts"].append(alert)
             target_ip = alert.affected_host or alert.affected_asset
@@ -213,22 +233,37 @@ def correlate_entity(entity_type, entity_id):
                 ).first()
                 if target_asset:
                     related["asset"] = target_asset
+
             if getattr(alert, "incident_id", None):
-                linked_inc = Incident.query.filter(
-                    or_(
-                        Incident.id == int(alert.incident_id) if str(alert.incident_id).isdigit() else False,
-                        Incident.incident_id == str(alert.incident_id),
-                    )
-                ).first()
+                inc_ref = str(alert.incident_id).strip()
+                if inc_ref.isdigit():
+                    linked_inc = Incident.query.filter(
+                        or_(
+                            Incident.id == int(inc_ref),
+                            Incident.incident_id == inc_ref,
+                        )
+                    ).first()
+                else:
+                    linked_inc = Incident.query.filter(
+                        Incident.incident_id == inc_ref
+                    ).first()
+
                 if linked_inc and linked_inc not in related["incidents"]:
                     related["incidents"].append(linked_inc)
+
     elif entity_type == "incident":
-        inc = Incident.query.filter(
-            or_(
-                Incident.id == int(entity_id) if str(entity_id).isdigit() else False,
-                Incident.incident_id == str(entity_id),
-            )
-        ).first()
+        if is_numeric:
+            inc = Incident.query.filter(
+                or_(
+                    Incident.id == int(entity_id),
+                    Incident.incident_id == entity_id,
+                )
+            ).first()
+        else:
+            inc = Incident.query.filter(
+                Incident.incident_id == entity_id
+            ).first()
+
         if inc:
             related["incidents"].append(inc)
             target_ip = inc.affected_host or inc.affected_asset
@@ -238,19 +273,32 @@ def correlate_entity(entity_type, entity_id):
                 ).first()
                 if target_asset:
                     related["asset"] = target_asset
+
             if getattr(inc, "incident_id", None):
-                linked_alerts = Alert.query.filter(Alert.incident_id == inc.incident_id).limit(25).all()
+                linked_alerts = Alert.query.filter(
+                    Alert.incident_id == str(inc.incident_id)
+                ).limit(25).all()
                 for la in linked_alerts:
                     if la not in related["alerts"]:
                         related["alerts"].append(la)
+
     elif entity_type == "cve":
-        v_list = VulnerabilityFinding.query.filter(
-            or_(
-                VulnerabilityFinding.cve.ilike(entity_id),
-                VulnerabilityFinding.finding_id == str(entity_id),
-                VulnerabilityFinding.id == int(entity_id) if str(entity_id).isdigit() else False,
-            )
-        ).all()
+        if is_numeric:
+            v_list = VulnerabilityFinding.query.filter(
+                or_(
+                    VulnerabilityFinding.id == int(entity_id),
+                    VulnerabilityFinding.cve.ilike(entity_id),
+                    VulnerabilityFinding.finding_id == entity_id,
+                )
+            ).all()
+        else:
+            v_list = VulnerabilityFinding.query.filter(
+                or_(
+                    VulnerabilityFinding.cve.ilike(entity_id),
+                    VulnerabilityFinding.finding_id == entity_id,
+                )
+            ).all()
+
         related["vulnerabilities"].extend(v_list)
         if v_list and v_list[0].host:
             target_ip = v_list[0].host
@@ -259,24 +307,42 @@ def correlate_entity(entity_type, entity_id):
             ).first()
             if target_asset:
                 related["asset"] = target_asset
+
     elif entity_type in ("ioc", "hash", "domain"):
-        i_list = IOC.query.filter(
-            or_(
-                IOC.value == entity_id,
-                IOC.value.ilike(entity_id),
-                IOC.ioc_id == str(entity_id),
-                IOC.id == int(entity_id) if str(entity_id).isdigit() else False,
-            )
-        ).all()
+        if is_numeric:
+            i_list = IOC.query.filter(
+                or_(
+                    IOC.id == int(entity_id),
+                    IOC.value == entity_id,
+                    IOC.value.ilike(entity_id),
+                    IOC.ioc_id == entity_id,
+                )
+            ).all()
+        else:
+            i_list = IOC.query.filter(
+                or_(
+                    IOC.value == entity_id,
+                    IOC.value.ilike(entity_id),
+                    IOC.ioc_id == entity_id,
+                )
+            ).all()
+
         related["threat_intel"].extend(i_list)
         target_ip = entity_id
+
     elif entity_type in ("ids", "ids_event"):
-        ev = IDSEvent.query.filter(
-            or_(
-                IDSEvent.id == int(entity_id) if str(entity_id).isdigit() else False,
-                IDSEvent.event_uuid == str(entity_id),
-            )
-        ).first()
+        if is_numeric:
+            ev = NetworkIDSEvent.query.filter(
+                or_(
+                    NetworkIDSEvent.id == int(entity_id),
+                    NetworkIDSEvent.event_uuid == entity_id,
+                )
+            ).first()
+        else:
+            ev = NetworkIDSEvent.query.filter(
+                NetworkIDSEvent.event_uuid == entity_id
+            ).first()
+
         if ev:
             if not is_diagnostic_event(ev.signature_id, ev.signature):
                 related["ids_events"].append(ev)
@@ -304,11 +370,11 @@ def correlate_entity(entity_type, entity_id):
                 related["alerts"].append(a)
 
         # IDS Events (filter diagnostic in SQL and Python)
-        ids_raw = IDSEvent.query.filter(
-            or_(IDSEvent.src_ip == target_ip, IDSEvent.dest_ip == target_ip),
-            IDSEvent.signature_id != 2200074,
-            not_(IDSEvent.signature.ilike("%invalid checksum%")),
-        ).order_by(desc(IDSEvent.timestamp)).limit(50).all()
+        ids_raw = NetworkIDSEvent.query.filter(
+            or_(NetworkIDSEvent.src_ip == target_ip, NetworkIDSEvent.dest_ip == target_ip),
+            NetworkIDSEvent.signature_id != 2200074,
+            not_(NetworkIDSEvent.signature.ilike("%invalid checksum%")),
+        ).order_by(desc(NetworkIDSEvent.timestamp)).limit(50).all()
         for ev in ids_raw:
             if not is_diagnostic_event(ev.signature_id, ev.signature):
                 if ev not in related["ids_events"]:
@@ -357,12 +423,19 @@ def correlate_entity(entity_type, entity_id):
         # Connect any incident IDs referenced by correlated alerts
         for a in list(related["alerts"]):
             if getattr(a, "incident_id", None):
-                linked_inc = Incident.query.filter(
-                    or_(
-                        Incident.id == int(a.incident_id) if str(a.incident_id).isdigit() else False,
-                        Incident.incident_id == str(a.incident_id),
-                    )
-                ).first()
+                inc_ref = str(a.incident_id).strip()
+                if inc_ref.isdigit():
+                    linked_inc = Incident.query.filter(
+                        or_(
+                            Incident.id == int(inc_ref),
+                            Incident.incident_id == inc_ref,
+                        )
+                    ).first()
+                else:
+                    linked_inc = Incident.query.filter(
+                        Incident.incident_id == inc_ref
+                    ).first()
+
                 if linked_inc and linked_inc not in related["incidents"]:
                     related["incidents"].append(linked_inc)
 
@@ -566,23 +639,23 @@ def find_campaigns():
     # 1. Multi-target attacker detection
     # Group IDS events by src_ip attacking distinct dest_ips (excluding diagnostic events)
     src_query = db.session.query(
-        IDSEvent.src_ip,
-        db.func.count(db.func.distinct(IDSEvent.dest_ip)).label("targets_count"),
-        db.func.count(IDSEvent.id).label("total_events")
+        NetworkIDSEvent.src_ip,
+        db.func.count(db.func.distinct(NetworkIDSEvent.dest_ip)).label("targets_count"),
+        db.func.count(NetworkIDSEvent.id).label("total_events")
     ).filter(
-        IDSEvent.src_ip.isnot(None),
-        IDSEvent.dest_ip.isnot(None),
-        IDSEvent.signature_id != 2200074,
-        not_(IDSEvent.signature.ilike("%invalid checksum%")),
-    ).group_by(IDSEvent.src_ip).having(db.func.count(db.func.distinct(IDSEvent.dest_ip)) >= 2).all()
+        NetworkIDSEvent.src_ip.isnot(None),
+        NetworkIDSEvent.dest_ip.isnot(None),
+        NetworkIDSEvent.signature_id != 2200074,
+        not_(NetworkIDSEvent.signature.ilike("%invalid checksum%")),
+    ).group_by(NetworkIDSEvent.src_ip).having(db.func.count(db.func.distinct(NetworkIDSEvent.dest_ip)) >= 2).all()
 
     for row in src_query:
         attacker_ip = row[0]
         # Ignore diagnostic noise
-        evs = IDSEvent.query.filter(
-            IDSEvent.src_ip == attacker_ip,
-            IDSEvent.signature_id != 2200074,
-            not_(IDSEvent.signature.ilike("%invalid checksum%")),
+        evs = NetworkIDSEvent.query.filter(
+            NetworkIDSEvent.src_ip == attacker_ip,
+            NetworkIDSEvent.signature_id != 2200074,
+            not_(NetworkIDSEvent.signature.ilike("%invalid checksum%")),
         ).limit(10).all()
         sec_evs = [e for e in evs if not is_diagnostic_event(e.signature_id, e.signature)]
         if sec_evs:
@@ -666,6 +739,7 @@ def _serialize_alert(a):
 def _serialize_ids(e):
     return {
         "id": e.id,
+        "event_uuid": getattr(e, "event_uuid", None),
         "signature_id": e.signature_id,
         "signature": e.signature,
         "severity": e.severity,
