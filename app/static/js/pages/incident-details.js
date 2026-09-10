@@ -59,7 +59,8 @@
       : `<div class="empty-state"><i class="bi bi-inbox"></i><h3>No evidence yet</h3><p>No artifacts have been collected for this incident.</p></div>`;
   
     // ---------- Timeline preview (top 5) ----------
-    const events = TIMELINE_DATA.filter((t) => t.incidentId === incident.id).sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    const rawEvents = (typeof TIMELINE_DATA !== "undefined" && Array.isArray(TIMELINE_DATA)) ? TIMELINE_DATA : [];
+    const events = rawEvents.filter((t) => t.incidentId === incident.id).sort((a, b) => new Date(b.ts) - new Date(a.ts));
     document.getElementById("incTimelinePreview").innerHTML = events.slice(0, 5).map((e) => `
         <div class="timeline-item">
           <div class="timeline-time">${XDRUtils.formatTime(e.ts)}</div>

@@ -85,6 +85,14 @@ def _success(data=None, message=None, status=200):
     return jsonify(response), status
 
 
+def _wants_html():
+    """Determine whether the client prefers an HTML response over JSON."""
+    if request.args.get("format") == "json" or request.path.startswith("/threat-intelligence/api/"):
+        return False
+    best = request.accept_mimetypes.best_match(["application/json", "text/html"], default="application/json")
+    return best == "text/html" and request.accept_mimetypes[best] > request.accept_mimetypes["application/json"]
+
+
 # ---------------------------------------------------------------------------
 # Threat Intelligence Dashboard
 # ---------------------------------------------------------------------------
@@ -275,11 +283,14 @@ def ioc_enrichment(ioc_id):
 # Campaign Routes
 # ---------------------------------------------------------------------------
 
+@threatintel.get("/api/campaigns")
 @threatintel.get("/campaigns")
 @login_required
 @permission_required("threatintel.view")
 def campaign_list():
     """Return paginated campaigns."""
+    if _wants_html():
+        return render_template("threatintel/campaigns.html")
 
     page, per_page = _pagination_params()
 
@@ -386,11 +397,14 @@ def campaign_delete(campaign_id):
 # Feed Routes
 # ---------------------------------------------------------------------------
 
+@threatintel.get("/api/feeds")
 @threatintel.get("/feeds")
 @login_required
 @permission_required("threatintel.view")
 def feed_list():
     """Return paginated threat feeds."""
+    if _wants_html():
+        return render_template("threatintel/feeds.html")
 
     page, per_page = _pagination_params()
 
@@ -506,11 +520,14 @@ def feed_delete(feed_id):
 # Threat Actor Routes
 # ---------------------------------------------------------------------------
 
+@threatintel.get("/api/actors")
 @threatintel.get("/actors")
 @login_required
 @permission_required("threatintel.view")
 def actor_list():
     """Return paginated threat actors."""
+    if _wants_html():
+        return render_template("threatintel/actors.html")
 
     page, per_page = _pagination_params()
 
@@ -628,7 +645,8 @@ def ioc_details_page():
     return render_template("threatintel/ioc-details.html")
 
 
-@threatintel.get("/campaigns")
+@threatintel.get("/campaigns-page")
+@threatintel.get("/campaigns/view")
 @login_required
 @permission_required("threatintel.view")
 def campaigns_page():
@@ -636,7 +654,8 @@ def campaigns_page():
     return render_template("threatintel/campaigns.html")
 
 
-@threatintel.get("/feeds")
+@threatintel.get("/feeds-page")
+@threatintel.get("/feeds/view")
 @login_required
 @permission_required("threatintel.view")
 def feeds_page():
@@ -644,7 +663,8 @@ def feeds_page():
     return render_template("threatintel/feeds.html")
 
 
-@threatintel.get("/actors")
+@threatintel.get("/actors-page")
+@threatintel.get("/actors/view")
 @login_required
 @permission_required("threatintel.view")
 def actors_page():

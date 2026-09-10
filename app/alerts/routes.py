@@ -103,6 +103,21 @@ def alert_data():
 # ALERT DETAILS & SINGLE DATA
 # ============================================================
 
+@alerts.route("/api/stats", methods=["GET"])
+@alerts.route("/stats", methods=["GET"])
+@login_required
+@permission_required("alerts.view")
+def alert_stats():
+    """
+    Return alert statistics KPI metrics.
+    """
+    stats = get_alert_statistics()
+    return jsonify({
+        "success": True,
+        "data": stats,
+    }), 200
+
+
 @alerts.route("/<string:alert_id>", methods=["GET"])
 @login_required
 def alert_details(alert_id):
@@ -402,12 +417,14 @@ def change_status_route(alert_id):
         }), 500
 
 
+@alerts.route("/<string:alert_id>/escalate", methods=["POST"])
 @alerts.route("/<string:alert_id>/link-incident", methods=["POST"])
 @login_required
 @permission_required("alerts.modify")
 def link_incident_route(alert_id):
     """
     Link an existing incident or create a new incident from the alert.
+    Also handles alert escalation to incident via /<alert_id>/escalate.
     """
     alert = get_alert(alert_id)
     if not alert:
@@ -418,7 +435,8 @@ def link_incident_route(alert_id):
 
     data = request.get_json(silent=True) or {}
     incident_id = data.get("incident_id")
-    create_new = data.get("create_new", False)
+    is_escalate_route = request.path.endswith("/escalate")
+    create_new = data.get("create_new", True if is_escalate_route and not incident_id else False)
 
     try:
         if incident_id and not create_new:
