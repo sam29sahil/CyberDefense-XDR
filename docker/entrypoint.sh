@@ -16,6 +16,12 @@ echo "============================================"
 echo "  CyberDefense XDR — Starting Application"
 echo "============================================"
 
+# Ensure DATABASE_URL has properly URL-encoded credentials
+if [ -n "$DB_PASSWORD" ]; then
+    ENCODED_PW=$(python3 -c 'import urllib.parse, os; print(urllib.parse.quote_plus(os.getenv("DB_PASSWORD", "")))')
+    export DATABASE_URL="postgresql://${DB_USER:-cyberadmin}:${ENCODED_PW}@${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-cyberdefense_xdr}"
+fi
+
 # ---------------------------------------------------------------------------
 # 1. Wait for PostgreSQL to be ready
 # ---------------------------------------------------------------------------

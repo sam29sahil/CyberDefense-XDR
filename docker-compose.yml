@@ -55,11 +55,11 @@ services:
       GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
 
       # Database Connection (inter-container DNS)
-      DATABASE_URL: postgresql://${DB_USER:-cyberadmin}:${DB_PASSWORD}@db:5432/${DB_NAME:-cyberdefense_xdr}
       DB_HOST: db
       DB_PORT: "5432"
       DB_NAME: ${DB_NAME:-cyberdefense_xdr}
       DB_USER: ${DB_USER:-cyberadmin}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
 
       # Central AI Assistant (Gemini 3.6 Flash)
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
