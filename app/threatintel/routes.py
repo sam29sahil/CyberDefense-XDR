@@ -4,8 +4,10 @@ Threat Intelligence Routes
 """
 
 from flask import jsonify, request, render_template
+from flask_login import login_required
 
 from app.threatintel import threatintel
+from app.user_management.decorators import permission_required
 from app.threatintel.services import (
     get_iocs,
     get_ioc,
@@ -88,6 +90,8 @@ def _success(data=None, message=None, status=200):
 # ---------------------------------------------------------------------------
 
 @threatintel.get("/")
+@login_required
+@permission_required("threatintel.view")
 def index():
     """Threat Intelligence module entry point."""
 
@@ -104,6 +108,8 @@ def index():
     })
 
 @threatintel.get("/dashboard")
+@login_required
+@permission_required("threatintel.view")
 def dashboard_page():
     """Render the Threat Intelligence dashboard."""
 
@@ -111,6 +117,8 @@ def dashboard_page():
 
 
 @threatintel.get("/dashboard/data")
+@login_required
+@permission_required("threatintel.view")
 def dashboard_data():
     """Return aggregated Threat Intelligence dashboard data."""
 
@@ -122,6 +130,8 @@ def dashboard_data():
 # ---------------------------------------------------------------------------
 
 @threatintel.get("/iocs")
+@login_required
+@permission_required("threatintel.view")
 def ioc_list():
     """Return paginated IOC records."""
 
@@ -142,6 +152,8 @@ def ioc_list():
 
 
 @threatintel.get("/iocs/statistics")
+@login_required
+@permission_required("threatintel.view")
 def ioc_statistics():
     """Return IOC statistics."""
 
@@ -149,6 +161,8 @@ def ioc_statistics():
 
 
 @threatintel.get("/iocs/<string:ioc_id>")
+@login_required
+@permission_required("threatintel.view")
 def ioc_details(ioc_id):
     """Return a single IOC."""
 
@@ -161,6 +175,8 @@ def ioc_details(ioc_id):
 
 
 @threatintel.post("/iocs")
+@login_required
+@permission_required("threatintel.modify")
 def ioc_create():
     """Create a new IOC."""
 
@@ -180,6 +196,8 @@ def ioc_create():
 
 @threatintel.put("/iocs/<string:ioc_id>")
 @threatintel.patch("/iocs/<string:ioc_id>")
+@login_required
+@permission_required("threatintel.modify")
 def ioc_update(ioc_id):
     """Update an IOC."""
 
@@ -200,6 +218,8 @@ def ioc_update(ioc_id):
 
 
 @threatintel.patch("/iocs/<string:ioc_id>/status")
+@login_required
+@permission_required("threatintel.modify")
 def ioc_status(ioc_id):
     """Update IOC status."""
 
@@ -224,6 +244,8 @@ def ioc_status(ioc_id):
 
 
 @threatintel.delete("/iocs/<string:ioc_id>")
+@login_required
+@permission_required("threatintel.modify")
 def ioc_delete(ioc_id):
     """Delete an IOC."""
 
@@ -236,6 +258,8 @@ def ioc_delete(ioc_id):
 
 
 @threatintel.get("/iocs/<string:ioc_id>/enrichment")
+@login_required
+@permission_required("threatintel.view")
 def ioc_enrichment(ioc_id):
     """Return enrichment data for an IOC."""
 
@@ -252,6 +276,8 @@ def ioc_enrichment(ioc_id):
 # ---------------------------------------------------------------------------
 
 @threatintel.get("/campaigns")
+@login_required
+@permission_required("threatintel.view")
 def campaign_list():
     """Return paginated campaigns."""
 
@@ -269,6 +295,8 @@ def campaign_list():
 
 
 @threatintel.get("/campaigns/<string:campaign_id>")
+@login_required
+@permission_required("threatintel.view")
 def campaign_details(campaign_id):
     """Return campaign details."""
 
@@ -284,6 +312,8 @@ def campaign_details(campaign_id):
 
 
 @threatintel.get("/campaigns/<string:campaign_id>/iocs")
+@login_required
+@permission_required("threatintel.view")
 def campaign_iocs(campaign_id):
     """Return IOCs belonging to a campaign."""
 
@@ -296,6 +326,8 @@ def campaign_iocs(campaign_id):
 
 
 @threatintel.post("/campaigns")
+@login_required
+@permission_required("threatintel.modify")
 def campaign_create():
     """Create a campaign."""
 
@@ -315,6 +347,8 @@ def campaign_create():
 
 @threatintel.put("/campaigns/<string:campaign_id>")
 @threatintel.patch("/campaigns/<string:campaign_id>")
+@login_required
+@permission_required("threatintel.modify")
 def campaign_update(campaign_id):
     """Update a campaign."""
 
@@ -335,6 +369,8 @@ def campaign_update(campaign_id):
 
 
 @threatintel.delete("/campaigns/<string:campaign_id>")
+@login_required
+@permission_required("threatintel.modify")
 def campaign_delete(campaign_id):
     """Delete a campaign."""
 
@@ -351,6 +387,8 @@ def campaign_delete(campaign_id):
 # ---------------------------------------------------------------------------
 
 @threatintel.get("/feeds")
+@login_required
+@permission_required("threatintel.view")
 def feed_list():
     """Return paginated threat feeds."""
 
@@ -368,6 +406,8 @@ def feed_list():
 
 
 @threatintel.get("/feeds/<string:feed_id>")
+@login_required
+@permission_required("threatintel.view")
 def feed_details(feed_id):
     """Return feed details."""
 
@@ -380,6 +420,8 @@ def feed_details(feed_id):
 
 
 @threatintel.post("/feeds")
+@login_required
+@permission_required("threatintel.modify")
 def feed_create():
     """Create a threat feed."""
 
@@ -399,6 +441,8 @@ def feed_create():
 
 @threatintel.put("/feeds/<string:feed_id>")
 @threatintel.patch("/feeds/<string:feed_id>")
+@login_required
+@permission_required("threatintel.modify")
 def feed_update(feed_id):
     """Update a threat feed."""
 
@@ -419,6 +463,8 @@ def feed_update(feed_id):
 
 
 @threatintel.patch("/feeds/<string:feed_id>/status")
+@login_required
+@permission_required("threatintel.modify")
 def feed_status(feed_id):
     """Update feed status."""
 
@@ -443,6 +489,8 @@ def feed_status(feed_id):
 
 
 @threatintel.delete("/feeds/<string:feed_id>")
+@login_required
+@permission_required("threatintel.modify")
 def feed_delete(feed_id):
     """Delete a threat feed."""
 
@@ -459,6 +507,8 @@ def feed_delete(feed_id):
 # ---------------------------------------------------------------------------
 
 @threatintel.get("/actors")
+@login_required
+@permission_required("threatintel.view")
 def actor_list():
     """Return paginated threat actors."""
 
@@ -476,6 +526,8 @@ def actor_list():
 
 
 @threatintel.get("/actors/<string:actor_id>")
+@login_required
+@permission_required("threatintel.view")
 def actor_details(actor_id):
     """Return threat actor details."""
 
@@ -491,6 +543,8 @@ def actor_details(actor_id):
 
 
 @threatintel.get("/actors/<string:actor_id>/campaigns")
+@login_required
+@permission_required("threatintel.view")
 def actor_campaigns(actor_id):
     """Return campaigns associated with a threat actor."""
 
@@ -503,6 +557,8 @@ def actor_campaigns(actor_id):
 
 
 @threatintel.post("/actors")
+@login_required
+@permission_required("threatintel.modify")
 def actor_create():
     """Create a threat actor."""
 
@@ -522,6 +578,8 @@ def actor_create():
 
 @threatintel.put("/actors/<string:actor_id>")
 @threatintel.patch("/actors/<string:actor_id>")
+@login_required
+@permission_required("threatintel.modify")
 def actor_update(actor_id):
     """Update a threat actor."""
 
@@ -542,6 +600,8 @@ def actor_update(actor_id):
 
 
 @threatintel.delete("/actors/<string:actor_id>")
+@login_required
+@permission_required("threatintel.modify")
 def actor_delete(actor_id):
     """Delete a threat actor."""
 
@@ -553,30 +613,40 @@ def actor_delete(actor_id):
     )
 
 @threatintel.get("/ioc-feed")
+@login_required
+@permission_required("threatintel.view")
 def ioc_feed_page():
     """Render the IOC feed page."""
     return render_template("threatintel/ioc-feed.html")
 
 
 @threatintel.get("/ioc-details")
+@login_required
+@permission_required("threatintel.view")
 def ioc_details_page():
     """Render the IOC details page."""
     return render_template("threatintel/ioc-details.html")
 
 
 @threatintel.get("/campaigns")
+@login_required
+@permission_required("threatintel.view")
 def campaigns_page():
     """Render the campaigns page."""
     return render_template("threatintel/campaigns.html")
 
 
 @threatintel.get("/feeds")
+@login_required
+@permission_required("threatintel.view")
 def feeds_page():
     """Render the threat feeds page."""
     return render_template("threatintel/feeds.html")
 
 
 @threatintel.get("/actors")
+@login_required
+@permission_required("threatintel.view")
 def actors_page():
     """Render the threat actors page."""
     return render_template("threatintel/actors.html")    

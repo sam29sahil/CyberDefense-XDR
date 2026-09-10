@@ -9,11 +9,12 @@ from flask import (
     jsonify,
     current_app,
 )
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 from app.scanner import scanner
 from app.scanner import services
 from app.audit_logs.services import record_audit_event
+from app.user_management.decorators import permission_required
 
 
 # ============================================================
@@ -22,6 +23,8 @@ from app.audit_logs.services import record_audit_event
 
 @scanner.route("/")
 @scanner.route("/dashboard")
+@login_required
+@permission_required("scanner.view")
 def index():
     """Renders the Vulnerability Scanner Dashboard."""
     try:
@@ -32,6 +35,8 @@ def index():
 
 
 @scanner.route("/history")
+@login_required
+@permission_required("scanner.view")
 def history():
     """Renders the Scan History page."""
     try:
@@ -42,6 +47,8 @@ def history():
 
 
 @scanner.route("/new")
+@login_required
+@permission_required("scanner.view")
 def new_scan():
     """Renders the New Scan creation form."""
     try:
@@ -53,6 +60,8 @@ def new_scan():
 
 @scanner.route("/details")
 @scanner.route("/details/<scan_id>")
+@login_required
+@permission_required("scanner.view")
 def scan_details(scan_id=None):
     """Renders the Scan Details page."""
     try:
@@ -65,6 +74,8 @@ def scan_details(scan_id=None):
 
 @scanner.route("/vulnerability-details")
 @scanner.route("/vulnerabilities/<vuln_id>")
+@login_required
+@permission_required("scanner.view")
 def vulnerability_details(vuln_id=None):
     """Renders the Vulnerability Details page."""
     try:
@@ -77,6 +88,8 @@ def vulnerability_details(vuln_id=None):
 
 @scanner.route("/targets", endpoint="targets")
 @scanner.route("/targets", endpoint="targets_view")
+@login_required
+@permission_required("scanner.view")
 def targets():
     """Renders the Scan Targets management page."""
     try:
@@ -91,6 +104,8 @@ def targets():
 # ============================================================
 
 @scanner.route("/api/dashboard", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_dashboard():
     """Returns aggregated scanner dashboard KPIs, charts, and tables."""
     try:
@@ -118,6 +133,8 @@ def api_dashboard():
 
 
 @scanner.route("/api/scans", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_scans():
     """Returns paginated, searchable, and filtered scans list."""
     try:
@@ -155,6 +172,8 @@ def api_get_scans():
 
 
 @scanner.route("/api/scans", methods=["POST"])
+@login_required
+@permission_required("scanner.run")
 def api_create_scan():
     """
     Creates and launches a new vulnerability scan.
@@ -219,6 +238,8 @@ def api_create_scan():
 
 
 @scanner.route("/api/scans/<scan_id>", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_scan(scan_id):
     """Returns detailed information and findings for a single scan."""
     try:
@@ -244,6 +265,8 @@ def api_get_scan(scan_id):
 
 
 @scanner.route("/api/scans/<scan_id>", methods=["DELETE"])
+@login_required
+@permission_required("scanner.delete")
 def api_delete_scan(scan_id):
     """Deletes a scan and its associated findings."""
     try:
@@ -276,6 +299,8 @@ def api_delete_scan(scan_id):
 
 
 @scanner.route("/api/tools", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_tools():
     """Returns dynamic availability and versions of scanner security tools."""
     try:
@@ -296,6 +321,8 @@ def api_get_tools():
 
 
 @scanner.route("/api/scans/<scan_id>/services", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_scan_services(scan_id):
     """Returns discovered service/exposure observations for a specific scan."""
     try:
@@ -323,6 +350,8 @@ def api_get_scan_services(scan_id):
 
 
 @scanner.route("/api/scans/<scan_id>/findings", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_scan_findings(scan_id):
     """Returns paginated/filtered findings for a specific scan."""
     try:
@@ -367,6 +396,8 @@ def api_get_scan_findings(scan_id):
 
 
 @scanner.route("/api/vulnerabilities", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_vulnerabilities():
     """Returns filtered and paginated vulnerabilities list."""
     try:
@@ -402,6 +433,8 @@ def api_get_vulnerabilities():
 
 
 @scanner.route("/api/vulnerabilities/<vuln_id>", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_vulnerability(vuln_id):
     """Returns single vulnerability finding by ID."""
     try:
@@ -426,6 +459,8 @@ def api_get_vulnerability(vuln_id):
 
 
 @scanner.route("/api/vulnerabilities/<vuln_id>/status", methods=["POST", "PATCH"])
+@login_required
+@permission_required("scanner.run")
 def api_update_vulnerability_status(vuln_id):
     """Updates the lifecycle status of a vulnerability finding."""
     payload = request.get_json(silent=True) or {}
@@ -462,6 +497,8 @@ def api_update_vulnerability_status(vuln_id):
 
 
 @scanner.route("/api/targets", methods=["GET"])
+@login_required
+@permission_required("scanner.view")
 def api_get_targets():
     """Returns list of configured scan targets."""
     try:
@@ -481,6 +518,8 @@ def api_get_targets():
 
 
 @scanner.route("/api/targets", methods=["POST"])
+@login_required
+@permission_required("scanner.run")
 def api_create_target():
     """Adds a new scan target."""
     payload = request.get_json(silent=True)
@@ -527,6 +566,8 @@ def api_create_target():
 
 
 @scanner.route("/api/targets/<target_id>", methods=["DELETE"])
+@login_required
+@permission_required("scanner.delete")
 def api_delete_target(target_id):
     """Deletes a configured scan target."""
     try:

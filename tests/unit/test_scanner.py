@@ -116,6 +116,7 @@ class ScannerTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         with self.client.session_transaction() as sess:
             sess["user_id"] = self.test_user_id
+            sess["_user_id"] = str(self.test_user_id)
             sess["_fresh"] = True
 
     # ----------------------------------------------------------------------
