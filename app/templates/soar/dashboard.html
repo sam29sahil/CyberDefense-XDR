@@ -138,68 +138,68 @@
         </div>
       </div>
 
-      <!-- Execution Launch Modal -->
-      <div class="modal fade" id="runPlaybookModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary">
-              <h5 class="modal-title text-light" id="runModalTitle">Execute Playbook</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="runPlaybookForm">
-              <div class="modal-body">
-                <input type="hidden" id="modalPlaybookId">
-                <div class="mb-3">
-                  <label class="form-label text-muted small">Target Entity Identifier</label>
-                  <input type="text" class="form-control bg-dark border-secondary text-light cell-mono" id="modalTargetId" placeholder="IP, Alert ID, CVE, Incident ID, or Hostname..." required>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label text-muted small">Target Type</label>
-                  <select class="form-select bg-dark border-secondary text-light cell-mono" id="modalTargetType">
-                    <option value="alert">Alert</option>
-                    <option value="ip">IP Address</option>
-                    <option value="asset">Asset</option>
-                    <option value="incident">Incident</option>
-                    <option value="cve">Vulnerability (CVE)</option>
-                    <option value="ioc">IOC</option>
-                    <option value="ids">Network IDS</option>
-                  </select>
-                </div>
-              </div>
-              <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-warning btn-sm text-dark fw-semibold" id="btnConfirmRun">
-                  <i class="bi bi-play-fill me-1" id="confirmSpinIcon"></i>Run Playbook Now
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Execution Details Modal -->
-      <div class="modal fade" id="executionDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary">
-              <h5 class="modal-title text-light" id="execModalTitle">Execution Audit Details</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <strong class="text-light">Summary:</strong>
-                <p class="text-muted small mb-0" id="execModalSummary">-</p>
-              </div>
-              <h6 class="text-light small fw-bold mb-2">Automated Execution Steps:</h6>
-              <div id="execModalSteps" class="small mb-3"></div>
-              <h6 class="text-light small fw-bold mb-2">Results Payload:</h6>
-              <pre class="bg-black p-3 border border-secondary rounded cell-mono small text-light mb-0" style="max-height: 200px; overflow-y: auto;" id="execModalJson">-</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </main>
+  </div>
+</div>
+
+<!-- Execution Launch Modal -->
+<div class="modal fade" id="runPlaybookModal" tabindex="-1" aria-labelledby="runModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-light" id="runModalTitle">Execute Playbook</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="runPlaybookForm">
+        <div class="modal-body">
+          <input type="hidden" id="modalPlaybookId">
+          <div class="mb-3">
+            <label class="form-label text-muted small" for="modalTargetId">Target Entity Identifier</label>
+            <input type="text" class="form-control bg-dark border-secondary text-light cell-mono" id="modalTargetId" placeholder="IP, Alert ID, CVE, Incident ID, or Hostname..." required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small" for="modalTargetType">Target Type</label>
+            <select class="form-select bg-dark border-secondary text-light cell-mono" id="modalTargetType">
+              <option value="alert">Alert</option>
+              <option value="ip">IP Address</option>
+              <option value="asset">Asset</option>
+              <option value="incident">Incident</option>
+              <option value="cve">Vulnerability (CVE)</option>
+              <option value="ioc">IOC</option>
+              <option value="ids">Network IDS</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm text-dark fw-semibold" id="btnConfirmRun">
+            <i class="bi bi-play-fill me-1" id="confirmSpinIcon"></i>Run Playbook Now
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Execution Details Modal -->
+<div class="modal fade" id="executionDetailsModal" tabindex="-1" aria-labelledby="execModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-dark border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-light" id="execModalTitle">Execution Audit Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <strong class="text-light">Summary:</strong>
+          <p class="text-muted small mb-0" id="execModalSummary">-</p>
+        </div>
+        <h6 class="text-light small fw-bold mb-2">Automated Execution Steps:</h6>
+        <div id="execModalSteps" class="small mb-3"></div>
+        <h6 class="text-light small fw-bold mb-2">Results Payload:</h6>
+        <pre class="bg-black p-3 border border-secondary rounded cell-mono small text-light mb-0" style="max-height: 200px; overflow-y: auto;" id="execModalJson">-</pre>
+      </div>
+    </div>
   </div>
 </div>
 

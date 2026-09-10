@@ -33,6 +33,17 @@ class AIProvider(ABC):
         pass
 
 
+def _sanitize_log_text(text: str, api_key: str = None) -> str:
+    """Sanitizes text to ensure zero credential leakage and bounded length for logging."""
+    if not text:
+        return ""
+    truncated = str(text)[:500]
+    cleaned = scrub_secrets(truncated)
+    if api_key and len(api_key) >= 4:
+        cleaned = cleaned.replace(api_key, "********")
+    return cleaned
+
+
 class OpenAICompatibleProvider(AIProvider):
     """Integrates with OpenAI-compatible endpoints including Google Gemini OpenAI endpoint."""
 
@@ -44,6 +55,7 @@ class OpenAICompatibleProvider(AIProvider):
         timeout: int = 30,
         max_tokens: int = 1200,
         display_name: str = None,
+        temperature: float = None,
     ):
         self.api_key = api_key
         raw_base = (api_base or "https://generativelanguage.googleapis.com/v1beta/openai/").strip()
@@ -58,6 +70,12 @@ class OpenAICompatibleProvider(AIProvider):
         except (ValueError, TypeError):
             self.max_tokens = 1200
         self.display_name = display_name or ("Gemini" if "generativelanguage.googleapis.com" in self.api_base else "OpenAI-Compatible")
+        self.is_gemini = (
+            "gemini" in (self.display_name or "").lower()
+            or "generativelanguage.googleapis.com" in (self.api_base or "").lower()
+            or "gemini" in (self.model or "").lower()
+        )
+        self.temperature = temperature
 
     def generate_response(self, user_prompt: str, context_str: str, history: list = None) -> dict:
         import requests
@@ -77,13 +95,23 @@ class OpenAICompatibleProvider(AIProvider):
         payload = {
             "model": self.model,
             "messages": messages,
-            "temperature": 0.2,
             "max_tokens": self.max_tokens,
         }
+        # For Gemini requests, remove the temperature parameter from the payload
+        if not self.is_gemini:
+            payload["temperature"] = 0.2 if self.temperature is None else self.temperature
 
         try:
             resp = requests.post(f"{self.api_base}/chat/completions", headers=headers, json=payload, timeout=self.timeout)
-            resp.raise_for_status()
+            if resp.status_code != 200:
+                clean_body = _sanitize_log_text(resp.text, self.api_key)
+                logger.error(
+                    f"{self.display_name} provider request failed with HTTP {resp.status_code}: {clean_body}. "
+                    "Falling back to Local SOC Intelligence Engine."
+                )
+                fallback = LocalDeterministicProvider()
+                return fallback.generate_response(user_prompt, context_str, history)
+
             data = resp.json()
             choice = data["choices"][0]["message"]["content"]
             tokens = data.get("usage", {}).get("total_tokens", 0)
@@ -98,7 +126,12 @@ class OpenAICompatibleProvider(AIProvider):
                 "provider": f"{self.display_name} ({self.model})",
             }
         except Exception as e:
-            logger.error(f"{self.display_name} provider failed, falling back to Local Analyzer: {e}")
+            resp_obj = getattr(e, "response", None)
+            status_str = f" (HTTP {resp_obj.status_code})" if resp_obj is not None and getattr(resp_obj, "status_code", None) else ""
+            body_str = f": {_sanitize_log_text(getattr(resp_obj, 'text', ''), self.api_key)}" if resp_obj is not None and getattr(resp_obj, "text", None) else ""
+            err_msg = _sanitize_log_text(f"{e}{status_str}{body_str}", self.api_key)
+
+            logger.error(f"{self.display_name} provider failed, falling back to Local Analyzer: {err_msg}")
             fallback = LocalDeterministicProvider()
             return fallback.generate_response(user_prompt, context_str, history)
 

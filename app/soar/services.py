@@ -54,11 +54,89 @@ def trigger_playbook_execution(playbook_id, target_entity_type, target_entity_id
         execution.summary = run_res.get("summary", "")
         execution.completed_at = datetime.now(timezone.utc)
         db.session.commit()
+
+        # Dispatch execution notification
+        try:
+            from app.notifications.services import dispatch_notification
+            if execution.status == "completed":
+                dispatch_notification(
+                    title=f"SOAR Playbook Completed: {catalog_entry['name']}",
+                    message=execution.summary or f"Playbook '{catalog_entry['name']}' executed successfully on {execution.target_entity_type} {execution.target_entity_id}.",
+                    category="SOAR",
+                    severity="medium",
+                    recipient_permission="soar.view",
+                    source="SOAR Automation",
+                    resource_type="soar_execution",
+                    resource_id=f"{playbook_id}:{execution.target_entity_id}",
+                    action_url="/soar/",
+                    metadata={
+                        "execution_id": execution.execution_id,
+                        "playbook_id": playbook_id,
+                        "playbook_name": catalog_entry["name"],
+                        "target_type": execution.target_entity_type,
+                        "target_id": execution.target_entity_id,
+                        "status": execution.status,
+                    },
+                    dedup_window_minutes=5,
+                )
+            elif execution.status == "failed":
+                dispatch_notification(
+                    title=f"SOAR Playbook Failed: {catalog_entry['name']}",
+                    message=execution.summary or f"Playbook '{catalog_entry['name']}' failed during execution on {execution.target_entity_type} {execution.target_entity_id}.",
+                    category="SOAR",
+                    severity="high",
+                    recipient_permission="soar.view",
+                    source="SOAR Automation",
+                    resource_type="soar_execution",
+                    resource_id=f"{playbook_id}:{execution.target_entity_id}",
+                    action_url="/soar/",
+                    metadata={
+                        "execution_id": execution.execution_id,
+                        "playbook_id": playbook_id,
+                        "playbook_name": catalog_entry["name"],
+                        "target_type": execution.target_entity_type,
+                        "target_id": execution.target_entity_id,
+                        "status": execution.status,
+                    },
+                    dedup_window_minutes=5,
+                )
+        except Exception as ne:
+            import logging
+            logging.getLogger(__name__).warning(f"SOAR execution notification dispatch failed: {ne}")
+
     except Exception as e:
         execution.status = "failed"
         execution.error_message = str(e)
         execution.completed_at = datetime.now(timezone.utc)
         db.session.commit()
+
+        try:
+            from app.notifications.services import dispatch_notification
+            dispatch_notification(
+                title=f"SOAR Playbook Failed: {catalog_entry['name']}",
+                message=execution.error_message or f"Playbook '{catalog_entry['name']}' failed on {execution.target_entity_type} {execution.target_entity_id}.",
+                category="SOAR",
+                severity="high",
+                recipient_permission="soar.view",
+                source="SOAR Automation",
+                resource_type="soar_execution",
+                resource_id=f"{playbook_id}:{execution.target_entity_id}",
+                action_url="/soar/",
+                metadata={
+                    "execution_id": execution.execution_id,
+                    "playbook_id": playbook_id,
+                    "playbook_name": catalog_entry["name"],
+                    "target_type": execution.target_entity_type,
+                    "target_id": execution.target_entity_id,
+                    "status": "failed",
+                    "error": str(e),
+                },
+                dedup_window_minutes=5,
+            )
+        except Exception as ne:
+            import logging
+            logging.getLogger(__name__).warning(f"SOAR execution failure notification dispatch failed: {ne}")
+
         raise
     finally:
         try:
@@ -101,7 +179,6 @@ def get_approvals(status=None):
 def approve_staged_action(approval_id, user_id=None, notes=None):
     """Executes the staged state change after explicit analyst sign-off."""
     approval = SoarApproval.query.filter_by(approval_id=approval_id).first_or_404()
-    return execute_approved_action(approval, decided_by_user_id=user_id, notes=notes)
     result = execute_approved_action(approval, decided_by_user_id=user_id, notes=notes)
 
     try:

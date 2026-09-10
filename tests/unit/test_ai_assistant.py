@@ -21,6 +21,8 @@ from app.ai_assistant.provider import (
     get_ai_config,
     LocalDeterministicProvider,
     OpenAICompatibleProvider,
+    _parse_ai_output,
+    _sanitize_log_text,
 )
 from app.ai_assistant.models import AIConversation, AIMessage
 
@@ -240,6 +242,121 @@ class AIAssistantTestCase(unittest.TestCase):
         self.assertEqual(kwargs["timeout"], 30)
         self.assertEqual(kwargs["json"]["model"], "gemini-2.5-flash")
         self.assertEqual(kwargs["json"]["max_tokens"], 1200)
+        # Verify temperature parameter is removed for Gemini requests
+        self.assertNotIn("temperature", kwargs["json"])
+
+    @patch("requests.post")
+    def test_gemini_non_200_fallback(self, mock_post):
+        """Test HTTP non-200 (e.g. 503 or 500) gracefully logs status and falls back to LocalDeterministicProvider."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.text = '{"error": {"code": 503, "message": "The model is overloaded. Please try again later."}}'
+        mock_post.return_value = mock_resp
+
+        provider = OpenAICompatibleProvider(
+            api_key="secret-gemini-key-999",
+            api_base="https://generativelanguage.googleapis.com/v1beta/openai/",
+            model="gemini-3.6-flash",
+            timeout=30,
+            max_tokens=1200,
+            display_name="Gemini"
+        )
+
+        with self.assertLogs("app.ai_assistant.provider", level="ERROR") as log_cm:
+            res = provider.generate_response(
+                user_prompt="Analyze potential attack",
+                context_str="CRITICAL Alert [101] Host compromised"
+            )
+
+        # Fallback to Local SOC Intelligence Engine
+        self.assertIn("Local SOC Intelligence Engine", res["provider"])
+        self.assertEqual(res["risk_level"], "CRITICAL")
+        self.assertIn("EVIDENCE", res["content"])
+
+        # Check log records HTTP 503 and sanitized message without credentials
+        logged_output = " ".join(log_cm.output)
+        self.assertIn("HTTP 503", logged_output)
+        self.assertIn("The model is overloaded", logged_output)
+        self.assertNotIn("secret-gemini-key-999", logged_output)
+
+    @patch("requests.post")
+    def test_no_secret_leakage_in_error_logging(self, mock_post):
+        """Test that API keys and bearer tokens are never leaked in error logs upon failure."""
+        sensitive_key = "AIzaSyD-CONFIDENTIAL-GEMINI-KEY-999"
+        mock_resp = MagicMock()
+        mock_resp.status_code = 401
+        mock_resp.text = f'{{"error": {{"message": "Invalid API key provided: {sensitive_key}"}}}}'
+        mock_post.return_value = mock_resp
+
+        provider = OpenAICompatibleProvider(
+            api_key=sensitive_key,
+            api_base="https://generativelanguage.googleapis.com/v1beta/openai/",
+            model="gemini-3.6-flash",
+            display_name="Gemini"
+        )
+
+        with self.assertLogs("app.ai_assistant.provider", level="ERROR") as log_cm:
+            res = provider.generate_response(
+                user_prompt="Check telemetry",
+                context_str="Normal traffic"
+            )
+
+        logged_output = " ".join(log_cm.output)
+        self.assertNotIn(sensitive_key, logged_output)
+        self.assertIn("********", logged_output)
+        self.assertIn("HTTP 401", logged_output)
+        self.assertIn("Local SOC Intelligence Engine", res["provider"])
+
+    def test_response_parsing_structured(self):
+        """Test _parse_ai_output parses markdown sections, risk levels, and recommendations accurately."""
+        text_critical = (
+            "## EVIDENCE\n- Ransomware detected\n\n"
+            "## RISK LEVEL\nCRITICAL\n\n"
+            "## RECOMMENDATIONS\n"
+            "1. Isolate the endpoint\n"
+            "2. Revoke compromised credentials\n"
+        )
+        parsed_crit = _parse_ai_output(text_critical)
+        self.assertEqual(parsed_crit["risk_level"], "CRITICAL")
+        self.assertEqual(len(parsed_crit["recommendations"]), 2)
+        self.assertEqual(parsed_crit["recommendations"][0], "Isolate the endpoint")
+
+        text_low = (
+            "## RISK LEVEL\nLOW\n\n"
+            "## RECOMMENDATIONS\n"
+            "- Monitor DNS queries\n"
+        )
+        parsed_low = _parse_ai_output(text_low)
+        self.assertEqual(parsed_low["risk_level"], "LOW")
+        self.assertEqual(len(parsed_low["recommendations"]), 1)
+
+        text_clean = "Posture is CLEAN. No findings."
+        parsed_clean = _parse_ai_output(text_clean)
+        self.assertEqual(parsed_clean["risk_level"], "INFORMATIONAL")
+        self.assertTrue(len(parsed_clean["recommendations"]) >= 1)
+
+    @patch("requests.post")
+    def test_non_gemini_includes_temperature(self, mock_post):
+        """Test non-Gemini OpenAI-compatible providers retain temperature in payload."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "choices": [{"message": {"content": "Normal response"}}],
+            "usage": {"total_tokens": 50}
+        }
+        mock_post.return_value = mock_resp
+
+        provider = OpenAICompatibleProvider(
+            api_key="openai-key-123",
+            api_base="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            display_name="OpenAI",
+            temperature=0.2
+        )
+        provider.generate_response(user_prompt="Hello", context_str="")
+        args, kwargs = mock_post.call_args
+        self.assertIn("temperature", kwargs["json"])
+        self.assertEqual(kwargs["json"]["temperature"], 0.2)
 
     @patch("requests.post")
     def test_gemini_failure_transparent_fallback(self, mock_post):
@@ -295,7 +412,25 @@ class AIAssistantTestCase(unittest.TestCase):
     # -------------------------------------------------------------------------
     # 5. Chat API & Client Parameter Override Immunity
     # -------------------------------------------------------------------------
-    def test_chat_api_ignores_client_overrides(self):
+    @patch("requests.post")
+    def test_chat_api_ignores_client_overrides(self, mock_post):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "choices": [{
+                "message": {
+                    "content": (
+                        "## EVIDENCE\n- Target host telemetry verified\n\n"
+                        "## ANALYSIS\nNo compromise detected.\n\n"
+                        "## RISK LEVEL\nINFORMATIONAL\n\n"
+                        "## RECOMMENDATIONS\n1. Continue monitoring"
+                    )
+                }
+            }],
+            "usage": {"total_tokens": 100}
+        }
+        mock_post.return_value = mock_resp
+
         client = self.get_auth_client()
         # Attempt to inject client-side AI overrides
         res = client.post("/ai-assistant/api/chat", json={
@@ -319,10 +454,35 @@ class AIAssistantTestCase(unittest.TestCase):
         self.assertNotIn("injected-malicious-key", json.dumps(data))
         self.assertNotIn("evil-attacker.com", json.dumps(data))
 
+        # Ensure client overrides did NOT alter the server HTTP request parameters
+        args, kwargs = mock_post.call_args
+        self.assertNotIn("evil-attacker.com", args[0])
+        self.assertNotEqual(kwargs["headers"].get("Authorization"), "Bearer injected-malicious-key")
+        self.assertNotEqual(kwargs.get("timeout"), 9999)
+        self.assertNotEqual(kwargs.get("json", {}).get("max_tokens"), 100000)
+
     # -------------------------------------------------------------------------
     # 6. Conversation History Management & IDOR Protection
     # -------------------------------------------------------------------------
-    def test_conversation_history_endpoints_and_idor_protection(self):
+    @patch("requests.post")
+    def test_conversation_history_endpoints_and_idor_protection(self, mock_post):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "choices": [{
+                "message": {
+                    "content": (
+                        "## EVIDENCE\n- General SOC posture evaluated\n\n"
+                        "## ANALYSIS\nRoutine assessment.\n\n"
+                        "## RISK LEVEL\nLOW\n\n"
+                        "## RECOMMENDATIONS\n1. Maintain daily checks"
+                    )
+                }
+            }],
+            "usage": {"total_tokens": 80}
+        }
+        mock_post.return_value = mock_resp
+
         client_a = self.get_auth_client(self.test_user_id)
         client_b = self.get_auth_client(self.user_b_id)
 

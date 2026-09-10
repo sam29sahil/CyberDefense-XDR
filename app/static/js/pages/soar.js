@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnConfirmRun = document.getElementById('btnConfirmRun');
   const confirmSpinIcon = document.getElementById('confirmSpinIcon');
 
+  const runModalEl = document.getElementById('runPlaybookModal');
+  if (runModalEl) {
+    runModalEl.addEventListener('shown.bs.modal', () => {
+      if (modalTargetId) {
+        modalTargetId.focus();
+      }
+    });
+  }
+
   const btnRefreshExecutions = document.getElementById('btnRefreshExecutions');
 
   // Load Playbooks

@@ -6,6 +6,7 @@ Tests playbook catalog (10 playbooks), execution workflows, and human-in-the-loo
 
 import unittest
 import json
+import uuid
 from app import create_app
 from app.extensions import db
 from app.users.models import User
@@ -13,6 +14,7 @@ from app.alerts.models import Alert
 from app.incidents.models import Incident
 from app.soar.services import get_available_playbooks, trigger_playbook_execution, approve_staged_action, reject_staged_action
 from app.soar.models import SoarApproval, SoarPlaybookExecution
+from app.notifications.models import Notification
 
 
 class SoarAutomationTestCase(unittest.TestCase):
@@ -273,6 +275,176 @@ class SoarAutomationTestCase(unittest.TestCase):
             else:
                 res = self.client.post(url, json={})
             self.assertIn(res.status_code, [302, 401], f"Endpoint {method} {url} allowed unauthenticated access")
+
+    def test_soar_dashboard_modal_dom_structure(self):
+        """Ensure modals are placed outside <main> and .app-shell to avoid stacking context traps."""
+        client = self.get_auth_client(self.test_user_id)
+        res = client.get("/soar/")
+        self.assertEqual(res.status_code, 200)
+        html = res.get_data(as_text=True)
+
+        # Modals and controls exist
+        self.assertIn('id="runPlaybookModal"', html)
+        self.assertIn('id="executionDetailsModal"', html)
+        self.assertIn('id="modalTargetId"', html)
+        self.assertIn('id="modalTargetType"', html)
+        self.assertIn('id="btnConfirmRun"', html)
+        self.assertIn('data-bs-dismiss="modal"', html)
+
+        # Modals are outside <main>
+        main_end = html.find("</main>")
+        modal_pos = html.find('id="runPlaybookModal"')
+        self.assertGreater(modal_pos, main_end, "runPlaybookModal must be outside <main> to avoid CSS animation stacking context")
+
+    # 6. SOAR -> Notifications Integration Tests
+    def test_successful_soar_execution_dispatches_notification(self):
+        """A successful SOAR playbook execution (such as alert_investigation) dispatches a completion notification."""
+        with self.app.app_context():
+            alert = Alert(
+                alert_id=f"ALT-NOTIF-TEST-{uuid.uuid4().hex[:6].upper()}",
+                title="Investigation Notification Test Alert",
+                severity="medium",
+                status="new",
+                affected_host="10.0.0.88",
+                description="Testing SOAR execution completion notification",
+            )
+            db.session.add(alert)
+            db.session.commit()
+            target_alert_id = alert.id
+
+            execution = trigger_playbook_execution(
+                playbook_id="alert_investigation",
+                target_entity_type="alert",
+                target_entity_id=str(target_alert_id),
+                user_id=self.test_user_id,
+            )
+            self.assertEqual(execution.status, "completed")
+
+            res_id = f"alert_investigation:{target_alert_id}"
+            notif = Notification.query.filter_by(
+                category="SOAR",
+                resource_type="soar_execution",
+                resource_id=res_id,
+            ).first()
+
+            self.assertIsNotNone(notif, "Notification was not dispatched for successful SOAR execution")
+            self.assertIn("SOAR Playbook Completed:", notif.title)
+            self.assertEqual(notif.severity, "medium")
+            self.assertEqual(notif.source, "SOAR Automation")
+            self.assertEqual(notif.action_url, "/soar/")
+
+    def test_soar_notification_recipient_permission_filtering(self):
+        """Notification for SOAR execution is delivered only to users with soar.view permission."""
+        with self.app.app_context():
+            alert = Alert(
+                alert_id=f"ALT-RBAC-NOTIF-{uuid.uuid4().hex[:6].upper()}",
+                title="RBAC Notification Filter Test",
+                severity="low",
+                status="new",
+                affected_host="10.0.0.89",
+                description="Testing RBAC filtering on SOAR notifications",
+            )
+            db.session.add(alert)
+            db.session.commit()
+            target_alert_id = alert.id
+
+            trigger_playbook_execution(
+                playbook_id="alert_investigation",
+                target_entity_type="alert",
+                target_entity_id=str(target_alert_id),
+                user_id=self.test_user_id,
+            )
+
+            res_id = f"alert_investigation:{target_alert_id}"
+
+            # User with soar.view receives notification
+            analyst_notif = Notification.query.filter_by(
+                recipient_user_id=self.test_user_id,
+                resource_id=res_id,
+            ).first()
+            self.assertIsNotNone(analyst_notif, "User with soar.view should receive SOAR notification")
+
+            # User without soar.view (test_soar_unprivileged) did NOT receive notification
+            unpriv_notif = Notification.query.filter_by(
+                recipient_user_id=self.test_unprivileged_id,
+                resource_id=res_id,
+            ).first()
+            self.assertIsNone(unpriv_notif, "Unprivileged user without soar.view must NOT receive SOAR notification")
+
+    def test_soar_notification_deduplication_and_flood_protection(self):
+        """Repeated executions on the same target within dedup window coalesce and do not flood the user."""
+        with self.app.app_context():
+            alert = Alert(
+                alert_id=f"ALT-DEDUP-{uuid.uuid4().hex[:6].upper()}",
+                title="Dedup Notification Test Alert",
+                severity="medium",
+                status="new",
+                affected_host="10.0.0.90",
+                description="Testing deduplication on repeated SOAR executions",
+            )
+            db.session.add(alert)
+            db.session.commit()
+            target_alert_id = alert.id
+
+            res_id = f"alert_investigation:{target_alert_id}"
+
+            # 1st run
+            trigger_playbook_execution(
+                playbook_id="alert_investigation",
+                target_entity_type="alert",
+                target_entity_id=str(target_alert_id),
+                user_id=self.test_user_id,
+            )
+
+            notifs_1 = Notification.query.filter_by(
+                recipient_user_id=self.test_user_id,
+                resource_id=res_id,
+            ).all()
+            self.assertEqual(len(notifs_1), 1)
+            self.assertEqual(notifs_1[0].occurrence_count, 1)
+
+            # 2nd run immediately (within 5-minute dedup window)
+            trigger_playbook_execution(
+                playbook_id="alert_investigation",
+                target_entity_type="alert",
+                target_entity_id=str(target_alert_id),
+                user_id=self.test_user_id,
+            )
+
+            notifs_2 = Notification.query.filter_by(
+                recipient_user_id=self.test_user_id,
+                resource_id=res_id,
+            ).all()
+            # Still exactly 1 notification record, with occurrence_count incremented to 2
+            self.assertEqual(len(notifs_2), 1, "Duplicate notification record should not be created within window")
+            self.assertEqual(notifs_2[0].occurrence_count, 2, "Notification occurrence_count should increment on coalescing")
+
+    def test_failed_soar_execution_does_not_produce_success_notification(self):
+        """Failed playbook execution never creates a 'Completed' or success notification."""
+        with self.app.app_context():
+            non_existent_alert_id = 99999999
+            res_id = f"alert_investigation:{non_existent_alert_id}"
+
+            execution = trigger_playbook_execution(
+                playbook_id="alert_investigation",
+                target_entity_type="alert",
+                target_entity_id=str(non_existent_alert_id),
+                user_id=self.test_user_id,
+            )
+            self.assertEqual(execution.status, "failed")
+
+            # Ensure NO completed / success notification exists for this execution
+            success_notif = Notification.query.filter(
+                Notification.resource_id == res_id,
+                Notification.title.ilike("%Completed%"),
+            ).first()
+            self.assertIsNone(success_notif, "Failed execution must NEVER produce a 'Completed' notification")
+
+            # Verify that any notification dispatched is an explicit failure alert
+            fail_notif = Notification.query.filter_by(resource_id=res_id).first()
+            if fail_notif:
+                self.assertIn("Failed", fail_notif.title)
+                self.assertEqual(fail_notif.severity, "high")
 
 
 if __name__ == "__main__":

@@ -44,3 +44,20 @@
   border-color: #f59e0b;
 }
 
+/* Modal Stacking & Interaction Fix */
+.soar-page .modal {
+  z-index: 1055;
+}
+
+.soar-page .modal-backdrop {
+  z-index: 1050;
+}
+
+.soar-page .modal-dialog {
+  z-index: 1056;
+}
+
+.soar-page .modal-content {
+  pointer-events: auto;
+}
+
